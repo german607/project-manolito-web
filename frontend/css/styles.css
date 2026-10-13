@@ -297,6 +297,11 @@
   @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
 
   /* box detail modal */
+  .box-colors{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 14px 0;flex-wrap:wrap;}
+  .box-colors .bc-l{font-size:.7rem;font-weight:700;color:var(--ink-soft);margin-right:2px;}
+  .box-colors .bc{width:20px;height:20px;border-radius:6px;box-shadow:inset 0 0 0 1px rgba(63,58,52,0.12);display:inline-block;}
+  .box-colors + .box-body{padding-top:14px;}
+  @media(max-width:600px){.box-colors{gap:5px;padding:10px 6px 0;flex-wrap:nowrap}.box-colors .bc{width:16px;height:16px;border-radius:5px}.box-colors .bc-l{font-size:.62rem;margin-right:0}}
   .box-card{cursor:pointer;transition:transform .25s ease, box-shadow .25s ease;}
   .box-card:hover{transform:translateY(-3px);box-shadow:0 14px 28px -14px rgba(63,58,52,0.22);}
   .box-hint{font-size:.7rem;font-weight:700;color:var(--green-deep);text-align:center;margin-top:-2px;}

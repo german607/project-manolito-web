@@ -17,7 +17,7 @@ export const PRODUCTOS = [
 export const BOXES = [
   { id: 'mini-box', nombre: 'Mini box', precio: 890, foto: 'mini-box.jpg', items: ['Babero de algodón', 'Portachupete personalizado'] },
   { id: 'dulce-llegada', nombre: 'Box detalles especiales', precio: 1490, foto: 'box-dulce-llegada.jpg', items: ['Zapatitos tejidos', 'Babero de algodón', 'Portachupete personalizado'] },
-  { id: 'esencial', nombre: 'Box Esencial', precio: 1490, foto: 'box-esencial.jpg', items: ['Estuche de silicona para chupete', 'Mordillo de silicona y madera', 'Portachupete personalizado'] },
+  { id: 'esencial', nombre: 'Box Esencial', precio: 1490, foto: 'box-esencial-rosa.jpg', items: ['Estuche de silicona para chupete', 'Mordillo de silicona y madera', 'Portachupete personalizado'] },
   { id: 'dulce-suenos', nombre: 'Box Dulce sueños', precio: 1590, foto: 'box-dulce-suenos.jpg', items: ['Trapito de apego', 'Portachupete personalizado'] },
   { id: 'primeros-mimos', nombre: 'Box Primeros mimos', precio: 1990, foto: 'box-primeros-mimos.jpg', items: ['Zapatitos tejidos', 'Babero de algodón', 'Sonajero de tela suave y seguro', 'Portachupete personalizado'] },
   { id: 'pequeno-tesoro', nombre: 'Box Pequeño tesoro', precio: 2190, foto: 'box-pequeno-tesoro.jpg', items: ['Trapito de apego', 'Zapatitos tejidos', 'Portachupete personalizado'] },

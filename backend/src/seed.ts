@@ -21,6 +21,6 @@ export const BOXES = [
   { id: 'dulce-suenos', nombre: 'Box Dulce sueños', precio: 1590, foto: 'box-dulce-suenos.jpg', items: ['Trapito de apego', 'Portachupete personalizado'] },
   { id: 'primeros-mimos', nombre: 'Box Primeros mimos', precio: 1990, foto: 'box-primeros-mimos.jpg', items: ['Zapatitos tejidos', 'Babero de algodón', 'Sonajero de tela suave y seguro', 'Portachupete personalizado'] },
   { id: 'pequeno-tesoro', nombre: 'Box Pequeño tesoro', precio: 2190, foto: 'box-pequeno-tesoro.jpg', items: ['Trapito de apego', 'Zapatitos tejidos', 'Portachupete personalizado'] },
-  { id: 'bienvenida', nombre: 'Box Bienvenida', precio: 2790, foto: 'box-bienvenida.jpg', items: ['Manta de muselina', 'Set de peine', 'Trapito de apego'] },
+  { id: 'bienvenida', nombre: 'Box Bienvenida', precio: 2790, foto: 'box-bienvenida.jpg', items: ['Manta de muselina', 'Set de peine', 'Trapito de apego', 'Portachupete personalizado'] },
   { id: 'especial-manolito', nombre: 'Box especial Manolito', precio: 3190, foto: 'box-especial-manolito.jpg', etiqueta: 'COMPLETA', items: ['Manta de muselina', 'Babero de algodón', 'Zapatitos tejidos', 'Cepillo y peine de madera', 'Conejo de peluche', 'Portachupete personalizado'] },
 ].map(b => ({ etiqueta: null as string | null, ...b, foto: `assets/img/boxes/${b.foto}` }));

@@ -30,5 +30,6 @@ test('rechaza color inexistente y producto desconocido', () => {
 test('el portachupete y las boxes que lo traen piden el nombre del bebé', () => {
   assert.throws(() => calcular(pedido([{ tipo: 'producto', id: 'porta' }]), productos.uno, boxes.una), /nombre del bebé/);
   assert.throws(() => calcular(pedido([{ tipo: 'box', id: 'mini-box' }]), productos.uno, boxes.una), /nombre del bebé/);
-  assert.doesNotThrow(() => calcular(pedido([{ tipo: 'box', id: 'bienvenida' }]), productos.uno, boxes.una)); // no trae portachupete
+  assert.throws(() => calcular(pedido([{ tipo: 'box', id: 'bienvenida' }]), productos.uno, boxes.una), /nombre del bebé/);
+  assert.doesNotThrow(() => calcular(pedido([{ tipo: 'box', id: 'bienvenida', nombreBebe: 'Ema' }]), productos.uno, boxes.una));
 });

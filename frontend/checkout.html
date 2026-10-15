@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Checkout — Manolito</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500;1,9..144,600&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="assets/img/marca/manolito.png">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a class="brand" href="index.html">
+      <img src="assets/img/marca/manolito.png" alt="Manolito">
+      <span class="brand-name">Manolito</span>
+    </a>
+    <nav>
+      <a class="navlink" href="index.html#boxes">Boxes</a>
+      <a class="navlink" href="index.html#portachupetes">Portachupetes</a>
+      <a class="navlink" href="index.html#faq">Preguntas</a>
+      <a class="btn btn-green btn-sm" href="arma-tu-box.html">Armá tu box</a>
+      <a class="cart-link" href="checkout.html" aria-label="Ver carrito"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l-1 13H7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg><span class="cart-count" hidden>0</span></a>
+    </nav>
+  </div>
+</header>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">Checkout</span>
+      <h2>Finalizar compra</h2>
+    </div>
+
+    <div class="cart-empty" id="checkoutVacio" hidden>
+      <p>Tu carrito está vacío.</p>
+      <div class="hero-ctas">
+        <a class="btn btn-green" href="index.html#boxes">Ver boxes</a>
+        <a class="btn btn-outline" href="arma-tu-box.html">Armá tu box</a>
+      </div>
+    </div>
+
+    <div class="cart-grid" id="checkoutLleno" hidden>
+      <form class="cart-sum cart-form" id="checkout" novalidate>
+        <h3>Tus datos</h3>
+        <label>Nombre y apellido<input name="nombre" required minlength="2" maxlength="80" autocomplete="name"></label>
+        <label>Teléfono<input name="telefono" type="tel" required minlength="6" maxlength="30" autocomplete="tel"></label>
+        <label>Email<input name="email" type="email" required maxlength="120" autocomplete="email"></label>
+
+        <fieldset>
+          <legend>Entrega</legend>
+          <label class="opt"><input type="radio" name="entrega" value="pickup" checked> Pick-up en Cordón (Montevideo)</label>
+          <label class="opt"><input type="radio" name="entrega" value="cadeteria"> Cadetería en Montevideo</label>
+          <label class="opt"><input type="radio" name="entrega" value="interior"> Envío al interior</label>
+        </fieldset>
+        <label id="dirWrap">Dirección<input name="direccion" maxlength="200" autocomplete="street-address"></label>
+
+        <fieldset>
+          <legend>Pago</legend>
+          <label class="opt"><input type="radio" name="pago" value="transferencia" checked> Transferencia bancaria</label>
+          <label class="opt"><input type="radio" name="pago" value="abitab_redpagos"> Giro Abitab / Red Pagos</label>
+          <label class="opt"><input type="radio" name="pago" value="prex_midinero"> Prex / Mi Dinero</label>
+          <label class="opt" id="payMP" hidden><input type="radio" name="pago" value="mercadopago"> Mercado Pago <small>(+10%)</small></label>
+        </fieldset>
+      </form>
+
+      <aside class="cart-sum">
+        <div class="resumen-head"><h3>Tu pedido</h3><button type="button" class="cart-remove" id="editarCarrito">Editar</button></div>
+        <div class="cart-lines" id="resumenLineas"></div>
+        <div class="cart-totals">
+          <div><span>Subtotal</span><span id="totSub">$0</span></div>
+          <div id="rowRecargo" hidden><span>Recargo Mercado Pago</span><span id="totRecargo">$0</span></div>
+          <div class="cart-total"><span>Total</span><b id="totTotal">$0</b></div>
+        </div>
+        <p class="cart-note">El envío se coordina aparte: la cadetería la paga quien recibe.</p>
+        <button class="btn btn-green" id="confirmar" type="submit" form="checkout" style="width:100%;">Confirmar pedido</button>
+        <p class="cart-error" id="cartError" role="alert"></p>
+      </aside>
+    </div>
+
+    <div class="cart-done" id="checkoutGracias" hidden>
+      <h3 id="gTitulo"></h3>
+      <p class="cart-num" id="gNumero"></p>
+      <p id="gTexto"></p>
+      <p class="cart-extra" id="gExtra" hidden></p>
+      <a class="btn btn-green" href="index.html">Volver al inicio</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-inner">
+      <div>
+        <div class="footer-brand">
+          <img src="assets/img/marca/manolito.png" alt="Manolito">
+          <span>Manolito</span>
+        </div>
+        <p class="footer-tag">Regalos de bienvenida y accesorios personalizados para los más chiquitos.</p>
+      </div>
+      <div class="footer-links">
+        <div class="footer-col">
+          <h4>Contacto</h4>
+          <a href="https://instagram.com/manolito_uy" target="_blank" rel="noopener">Instagram</a>
+        </div>
+        <div class="footer-col">
+          <h4>Explorar</h4>
+          <a href="index.html#coleccion">Colección</a>
+          <a href="index.html#boxes">Boxes</a>
+          <a href="index.html#portachupetes">Portachupetes</a>
+        </div>
+        <div class="footer-col">
+          <h4>Envíos</h4>
+          <a href="#" style="opacity:.88;">A todo Uruguay</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">© Manolito — Hecho con amor para los más chiquitos</div>
+  </div>
+</footer>
+
+<a class="float-ig" href="https://instagram.com/manolito_uy" target="_blank" rel="noopener" aria-label="Seguinos en Instagram">
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>
+</a>
+
+<script src="js/main.js"></script>
+<script src="js/carrito.js"></script>
+<script src="js/checkout.js"></script>
+</body>
+</html>

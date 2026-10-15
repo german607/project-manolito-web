@@ -14,15 +14,16 @@
 
 <header>
   <div class="header-inner">
-    <div class="brand">
+    <a class="brand" href="index.html">
       <img src="assets/img/marca/manolito.png" alt="Manolito">
       <span class="brand-name">Manolito</span>
-    </div>
+    </a>
     <nav>
       <a class="navlink" href="#boxes">Boxes</a>
-      <a class="navlink" href="#arma">Armá tu box</a>
       <a class="navlink" href="#portachupetes">Portachupetes</a>
       <a class="navlink" href="#faq">Preguntas</a>
+      <a class="btn btn-green btn-sm" href="arma-tu-box.html">Armá tu box</a>
+      <a class="cart-link" href="checkout.html" aria-label="Ver carrito"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l-1 13H7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg><span class="cart-count" hidden>0</span></a>
     </nav>
   </div>
 </header>
@@ -201,23 +202,6 @@
   </div>
 </section>
 
-<section class="section" id="arma" style="background:var(--white);">
-  <div class="wrap">
-    <div class="section-head">
-      <span class="kicker">A tu medida</span>
-      <h2>Armá tu box</h2>
-      <p>Elegí los productos que más te gusten y mirá cómo se suma el total. Después nos mandás tu armado por Instagram.</p>
-    </div>
-    <div class="arma-grid" id="armaGrid"></div>
-    <div class="arma-sum" id="armaSum">
-      <h3>Tu box</h3>
-      <div id="armaList"></div>
-      <div class="arma-total" id="armaTotalRow" style="display:none;"><span>Total</span><b id="armaTotal">$0</b></div>
-      <button class="btn btn-green" id="armaSend" style="width:100%;display:none;">Pedir esta box por Instagram</button>
-      <p class="arma-note" id="armaNote">Todavía no agregaste nada. ¡Empezá tocando "Agregar"!</p>
-    </div>
-  </div>
-</section>
 
 <div class="wave-divider" style="background:var(--white);">
   <svg viewBox="0 0 1200 60" preserveAspectRatio="none"><path d="M0,20 C250,55 450,0 700,25 C950,50 1050,10 1200,25 L1200,60 L0,60 Z" style="fill:var(--green-pale);"></path></svg>
@@ -239,10 +223,24 @@
     </div>
 
     <div class="porta-catalog">
-      <div class="porta-catalog-item"><img src="assets/img/portachupetes/portachupetes-de-silicona-modelos.jpg" alt="Portachupetes de silicona - modelos" loading="lazy"></div>
-      <div class="porta-catalog-item"><img src="assets/img/portachupetes/portachupetes-de-silicona-modelos-2.jpg" alt="Portachupetes de silicona - modelos" loading="lazy"></div>
-      <div class="porta-catalog-item"><img src="assets/img/portachupetes/portachupetes-de-silicona-modelos-3.jpg" alt="Portachupetes de silicona - modelos" loading="lazy"></div>
-      <div class="porta-catalog-item"><img src="assets/img/portachupetes/portachupetes-de-madera-modelos.jpg" alt="Portachupetes de madera - modelos" loading="lazy"></div>
+      <figure class="porta-card">
+        <div class="porta-slider">
+          <div class="porta-track" data-img="assets/img/portachupetes/silicona-{n}.jpg" data-count="3" data-alt="Modelos de portachupetes de silicona {n}" data-item="porta-slide"></div>
+          <button class="carousel-arrow arrow-left" type="button" aria-label="Anterior">&#8249;</button>
+          <button class="carousel-arrow arrow-right" type="button" aria-label="Siguiente">&#8250;</button>
+          <div class="porta-dots"></div>
+        </div>
+        <figcaption><h3>Silicona</h3><span>Libre de BPA · colores a elección</span></figcaption>
+      </figure>
+      <figure class="porta-card">
+        <div class="porta-slider">
+          <div class="porta-track" data-img="assets/img/portachupetes/madera-{n}.jpg" data-count="1" data-alt="Modelos de portachupetes de madera {n}" data-item="porta-slide"></div>
+          <button class="carousel-arrow arrow-left" type="button" aria-label="Anterior">&#8249;</button>
+          <button class="carousel-arrow arrow-right" type="button" aria-label="Siguiente">&#8250;</button>
+          <div class="porta-dots"></div>
+        </div>
+        <figcaption><h3>Madera</h3><span>Madera natural de haya</span></figcaption>
+      </figure>
     </div>
 
     <p class="porta-footnote">*Precio hasta 5 letras, por cada letra adicional se suman $20.<br>Silicona de grado alimenticio, libre de BPA · Colores a elección, sujeto a stock.</p>
@@ -333,7 +331,7 @@
       </details>
       <details class="faq-item">
         <summary>¿Puedo armar mi propia box? <span class="plus">+</span></summary>
-        <div class="faq-a">¡Sí! Escribinos por Instagram y armamos juntos una selección a tu gusto, con los colores y productos que prefieras.</div>
+        <div class="faq-a">¡Sí! Elegí tus productos en <a href="arma-tu-box.html" style="color:var(--green-deep);font-weight:700;">Armá tu box</a>, o escribinos por Instagram y armamos juntos una selección a tu gusto.</div>
       </details>
       <details class="faq-item">
         <summary>¿Qué métodos de pago aceptan? <span class="plus">+</span></summary>
@@ -387,15 +385,19 @@
       <div class="bm-title"><h3 id="bmTitle"></h3><span class="bm-price" id="bmPrice"></span></div>
       <p class="bm-sub">Esto es lo que trae tu box:</p>
       <div class="bm-items" id="bmItems"></div>
-      <a class="btn btn-green" style="width:100%;" href="https://instagram.com/manolito_uy" target="_blank" rel="noopener">Consultar por Instagram</a>
+      <div id="bmBuy">
+        <label class="bm-field" id="bmNameWrap">Nombre del bebé para el portachupete<input id="bmName" maxlength="20" placeholder="Ej: Lucas" autocomplete="off"></label>
+        <p class="bm-error" id="bmError" role="alert"></p>
+        <button class="btn btn-green" id="bmAdd" type="button" style="width:100%;">Agregar al carrito</button>
+      </div>
+      <a class="btn btn-outline" style="width:100%;margin-top:10px;" href="https://instagram.com/manolito_uy" target="_blank" rel="noopener">Consultar por Instagram</a>
     </div>
   </div>
 </div>
 
 
-<div class="arma-bar" id="armaBar"><span><span id="armaBarN">0</span> productos · <b id="armaBarT">$0</b></span><a class="btn btn-green btn-sm" href="#arma">Ver mi box</a></div>
-<div class="arma-toast" id="armaToast" role="status"></div>
 
 <script src="js/main.js"></script>
+<script src="js/carrito.js"></script>
 </body>
 </html>

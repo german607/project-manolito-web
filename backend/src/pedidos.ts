@@ -10,13 +10,15 @@ const LETRAS_INCLUIDAS = 5;
 const PRECIO_LETRA_EXTRA = 20;
 const RECARGO_MERCADOPAGO = 0.10; // "Mercado Pago (con 10% adicional)" según las preguntas frecuentes
 
-const Item = z.object({
+export const Item = z.object({
   tipo: z.enum(['producto', 'box']),
   id: z.string(),
   cantidad: z.number().int().min(1).max(20).default(1),
   color: z.string().optional(),
   nombreBebe: z.string().trim().max(20).optional(),
 });
+
+const Pago = z.enum(['transferencia', 'abitab_redpagos', 'prex_midinero', 'mercadopago']);
 
 export const PedidoInput = z.object({
   cliente: z.object({
@@ -26,12 +28,17 @@ export const PedidoInput = z.object({
     direccion: z.string().trim().max(200).optional(),
   }),
   entrega: z.enum(['cadeteria', 'pickup', 'interior']),
-  pago: z.enum(['transferencia', 'abitab_redpagos', 'prex_midinero', 'mercadopago']),
+  pago: Pago,
   items: z.array(Item).min(1).max(30),
 }).refine(p => p.entrega === 'pickup' || !!p.cliente.direccion, {
   message: 'La dirección es obligatoria salvo para pick-up', path: ['cliente', 'direccion'],
 });
 export type PedidoInput = z.infer<typeof PedidoInput>;
+
+export const CarritoInput = z.object({
+  items: z.array(Item).max(30),
+  pago: Pago.default('transferencia'),
+});
 
 export type Linea = {
   tipo: 'producto' | 'box'; id: string; nombre: string; cantidad: number;
@@ -42,7 +49,7 @@ export const letras = (s = '') => s.replace(/\s+/g, '').length;
 
 // Precio siempre calculado acá con los datos de la base: nunca se confía en el precio que manda el navegador
 export function calcular(
-  input: PedidoInput,
+  input: { items: z.infer<typeof Item>[]; pago: z.infer<typeof Pago> },
   buscarProducto: (id: string) => Producto | undefined,
   buscarBox: (id: string) => Box | undefined,
 ) {
@@ -50,6 +57,7 @@ export function calcular(
     if (it.tipo === 'box') {
       const b = buscarBox(it.id);
       if (!b?.activo) throw new HttpError(400, `La box "${it.id}" no existe`);
+      if (!it.nombreBebe && b.items.some(i => /portachupete/i.test(i))) throw new HttpError(400, `Falta el nombre del bebé para el portachupete de ${b.nombre}`);
       // ponytail: la box no cobra letras extra en el portachupete; confirmar con Manolito si corresponde
       return { tipo: 'box', id: b.id, nombre: b.nombre, cantidad: it.cantidad, nombreBebe: it.nombreBebe, precioUnitario: b.precio, total: b.precio * it.cantidad };
     }
@@ -57,13 +65,19 @@ export function calcular(
     if (!p?.activo) throw new HttpError(400, `El producto "${it.id}" no existe`);
     if (it.color && !p.colores?.includes(it.color)) throw new HttpError(400, `Color "${it.color}" no disponible para ${p.nombre}`);
     if (it.nombreBebe && !p.personalizable) throw new HttpError(400, `${p.nombre} no lleva nombre`);
+    if (!it.nombreBebe && p.personalizable) throw new HttpError(400, `Falta el nombre del bebé para ${p.nombre}`);
+    if (p.stock !== null && p.stock < it.cantidad) throw new HttpError(409, p.stock ? `Quedan solo ${p.stock} de ${p.nombre}` : `${p.nombre} está sin stock`);
     const extra = p.personalizable ? Math.max(0, letras(it.nombreBebe) - LETRAS_INCLUIDAS) * PRECIO_LETRA_EXTRA : 0;
     const unit = p.precio + extra;
     return { tipo: 'producto', id: p.id, nombre: p.nombre, cantidad: it.cantidad, color: it.color, nombreBebe: it.nombreBebe, precioUnitario: unit, total: unit * it.cantidad };
   });
+  return { lineas, ...totales(lineas, input.pago) };
+}
+
+function totales(lineas: Linea[], pago: z.infer<typeof Pago>) {
   const subtotal = lineas.reduce((s, l) => s + l.total, 0);
-  const recargo = input.pago === 'mercadopago' ? Math.round(subtotal * RECARGO_MERCADOPAGO) : 0;
-  return { lineas, subtotal, recargo, total: subtotal + recargo };
+  const recargo = pago === 'mercadopago' ? Math.round(subtotal * RECARGO_MERCADOPAGO) : 0;
+  return { subtotal, recargo, total: subtotal + recargo };
 }
 
 export type Pedido = {
@@ -110,22 +124,46 @@ const insertar = db.transaction((input: PedidoInput, c: ReturnType<typeof calcul
 
 export const pedidosRouter = Router();
 
+// Cotiza el carrito sin crear el pedido. Cada ítem se valida por separado para poder marcar
+// cuál falla (sin stock, desactivado...) sin perder el resto del carrito.
+pedidosRouter.post('/carrito', (req, res) => {
+  const { items, pago } = CarritoInput.parse(req.body);
+  const lineas: (Linea & { i: number; foto: string | null })[] = [];
+  const avisos: { i: number; nombre?: string; error: string }[] = [];
+  items.forEach((it, i) => {
+    try {
+      const foto = (it.tipo === 'box' ? boxes.una(it.id) : productos.uno(it.id))?.foto ?? null;
+      lineas.push({ i, foto, ...calcular({ items: [it], pago }, productos.uno, boxes.una).lineas[0] });
+    } catch (e) {
+      if (!(e instanceof HttpError)) throw e;
+      avisos.push({ i, nombre: (it.tipo === 'box' ? boxes.una(it.id) : productos.uno(it.id))?.nombre, error: e.message });
+    }
+  });
+  res.json({ lineas, avisos, ...totales(lineas, pago), mercadopago: !!process.env.MP_ACCESS_TOKEN });
+});
+
 pedidosRouter.post('/pedidos', async (req, res) => {
   const input = PedidoInput.parse(req.body);
+  if (input.pago === 'mercadopago' && !process.env.MP_ACCESS_TOKEN) throw new HttpError(400, 'Mercado Pago no está disponible, elegí otro medio de pago');
   const id = insertar(input, calcular(input, productos.uno, boxes.una));
   const p = buscarPedido(id)!;
 
-  const pagoUrl = p.pago === 'mercadopago' ? await crearPreferencia({ id, total: p.total, email: p.email }) : undefined;
+  let pagoUrl: string | undefined;
+  if (p.pago === 'mercadopago') {
+    // El pedido ya está guardado: si Mercado Pago falla no se pierde, queda pendiente para coordinar a mano
+    pagoUrl = await crearPreferencia({ id, total: p.total, email: p.email }).catch(e => { console.error(e); return undefined; });
+  }
+  const instrucciones = pagoUrl ? undefined : (process.env.PAGO_INSTRUCCIONES ?? 'Te vamos a escribir para coordinar el pago y la entrega.');
 
   enviarMail(p.email, `Recibimos tu pedido Manolito #${id}`,
     `¡Gracias ${p.nombre}! Recibimos tu pedido.\n\n${resumen(p)}\n\n` +
-    (pagoUrl ? 'Si no completaste el pago, podés hacerlo desde el link que te mostramos en la web.' : (process.env.PAGO_INSTRUCCIONES ?? 'Te vamos a escribir para coordinar el pago y la entrega.')));
+    (pagoUrl ? 'Si no completaste el pago, podés hacerlo desde el link que te mostramos en la web.' : instrucciones));
   if (process.env.ADMIN_EMAIL) {
     enviarMail(process.env.ADMIN_EMAIL, `Nuevo pedido #${id} — $${p.total}`,
       `${p.nombre} · ${p.telefono} · ${p.email}\nPago: ${p.pago}\n\n${resumen(p)}`);
   }
 
-  res.status(201).json({ id, subtotal: p.subtotal, recargo: p.recargo, total: p.total, pagoUrl });
+  res.status(201).json({ id, subtotal: p.subtotal, recargo: p.recargo, total: p.total, pagoUrl, instrucciones });
 });
 
 pedidosRouter.post('/mercadopago/webhook', async (req, res) => {

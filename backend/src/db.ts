@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
+import { PRODUCTOS, BOXES } from './seed.js';
 
 const DB_PATH = process.env.DB_PATH ?? 'data/manolito.db';
 if (DB_PATH !== ':memory:') mkdirSync(dirname(DB_PATH), { recursive: true });
@@ -49,7 +50,25 @@ db.exec(`
     total         INTEGER NOT NULL,
     mp_payment_id TEXT
   );
+
+  -- Métricas de uso: contadores por día, sin datos personales ni cookies
+  CREATE TABLE IF NOT EXISTS eventos (
+    dia  TEXT NOT NULL,               -- YYYY-MM-DD
+    tipo TEXT NOT NULL,
+    ref  TEXT NOT NULL DEFAULT '',    -- página, box o producto según el tipo
+    n    INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (dia, tipo, ref)
+  );
 `);
+
+if (!db.prepare('SELECT 1 FROM productos LIMIT 1').get()) {
+  const insP = db.prepare('INSERT INTO productos (id, nombre, descripcion, precio, colores, personalizable, foto) VALUES (?, ?, ?, ?, ?, ?, ?)');
+  const insB = db.prepare('INSERT INTO boxes (id, nombre, precio, items, foto, etiqueta) VALUES (?, ?, ?, ?, ?, ?)');
+  db.transaction(() => {
+    for (const p of PRODUCTOS) insP.run(p.id, p.nombre, p.descripcion, p.precio, p.colores && JSON.stringify(p.colores), p.personalizable ? 1 : 0, p.foto);
+    for (const b of BOXES) insB.run(b.id, b.nombre, b.precio, JSON.stringify(b.items), b.foto, b.etiqueta);
+  })();
+}
 
 export type Producto = {
   id: string; nombre: string; descripcion: string | null; precio: number;

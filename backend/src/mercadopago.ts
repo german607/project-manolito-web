@@ -25,9 +25,9 @@ export async function crearPreferencia(p: { id: number; total: number; email: st
       external_reference: String(p.id),
       notification_url: `${base}/api/mercadopago/webhook`,
       back_urls: {
-        success: `${base}/?pedido=${p.id}&pago=ok`,
-        pending: `${base}/?pedido=${p.id}&pago=pendiente`,
-        failure: `${base}/?pedido=${p.id}&pago=error`,
+        success: `${base}/checkout.html?pedido=${p.id}&pago=ok`,
+        pending: `${base}/checkout.html?pedido=${p.id}&pago=pendiente`,
+        failure: `${base}/checkout.html?pedido=${p.id}&pago=error`,
       },
       auto_return: 'approved',
     }),

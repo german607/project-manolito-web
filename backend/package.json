@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "test": "DB_PATH=:memory: node --import tsx --test src/*.test.ts"
   },
   "dependencies": {
     "better-sqlite3": "^12.11.1",

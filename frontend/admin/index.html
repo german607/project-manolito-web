@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Admin — Manolito</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="../assets/img/marca/manolito.png">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+<main id="login" class="login" hidden>
+  <form class="card login-card" id="loginForm">
+    <img src="../assets/img/marca/manolito.png" alt="Manolito">
+    <h1>Panel de Manolito</h1>
+    <label>Contraseña<input type="password" id="loginPass" autocomplete="current-password" required></label>
+    <button class="btn" type="submit">Entrar</button>
+    <p class="error" id="loginError" role="alert"></p>
+  </form>
+</main>
+
+<div id="app" hidden>
+  <header class="top">
+    <a class="brand" href="../index.html" title="Ver la web"><img src="../assets/img/marca/manolito.png" alt=""><span>Manolito <small>admin</small></span></a>
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="resumen">Resumen</button>
+      <button role="tab" data-tab="productos">Productos</button>
+      <button role="tab" data-tab="boxes">Boxes</button>
+      <button role="tab" data-tab="pedidos">Pedidos</button>
+    </nav>
+    <button class="link" id="logout">Salir</button>
+  </header>
+
+  <section class="panel" id="tab-resumen">
+    <div class="row-head">
+      <h2>Resumen</h2>
+      <div class="seg" id="rango" role="group" aria-label="Período">
+        <button data-dias="7">7 días</button><button data-dias="30">30 días</button><button data-dias="90">90 días</button>
+      </div>
+    </div>
+    <div class="alert" id="stockAlert" hidden></div>
+    <div class="kpis" id="kpis"></div>
+    <div class="card">
+      <h3>Visitas por día</h3>
+      <div class="chart" id="chart"></div>
+    </div>
+    <div class="grid3">
+      <div class="card"><h3>Páginas más vistas</h3><div id="topPaginas"></div></div>
+      <div class="card"><h3>Boxes más vistas</h3><div id="topBoxes"></div></div>
+      <div class="card"><h3>Productos más agregados</h3><div id="topProductos"></div></div>
+    </div>
+  </section>
+
+  <section class="panel" id="tab-productos" hidden>
+    <div class="row-head"><h2>Productos</h2><p class="hint">Stock vacío = sin límite. Tocá la foto para cambiarla.</p></div>
+    <div class="card table-wrap"><table id="tablaProductos"></table></div>
+  </section>
+
+  <section class="panel" id="tab-boxes" hidden>
+    <div class="row-head"><h2>Boxes</h2></div>
+    <div class="card table-wrap"><table id="tablaBoxes"></table></div>
+  </section>
+
+  <section class="panel" id="tab-pedidos" hidden>
+    <div class="row-head">
+      <h2>Pedidos</h2>
+      <select id="filtroEstado" aria-label="Filtrar por estado">
+        <option value="">Todos</option><option>pendiente</option><option>pagado</option><option>enviado</option><option>entregado</option><option>cancelado</option>
+      </select>
+    </div>
+    <div id="listaPedidos"></div>
+  </section>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+<script src="admin.js"></script>
+</body>
+</html>

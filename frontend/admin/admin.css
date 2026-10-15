@@ -77,6 +77,9 @@ td{padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:middle;}
 tr:last-child td{border-bottom:0;}
 tr.off td:not(:last-child){opacity:.5;}
 td input[type=number]{width:96px;}
+.stock-cell{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.stock-cell input:disabled{background:var(--cream);color:var(--ink-soft);text-decoration:line-through;}
+.stock-cell .switch{font-size:.82rem;color:var(--ink-soft);white-space:nowrap;}
 .thumb{width:48px;height:48px;border-radius:10px;object-fit:cover;cursor:pointer;display:block;border:1px solid var(--line);}
 .thumb:hover{outline:2px solid var(--pink);}
 .switch{display:inline-flex;align-items:center;gap:6px;cursor:pointer;}

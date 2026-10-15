@@ -19,7 +19,8 @@ db.exec(`
     colores        TEXT,              -- JSON array o NULL si no tiene colores
     personalizable INTEGER NOT NULL DEFAULT 0, -- lleva nombre del bebé
     foto           TEXT,
-    stock          INTEGER,           -- NULL = sin límite
+    stock          INTEGER,           -- cantidad cargada (se guarda aunque no se controle)
+    controla_stock INTEGER NOT NULL DEFAULT 0, -- 0 = "Ignorar stock": se vende sin mirar la cantidad
     activo         INTEGER NOT NULL DEFAULT 1
   );
 
@@ -51,6 +52,14 @@ db.exec(`
     mp_payment_id TEXT
   );
 
+  -- Productos que trae cada box: venderla descuenta su stock
+  CREATE TABLE IF NOT EXISTS box_productos (
+    box_id      TEXT NOT NULL REFERENCES boxes(id),
+    producto_id TEXT NOT NULL REFERENCES productos(id),
+    cantidad    INTEGER NOT NULL DEFAULT 1 CHECK (cantidad > 0),
+    PRIMARY KEY (box_id, producto_id)
+  );
+
   -- Métricas de uso: contadores por día, sin datos personales ni cookies
   CREATE TABLE IF NOT EXISTS eventos (
     dia  TEXT NOT NULL,               -- YYYY-MM-DD
@@ -61,6 +70,23 @@ db.exec(`
   );
 `);
 
+// ---------- Migraciones: cambios a bases que ya existen. user_version = última aplicada ----------
+const MIGRACIONES: (() => void)[] = [
+  // 1: interruptor "Ignorar stock". Antes, stock NULL significaba "sin límite"
+  () => {
+    const cols = (db.prepare("SELECT name FROM pragma_table_info('productos')").all() as { name: string }[]).map(c => c.name);
+    if (!cols.includes('controla_stock')) {
+      db.exec('ALTER TABLE productos ADD COLUMN controla_stock INTEGER NOT NULL DEFAULT 0');
+      db.exec('UPDATE productos SET controla_stock = 1 WHERE stock IS NOT NULL');
+    }
+  },
+];
+const version = db.pragma('user_version', { simple: true }) as number;
+MIGRACIONES.slice(version).forEach((migrar, i) => db.transaction(() => {
+  migrar();
+  db.pragma(`user_version = ${version + i + 1}`);
+})());
+
 if (!db.prepare('SELECT 1 FROM productos LIMIT 1').get()) {
   const insP = db.prepare('INSERT INTO productos (id, nombre, descripcion, precio, colores, personalizable, foto) VALUES (?, ?, ?, ?, ?, ?, ?)');
   const insB = db.prepare('INSERT INTO boxes (id, nombre, precio, items, foto, etiqueta) VALUES (?, ?, ?, ?, ?, ?)');
@@ -70,19 +96,41 @@ if (!db.prepare('SELECT 1 FROM productos LIMIT 1').get()) {
   })();
 }
 
+// Bases creadas antes de existir box_productos: se completa con el contenido del catálogo inicial
+if (!db.prepare('SELECT 1 FROM box_productos LIMIT 1').get()) {
+  const ins = db.prepare(`INSERT OR IGNORE INTO box_productos (box_id, producto_id)
+    SELECT @box, @prod WHERE EXISTS (SELECT 1 FROM boxes WHERE id = @box) AND EXISTS (SELECT 1 FROM productos WHERE id = @prod)`);
+  db.transaction(() => { for (const b of BOXES) for (const p of b.productos) ins.run({ box: b.id, prod: p }); })();
+}
+
 export type Producto = {
   id: string; nombre: string; descripcion: string | null; precio: number;
   colores: string[] | null; personalizable: boolean; foto: string | null;
-  stock: number | null; activo: boolean;
+  activo: boolean;
+  stock: number | null;   // el que usan las ventas: null = sin límite (no se controla)
+  stockCargado: number | null; controlaStock: boolean; // lo que se edita en el admin
 };
+export type Componente = { id: string; nombre: string; cantidad: number; stock: number | null };
 export type Box = {
   id: string; nombre: string; precio: number; items: string[];
   foto: string | null; etiqueta: string | null; activo: boolean;
+  componentes: Componente[]; agotada: boolean; // agotada = algún producto que trae tiene stock 0
 };
 
 // SQLite guarda JSON como texto y booleanos como 0/1
-const toProducto = (r: any): Producto => ({ ...r, colores: r.colores && JSON.parse(r.colores), personalizable: !!r.personalizable, activo: !!r.activo });
-const toBox = (r: any): Box => ({ ...r, items: JSON.parse(r.items), activo: !!r.activo });
+const toProducto = ({ controla_stock, ...r }: any): Producto => ({
+  ...r, colores: r.colores && JSON.parse(r.colores), personalizable: !!r.personalizable, activo: !!r.activo,
+  stock: controla_stock ? (r.stock ?? 0) : null, stockCargado: r.stock, controlaStock: !!controla_stock,
+});
+// Stock que usan las ventas, en SQL: NULL si el producto tiene "Ignorar stock"
+export const STOCK_SQL = 'CASE WHEN controla_stock = 1 THEN COALESCE(stock, 0) END';
+const componentesDe = db.prepare(`SELECT p.id, p.nombre, bp.cantidad, ${STOCK_SQL} AS stock FROM box_productos bp
+  JOIN productos p ON p.id = bp.producto_id WHERE bp.box_id = ? ORDER BY bp.rowid`);
+const toBox = (r: any): Box => {
+  const componentes = componentesDe.all(r.id) as Componente[];
+  return { ...r, items: JSON.parse(r.items), activo: !!r.activo, componentes,
+    agotada: componentes.some(c => c.stock !== null && c.stock < c.cantidad) };
+};
 
 export const productos = {
   todos: (soloActivos = true): Producto[] =>

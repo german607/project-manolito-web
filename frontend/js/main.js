@@ -78,8 +78,9 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
     document.querySelectorAll('.box-card').forEach(function(card){
       var b=m[card.querySelector('h3').textContent.trim()];
       if(!b){card.style.display='none';return;}
-      card.querySelector('.box-price').textContent='$'+b.precio;
+      card.querySelector('.box-price').textContent=b.agotada?'Sin stock':'$'+b.precio;
       card.dataset.boxId=b.id;
+      card.classList.toggle('agotada',b.agotada);
     });
   }).catch(function(){});
   var actual=null;
@@ -105,6 +106,9 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
     document.getElementById('bmBuy').hidden=!card.dataset.boxId;
     document.getElementById('bmNameWrap').hidden=!/portachupete/i.test(card.querySelector('.box-items').textContent);
     document.getElementById('bmName').value=''; document.getElementById('bmError').textContent='';
+    var agotada=card.classList.contains('agotada'), add=document.getElementById('bmAdd');
+    add.disabled=agotada; add.textContent=agotada?'Sin stock por ahora':'Agregar al carrito';
+    document.getElementById('bmNameWrap').hidden=document.getElementById('bmNameWrap').hidden||agotada;
     ov.classList.add('open'); ov.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden';
   }
   function close(){ov.classList.remove('open');ov.setAttribute('aria-hidden','true');document.body.style.overflow='';}

@@ -15,7 +15,7 @@ async function mp(path: string, init: RequestInit = {}) {
 }
 
 // Checkout Pro: el cliente paga en la página de Mercado Pago. Devuelve la URL a la que redirigir.
-export async function crearPreferencia(p: { id: number; total: number; email: string }): Promise<string> {
+export async function crearPreferencia(p: { id: number; total: number; email: string; vence: Date }): Promise<string> {
   const base = process.env.BASE_URL ?? 'http://localhost:3000';
   const pref = await mp('/checkout/preferences', {
     method: 'POST',
@@ -23,6 +23,8 @@ export async function crearPreferencia(p: { id: number; total: number; email: st
       items: [{ title: `Pedido Manolito #${p.id}`, quantity: 1, unit_price: p.total, currency_id: 'UYU' }],
       payer: { email: p.email },
       external_reference: String(p.id),
+      expires: true, // después de esta fecha Mercado Pago no acepta el pago
+      expiration_date_to: p.vence.toISOString(),
       notification_url: `${base}/api/mercadopago/webhook`,
       back_urls: {
         success: `${base}/checkout.html?pedido=${p.id}&pago=ok`,

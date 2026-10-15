@@ -7,6 +7,7 @@ import { db, productos, boxes } from './db.js';
 import { HttpError } from './errores.js';
 import { ESTADOS, buscarPedido, cambiarEstado } from './pedidos.js';
 import { HOY_UY } from './publico.js';
+import { DEV } from './seguridad.js';
 
 export const FRONTEND = fileURLToPath(new URL('../../frontend', import.meta.url));
 
@@ -46,7 +47,7 @@ adminRouter.post('/login', (req, res) => {
 
   const token = randomBytes(32).toString('hex');
   sesiones.set(token, Date.now() + DURACION);
-  res.cookie('admin', token, { httpOnly: true, sameSite: 'strict', secure: process.env.NODE_ENV === 'production', maxAge: DURACION, path: '/api/admin' });
+  res.cookie('admin', token, { httpOnly: true, sameSite: 'strict', secure: !DEV, maxAge: DURACION, path: '/api/admin' });
   res.json({ ok: true });
 });
 
@@ -89,7 +90,7 @@ adminRouter.get('/resumen', (req, res) => {
     paginas: suma('visita'),
     boxesVistas: suma('box_ver'),
     productosAgregados: suma('arma_agregar'),
-    stockBajo: db.prepare('SELECT id, nombre, stock FROM productos WHERE activo = 1 AND stock IS NOT NULL AND stock <= 3 ORDER BY stock').all(),
+    stockBajo: db.prepare('SELECT id, nombre, COALESCE(stock, 0) AS stock FROM productos WHERE activo = 1 AND controla_stock = 1 AND COALESCE(stock, 0) <= 3 ORDER BY 3').all(),
   });
 });
 
@@ -114,12 +115,18 @@ function actualizar(tabla: 'productos' | 'boxes', id: string, cambios: Record<st
 }
 
 adminRouter.patch('/productos/:id', (req, res) => {
-  const cambios = z.object({
+  const { controlaStock, ...cambios } = z.object({
     precio: Precio.optional(),
-    stock: z.number().int().min(0).nullable().optional(), // null = sin límite
+    stock: z.number().int().min(0).nullable().optional(),
+    controlaStock: z.boolean().optional(), // false = "Ignorar stock"
     activo: z.boolean().optional(),
   }).strict().parse(req.body);
-  actualizar('productos', req.params.id, cambios);
+  const actual = productos.uno(req.params.id);
+  if (!actual) throw new HttpError(404, 'No encontrado');
+  if ((controlaStock ?? actual.controlaStock) && (cambios.stock === undefined ? actual.stockCargado : cambios.stock) === null) {
+    throw new HttpError(400, 'Cargá la cantidad de stock, o activá "Ignorar stock"');
+  }
+  actualizar('productos', req.params.id, { ...cambios, controla_stock: controlaStock });
   res.json(productos.uno(req.params.id));
 });
 

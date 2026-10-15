@@ -23,6 +23,12 @@
 - [x] Lista de pedidos con filtro por estado y botón para cambiarlo
 - [x] Editar productos (precio, stock, activo) y subir fotos
 
+## Seguridad
+- [ ] Sacar los 4 `onclick=` inline de `index.html` (flechas de los carruseles) y pasarlos a `js/main.js`, para poder activar una Content-Security-Policy estricta
+- [ ] Regla para todo código nuevo: nunca meter datos del servidor o del usuario con `innerHTML` sin escapar (usar `textContent` o `esc()`, como en el carrito y el admin)
+- [ ] La página de "¡Pago recibido!" debe consultar el estado real del pedido, no confiar en `?pago=ok` de la URL
+- [ ] Opcional: servir las fuentes desde el propio sitio en vez de Google Fonts (CSP más simple y no se comparte la IP de los visitantes con Google)
+
 ## Fase 6 — Producción
 - [ ] Optimizar imágenes a WebP y bajar resolución (hoy 3,7 MB)
 

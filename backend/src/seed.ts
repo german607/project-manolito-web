@@ -1,4 +1,5 @@
 // Catálogo inicial: lo que hoy muestra el sitio. Se carga solo si la base está vacía.
+// `productos` de cada box = de qué productos descuenta stock (el conejo de peluche no es un producto del catálogo).
 const COL = ['Rosa', 'Celeste', 'Beige'];
 const foto = (id: string) => `assets/img/arma-tu-box/producto-${id}.jpg`;
 
@@ -15,12 +16,12 @@ export const PRODUCTOS = [
 ].map(p => ({ personalizable: false, ...p, foto: foto(p.id) }));
 
 export const BOXES = [
-  { id: 'mini-box', nombre: 'Mini box', precio: 890, foto: 'mini-box.jpg', items: ['Babero de algodón', 'Portachupete personalizado'] },
-  { id: 'dulce-llegada', nombre: 'Box Dulce llegada', precio: 1390, foto: 'box-dulce-llegada.jpg', items: ['Zapatitos tejidos', 'Babero de algodón', 'Portachupete personalizado'] },
-  { id: 'esencial', nombre: 'Box Esencial', precio: 1490, foto: 'box-esencial.jpg', items: ['Estuche de silicona para chupete', 'Mordillo de silicona y madera', 'Portachupete personalizado'] },
-  { id: 'dulce-suenos', nombre: 'Box Dulce sueños', precio: 1590, foto: 'box-dulce-suenos.jpg', items: ['Trapito de apego', 'Portachupete personalizado'] },
-  { id: 'primeros-mimos', nombre: 'Box Primeros mimos', precio: 1990, foto: 'box-primeros-mimos.jpg', items: ['Zapatitos tejidos', 'Babero de algodón', 'Sonajero de tela suave y seguro', 'Portachupete personalizado'] },
-  { id: 'pequeno-tesoro', nombre: 'Box Pequeño tesoro', precio: 2190, foto: 'box-pequeno-tesoro.jpg', items: ['Trapito de apego', 'Zapatitos tejidos', 'Portachupete personalizado'] },
-  { id: 'bienvenida', nombre: 'Box Bienvenida', precio: 2490, foto: 'box-bienvenida.jpg', items: ['Manta de muselina', 'Set de peine', 'Trapito de apego'] },
-  { id: 'especial-manolito', nombre: 'Box especial Manolito', precio: 3190, foto: 'box-especial-manolito.jpg', etiqueta: 'COMPLETA', items: ['Manta de muselina', 'Babero de algodón', 'Zapatitos tejidos', 'Cepillo y peine de madera', 'Conejo de peluche', 'Portachupete personalizado'] },
+  { id: 'mini-box', nombre: 'Mini box', precio: 890, foto: 'mini-box.jpg', productos: ['babero', 'porta'], items: ['Babero de algodón', 'Portachupete personalizado'] },
+  { id: 'dulce-llegada', nombre: 'Box Dulce llegada', precio: 1390, foto: 'box-dulce-llegada.jpg', productos: ['zapatitos', 'babero', 'porta'], items: ['Zapatitos tejidos', 'Babero de algodón', 'Portachupete personalizado'] },
+  { id: 'esencial', nombre: 'Box Esencial', precio: 1490, foto: 'box-esencial.jpg', productos: ['guarda', 'mordillo', 'porta'], items: ['Estuche de silicona para chupete', 'Mordillo de silicona y madera', 'Portachupete personalizado'] },
+  { id: 'dulce-suenos', nombre: 'Box Dulce sueños', precio: 1590, foto: 'box-dulce-suenos.jpg', productos: ['trapito', 'porta'], items: ['Trapito de apego', 'Portachupete personalizado'] },
+  { id: 'primeros-mimos', nombre: 'Box Primeros mimos', precio: 1990, foto: 'box-primeros-mimos.jpg', productos: ['zapatitos', 'babero', 'sonajero', 'porta'], items: ['Zapatitos tejidos', 'Babero de algodón', 'Sonajero de tela suave y seguro', 'Portachupete personalizado'] },
+  { id: 'pequeno-tesoro', nombre: 'Box Pequeño tesoro', precio: 2190, foto: 'box-pequeno-tesoro.jpg', productos: ['trapito', 'zapatitos', 'porta'], items: ['Trapito de apego', 'Zapatitos tejidos', 'Portachupete personalizado'] },
+  { id: 'bienvenida', nombre: 'Box Bienvenida', precio: 2490, foto: 'box-bienvenida.jpg', productos: ['manta', 'peine', 'trapito'], items: ['Manta de muselina', 'Set de peine', 'Trapito de apego'] },
+  { id: 'especial-manolito', nombre: 'Box especial Manolito', precio: 3190, foto: 'box-especial-manolito.jpg', etiqueta: 'COMPLETA', productos: ['manta', 'babero', 'zapatitos', 'peine', 'porta'], items: ['Manta de muselina', 'Babero de algodón', 'Zapatitos tejidos', 'Cepillo y peine de madera', 'Conejo de peluche', 'Portachupete personalizado'] },
 ].map(b => ({ etiqueta: null as string | null, ...b, foto: `assets/img/boxes/${b.foto}` }));

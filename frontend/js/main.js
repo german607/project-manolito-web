@@ -85,7 +85,7 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
   var actual=null;
   function open(card){
     actual=card;
-    var img=card.querySelector('.box-photo img');
+    var img=card.querySelector('.box-photo img.cur')||card.querySelector('.box-photo img');
     document.getElementById('bmImg').src=img?img.src:'';
     var t=card.querySelector('h3').textContent;
     document.getElementById('bmImg').alt=t;
@@ -125,4 +125,25 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
   });
   ov.addEventListener('click',function(e){if(e.target===ov)close();});
   document.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
+})();
+
+// Mini box: carrete de fotos; al tocar un color se muestra la foto de ese color
+(function(){
+  document.querySelectorAll('.box-photo.bs').forEach(function(ph){
+    var card=ph.closest('.box-card'), track=ph.querySelector('.bs-track'), imgs=[].slice.call(track.children);
+    var sw=[].slice.call(card.querySelectorAll('button.bc')), dots=ph.querySelector('.bs-dots'), cur=-1;
+    imgs.forEach(function(){dots.appendChild(document.createElement('i'));});
+    function go(i){ i=Math.max(0,Math.min(imgs.length-1,i)); track.scrollTo({left:i*track.clientWidth,behavior:'smooth'}); }
+    function mark(i){
+      if(i===cur) return; cur=i;
+      [].forEach.call(dots.children,function(d,k){d.classList.toggle('on',k===i);});
+      sw.forEach(function(b,k){b.classList.toggle('on',k===i);});
+      imgs.forEach(function(im,k){im.classList.toggle('cur',k===i);});
+    }
+    track.addEventListener('scroll',function(){ mark(Math.round(track.scrollLeft/(track.clientWidth||1))); },{passive:true});
+    sw.forEach(function(b,k){ b.addEventListener('click',function(e){e.stopPropagation();go(k);}); });
+    ph.querySelector('.bs-prev').addEventListener('click',function(e){e.stopPropagation();go(cur-1);});
+    ph.querySelector('.bs-next').addEventListener('click',function(e){e.stopPropagation();go(cur+1);});
+    mark(0);
+  });
 })();

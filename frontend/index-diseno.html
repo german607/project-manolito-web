@@ -331,6 +331,21 @@
   .box-colors .bc{width:20px;height:20px;border-radius:6px;box-shadow:inset 0 0 0 1px rgba(63,58,52,0.12);display:inline-block;}
   .box-colors + .box-body{padding-top:14px;}
   @media(max-width:600px){.box-colors{gap:5px;padding:10px 6px 0;flex-wrap:nowrap}.box-colors .bc{width:16px;height:16px;border-radius:5px}.box-colors .bc-l{font-size:.62rem;margin-right:0}}
+  /* Mini box: carrete de fotos + colores clickeables */
+  .box-photo.bs{position:relative;}
+  .bs-track{display:flex;height:100%;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+  .bs-track::-webkit-scrollbar{display:none;}
+  .bs-track img{flex:0 0 100%;width:100%;height:100%;object-fit:cover;scroll-snap-align:start;}
+  .bs-arrow{position:absolute;top:50%;transform:translateY(-50%);width:32px;height:32px;border:0;border-radius:50%;background:rgba(255,255,255,0.88);color:var(--ink);font-size:1.2rem;line-height:1;cursor:pointer;box-shadow:0 4px 12px -4px rgba(63,58,52,0.3);display:flex;align-items:center;justify-content:center;padding:0 0 3px;}
+  .bs-arrow:hover{background:var(--green-pale);}
+  .bs-prev{left:10px;} .bs-next{right:10px;}
+  @media (hover:hover){.bs-arrow{opacity:0;transition:opacity .2s ease;} .box-photo.bs:hover .bs-arrow{opacity:1;}}
+  .bs-dots{position:absolute;left:0;right:0;bottom:10px;display:flex;justify-content:center;gap:6px;pointer-events:none;}
+  .bs-dots i{width:7px;height:7px;border-radius:999px;background:rgba(255,255,255,0.75);box-shadow:0 0 0 1px rgba(63,58,52,0.12);transition:width .25s ease,background .25s ease;}
+  .bs-dots i.on{width:18px;background:var(--green-deep);}
+  button.bc{border:0;padding:0;cursor:pointer;transition:transform .15s ease;}
+  button.bc:hover{transform:scale(1.12);}
+  button.bc.on{box-shadow:0 0 0 2px var(--white),0 0 0 3.5px var(--green-deep);}
   .box-card{cursor:pointer;transition:transform .25s ease, box-shadow .25s ease;}
   .box-card:hover{transform:translateY(-3px);box-shadow:0 14px 28px -14px rgba(63,58,52,0.22);}
   .box-hint{font-size:.7rem;font-weight:700;color:var(--green-deep);text-align:center;margin-top:-2px;}
@@ -565,8 +580,8 @@
     <div class="boxes-grid">
 
       <div class="box-card">
-        <div class="box-photo"><img src="assets/img/boxes/mini-box.jpg" alt="Mini box" loading="lazy"></div>
-        <div class="box-colors" aria-label="Colores disponibles: rosa, celeste, verde, beige"><span class="bc-l">Colores</span><span class="bc" style="background:#EDB6C1" title="Rosa"></span><span class="bc" style="background:#B7D2EA" title="Celeste"></span><span class="bc" style="background:#B8CDAC" title="Verde"></span><span class="bc" style="background:#E4D3BA" title="Beige"></span></div>
+        <div class="box-photo bs"><div class="bs-track"><img src="assets/img/boxes/mini-box.jpg" alt="Mini box, color rosa"><img src="assets/img/boxes/mini-box-celeste.jpg" alt="Mini box, color celeste" loading="lazy"><img src="assets/img/boxes/mini-box-verde.jpg" alt="Mini box, color verde" loading="lazy"><img src="assets/img/boxes/mini-box-beige.jpg" alt="Mini box, color beige" loading="lazy"></div><button type="button" class="bs-arrow bs-prev" aria-label="Foto anterior">&#8249;</button><button type="button" class="bs-arrow bs-next" aria-label="Foto siguiente">&#8250;</button><div class="bs-dots"></div></div>
+        <div class="box-colors" aria-label="Colores disponibles: rosa, celeste, verde, beige"><span class="bc-l">Colores</span><button type="button" class="bc" style="background:#EDB6C1" title="Rosa" aria-label="Ver foto en color rosa"></button><button type="button" class="bc" style="background:#B7D2EA" title="Celeste" aria-label="Ver foto en color celeste"></button><button type="button" class="bc" style="background:#B8CDAC" title="Verde" aria-label="Ver foto en color verde"></button><button type="button" class="bc" style="background:#E4D3BA" title="Beige" aria-label="Ver foto en color beige"></button></div>
         <div class="box-body">
           <div class="box-title-row"><h3>Mini box</h3><span class="box-price">$890</span></div>
           <ul class="box-items">
@@ -1132,7 +1147,7 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
   var actual=null;
   function open(card){
     actual=card;
-    var img=card.querySelector('.box-photo img');
+    var img=card.querySelector('.box-photo img.cur')||card.querySelector('.box-photo img');
     document.getElementById('bmImg').src=img?img.src:'';
     var t=card.querySelector('h3').textContent;
     document.getElementById('bmImg').alt=t;
@@ -1574,6 +1589,28 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
     if(el) el.scrollIntoView(); else window.scrollTo(0,0);
   }
   window.addEventListener('hashchange',ir); ir();
+})();
+</script>
+<script>
+// Mini box: carrete de fotos; al tocar un color se muestra la foto de ese color
+(function(){
+  document.querySelectorAll('.box-photo.bs').forEach(function(ph){
+    var card=ph.closest('.box-card'), track=ph.querySelector('.bs-track'), imgs=[].slice.call(track.children);
+    var sw=[].slice.call(card.querySelectorAll('button.bc')), dots=ph.querySelector('.bs-dots'), cur=-1;
+    imgs.forEach(function(){dots.appendChild(document.createElement('i'));});
+    function go(i){ i=Math.max(0,Math.min(imgs.length-1,i)); track.scrollTo({left:i*track.clientWidth,behavior:'smooth'}); }
+    function mark(i){
+      if(i===cur) return; cur=i;
+      [].forEach.call(dots.children,function(d,k){d.classList.toggle('on',k===i);});
+      sw.forEach(function(b,k){b.classList.toggle('on',k===i);});
+      imgs.forEach(function(im,k){im.classList.toggle('cur',k===i);});
+    }
+    track.addEventListener('scroll',function(){ mark(Math.round(track.scrollLeft/(track.clientWidth||1))); },{passive:true});
+    sw.forEach(function(b,k){ b.addEventListener('click',function(e){e.stopPropagation();go(k);}); });
+    ph.querySelector('.bs-prev').addEventListener('click',function(e){e.stopPropagation();go(cur-1);});
+    ph.querySelector('.bs-next').addEventListener('click',function(e){e.stopPropagation();go(cur+1);});
+    mark(0);
+  });
 })();
 </script>
 </body>

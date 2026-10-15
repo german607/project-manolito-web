@@ -320,6 +320,21 @@
   .box-colors .bc{width:20px;height:20px;border-radius:6px;box-shadow:inset 0 0 0 1px rgba(63,58,52,0.12);display:inline-block;}
   .box-colors + .box-body{padding-top:14px;}
   @media(max-width:600px){.box-colors{gap:5px;padding:10px 6px 0;flex-wrap:nowrap}.box-colors .bc{width:16px;height:16px;border-radius:5px}.box-colors .bc-l{font-size:.62rem;margin-right:0}}
+  /* Mini box: carrete de fotos + colores clickeables */
+  .box-photo.bs{position:relative;}
+  .bs-track{display:flex;height:100%;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+  .bs-track::-webkit-scrollbar{display:none;}
+  .bs-track img{flex:0 0 100%;width:100%;height:100%;object-fit:cover;scroll-snap-align:start;}
+  .bs-arrow{position:absolute;top:50%;transform:translateY(-50%);width:32px;height:32px;border:0;border-radius:50%;background:rgba(255,255,255,0.88);color:var(--ink);font-size:1.2rem;line-height:1;cursor:pointer;box-shadow:0 4px 12px -4px rgba(63,58,52,0.3);display:flex;align-items:center;justify-content:center;padding:0 0 3px;}
+  .bs-arrow:hover{background:var(--green-pale);}
+  .bs-prev{left:10px;} .bs-next{right:10px;}
+  @media (hover:hover){.bs-arrow{opacity:0;transition:opacity .2s ease;} .box-photo.bs:hover .bs-arrow{opacity:1;}}
+  .bs-dots{position:absolute;left:0;right:0;bottom:10px;display:flex;justify-content:center;gap:6px;pointer-events:none;}
+  .bs-dots i{width:7px;height:7px;border-radius:999px;background:rgba(255,255,255,0.75);box-shadow:0 0 0 1px rgba(63,58,52,0.12);transition:width .25s ease,background .25s ease;}
+  .bs-dots i.on{width:18px;background:var(--green-deep);}
+  button.bc{border:0;padding:0;cursor:pointer;transition:transform .15s ease;}
+  button.bc:hover{transform:scale(1.12);}
+  button.bc.on{box-shadow:0 0 0 2px var(--white),0 0 0 3.5px var(--green-deep);}
   .box-card{cursor:pointer;transition:transform .25s ease, box-shadow .25s ease;}
   .box-card:hover{transform:translateY(-3px);box-shadow:0 14px 28px -14px rgba(63,58,52,0.22);}
   .box-hint{font-size:.7rem;font-weight:700;color:var(--green-deep);text-align:center;margin-top:-2px;}

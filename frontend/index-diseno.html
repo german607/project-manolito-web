@@ -1,0 +1,1579 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manolito — Vista de diseño</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500;1,9..144,600&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="assets/img/marca/manolito.png">
+<style>
+  :root{
+    --green:#EAB3BE;
+    --green-deep:#C97D8D;
+    --green-pale:#FBEDF0;
+    --coral:#EDA79A;
+    --mustard:#F0C46A;
+    --blue:#A9C2DE;
+    --cream:#FFFBF3;
+    --cream-2:#FBF2E3;
+    --ink:#3F3A34;
+    --ink-soft:#7A6F62;
+    --white:#FFFFFF;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--cream);
+    color:var(--ink);
+    font-family:'Nunito',sans-serif;
+    font-weight:500;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  h1,h2,.display{font-family:'Fraunces',serif;font-weight:600;line-height:1.15;color:var(--ink);}
+  h1 em, h2 em, .hl{font-style:italic;font-weight:500;}
+  h3{font-family:'Baloo 2',sans-serif;font-weight:700;line-height:1.15;color:var(--ink);}
+  .brand-name,.footer-brand span,.brand{font-family:'Baloo 2',sans-serif;}
+  a{text-decoration:none;color:inherit;}
+  img{display:block;max-width:100%;}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 28px;}
+  ul{list-style:none;}
+
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    padding:15px 30px;border-radius:999px;
+    font-family:'Baloo 2';font-weight:600;font-size:.95rem;
+    transition:transform .22s ease, box-shadow .22s ease;
+    white-space:nowrap;
+  }
+  button.btn{cursor:pointer;}
+  button.btn:not(.btn-outline){border:none;}
+  .btn-green{background:var(--green);color:var(--white);box-shadow:0 8px 20px rgba(201,125,141,0.32);}
+  .btn-green:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(201,125,141,0.4);background:var(--green-deep);}
+  .btn-outline{background:var(--white);color:var(--ink);border:1.6px solid rgba(63,58,52,0.16);}
+  .btn-outline:hover{border-color:var(--green);color:var(--green-deep);}
+  .btn-sm{padding:11px 22px;font-size:.82rem;}
+
+  header{
+    position:sticky;top:0;z-index:50;
+    background:rgba(251,237,240,0.75);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid rgba(63,58,52,0.06);
+  }
+  .header-inner{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;max-width:1180px;margin:0 auto;}
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand img{height:38px;width:auto;}
+  .brand-name{font-family:'Baloo 2';font-weight:700;font-size:1.35rem;color:var(--ink);}
+  nav{display:flex;align-items:center;gap:26px;}
+  nav a.navlink{font-weight:700;font-size:.9rem;color:var(--ink);opacity:.75;}
+  nav a.navlink:hover{opacity:1;color:var(--green-deep);}
+
+  .hero{position:relative;padding:56px 0 30px;overflow:hidden;background:var(--white);}
+  .hero-copy-center{text-align:center;max-width:680px;margin:8px auto 44px;}
+  .eyebrow-minimal{
+    display:inline-block;font-family:'Baloo 2';font-weight:700;font-size:.8rem;letter-spacing:.03em;
+    color:var(--green-deep);text-transform:uppercase;margin-bottom:20px;
+    padding-bottom:9px;border-bottom:2px solid var(--green);
+  }
+  .hero-copy-center h1{font-size:2.9rem;letter-spacing:-.3px;}
+  .hero-copy-center h1 .hl{color:var(--green-deep);}
+  .hero-copy-center p.sub{margin:22px auto 34px;font-size:1.06rem;color:var(--ink-soft);max-width:520px;line-height:1.65;font-weight:600;}
+  .hero-copy-center .hero-ctas{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;}
+  .hero-photo-wide{border-radius:26px;overflow:hidden;box-shadow:0 24px 50px -22px rgba(63,58,52,0.22);margin-bottom:40px;}
+  .hero-photo-wide img{width:100%;display:block;}
+  .features{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
+
+  .section{padding:96px 0;}
+  .section-head{text-align:center;max-width:620px;margin:0 auto 48px;}
+  .section-head .kicker{font-family:'Baloo 2';font-weight:700;font-size:.85rem;letter-spacing:.02em;color:var(--green-deep);margin-bottom:8px;display:block;}
+  .section-head h2{font-size:2.1rem;margin-bottom:10px;}
+  .section-head p{color:var(--ink-soft);font-weight:600;line-height:1.6;}
+  .feature-card{background:var(--white);border-radius:20px;padding:18px 16px;box-shadow:0 12px 30px -14px rgba(63,58,52,0.12);text-align:left;display:flex;align-items:center;gap:12px;}
+  .feature-icon{width:44px;height:44px;min-width:44px;border-radius:50%;background:var(--green-pale);display:flex;align-items:center;justify-content:center;}
+  .feature-icon svg{width:18px;height:18px;}
+  .feature-card h3{font-size:.88rem;margin-bottom:2px;line-height:1.25;}
+  .feature-card p{color:var(--ink-soft);font-size:.76rem;font-weight:600;line-height:1.4;}
+
+  /* boxes */
+  .boxes-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;max-width:520px;margin:0 auto;}
+  .box-card{background:var(--white);border-radius:22px;overflow:hidden;box-shadow:0 6px 18px -12px rgba(63,58,52,0.12);display:flex;flex-direction:column;}
+  .box-photo{aspect-ratio:4/5;overflow:hidden;background:var(--white);}
+  .box-photo img{width:100%;height:100%;object-fit:cover;}
+  .box-card{border:1px solid rgba(63,58,52,0.08);}
+
+  .boxes-cover{border-radius:24px;overflow:hidden;margin:0 auto 48px;max-width:460px;box-shadow:0 20px 44px -20px rgba(63,58,52,0.22);}
+  .boxes-cover img{width:100%;display:block;}
+  .box-num{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:30px;height:30px;border-radius:50%;background:var(--white);
+    font-family:'Baloo 2';font-weight:800;font-size:.85rem;color:var(--ink);
+    box-shadow:0 4px 10px rgba(63,58,52,0.15);
+  }
+  .box-body{padding:26px 28px 30px;display:flex;flex-direction:column;gap:14px;flex:1;}
+  .box-title-row{display:flex;justify-content:space-between;align-items:center;gap:12px;}
+  .box-title-row h3{font-size:1.35rem;}
+  .box-price{font-family:'Baloo 2';font-weight:700;color:var(--green-deep);font-size:1.25rem;white-space:nowrap;}
+  .box-badge{display:inline-block;background:var(--mustard);color:var(--white);font-size:.72rem;font-weight:800;padding:4px 12px;border-radius:999px;letter-spacing:.03em;width:fit-content;}
+  .box-items{list-style:none;padding:0;}
+  .box-items li{padding:5px 0 5px 22px;position:relative;color:var(--ink-soft);font-weight:600;font-size:.94rem;}
+  .box-items li::before{content:"";position:absolute;left:0;top:12px;width:8px;height:8px;border-radius:50%;background:var(--green);}
+  .box-cta{margin-top:6px;align-self:stretch;text-align:center;padding:9px 10px;font-size:.72rem;white-space:normal;line-height:1.3;}
+
+  /* portachupetes compare */
+  .porta-compare{display:grid;grid-template-columns:repeat(2,1fr);gap:32px;margin-bottom:44px;}
+  .porta-col{background:var(--white);border-radius:26px;padding:26px;box-shadow:0 14px 34px -16px rgba(63,58,52,0.12);}
+  .porta-col h3{font-size:1.3rem;margin-bottom:14px;text-align:center;}
+  .porta-imgs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+  .porta-imgs img{border-radius:16px;aspect-ratio:1/1;object-fit:cover;width:100%;}
+  .porta-price{text-align:center;font-family:'Baloo 2';font-weight:700;color:var(--green-deep);font-size:1.4rem;}
+  .porta-note{text-align:center;color:var(--ink-soft);font-size:.85rem;font-weight:600;margin-top:6px;}
+  .porta-price-table{max-width:560px;margin:0 auto;background:var(--white);border-radius:22px;padding:22px 28px;box-shadow:0 12px 30px -16px rgba(63,58,52,0.1);}
+  .price-row{display:flex;justify-content:space-between;padding:13px 0;border-bottom:1px dashed rgba(63,58,52,0.14);font-family:'Fraunces',serif;font-weight:500;font-size:1.05rem;}
+  .price-row:last-child{border-bottom:none;}
+  .price-row span:last-child{color:var(--green-deep);font-weight:600;}
+  .porta-footnote{text-align:center;color:var(--ink-soft);font-size:.82rem;font-weight:600;margin-top:16px;line-height:1.6;}
+
+  .porta-cover{border-radius:24px;overflow:hidden;margin:0 auto 44px;max-width:400px;box-shadow:0 20px 44px -20px rgba(63,58,52,0.2);}
+  .porta-cover img{width:100%;display:block;}
+
+  /* porta catalog images */
+  .porta-catalog{display:grid;grid-template-columns:repeat(2,1fr);gap:28px;max-width:860px;margin:0 auto;}
+  .porta-card{border-radius:24px;overflow:hidden;box-shadow:0 16px 36px -18px rgba(63,58,52,0.2);background:var(--white);}
+  .porta-slider{position:relative;}
+  .porta-track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;}
+  .porta-track::-webkit-scrollbar{display:none;}
+  .porta-slide{flex:0 0 100%;scroll-snap-align:start;}
+  .porta-slide img{width:100%;aspect-ratio:900/1160;object-fit:cover;display:block;}
+  .porta-slider .arrow-left{left:12px;}
+  .porta-slider .arrow-right{right:12px;}
+  @media (hover:hover){
+    .porta-slider .carousel-arrow{opacity:0;transition:opacity .2s ease;}
+    .porta-slider:hover .carousel-arrow{opacity:1;}
+  }
+  .porta-dots{position:absolute;left:0;right:0;bottom:14px;display:flex;justify-content:center;gap:7px;}
+  .porta-dots button{width:8px;height:8px;padding:0;border:0;border-radius:999px;cursor:pointer;background:rgba(63,58,52,0.2);transition:width .25s ease,background .25s ease;}
+  .porta-dots button.on{width:22px;background:var(--green-deep);}
+  .porta-slider.single .carousel-arrow,.porta-slider.single .porta-dots{display:none;}
+  .porta-card figcaption{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:18px 22px 20px;}
+  .porta-card figcaption h3{font-size:1.25rem;}
+  .porta-card figcaption span{color:var(--ink-soft);font-size:.85rem;text-align:right;}
+
+  /* silicona block */
+  .sil-block{background:var(--green-pale);}
+  .sil-cover{border-radius:28px;overflow:hidden;box-shadow:0 20px 44px -20px rgba(63,58,52,0.2);margin-bottom:36px;max-width:720px;margin-left:auto;margin-right:auto;}
+  .sil-cover img{width:100%;display:block;}
+  .sil-desc{text-align:center;max-width:560px;margin:0 auto 44px;color:var(--ink-soft);font-weight:700;font-size:1.02rem;line-height:1.65;}
+  .sil-gallery{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;}
+  .sil-item{border-radius:18px;overflow:hidden;aspect-ratio:4/5;box-shadow:0 10px 24px -12px rgba(63,58,52,0.16);position:relative;}
+  .sil-item img{width:100%;height:100%;object-fit:cover;transition:transform .4s ease;}
+  .sil-item:hover img{transform:scale(1.06);}
+  .sil-name{
+    position:absolute;bottom:8px;left:8px;background:rgba(255,255,255,0.92);
+    padding:3px 10px;border-radius:999px;font-family:'Baloo 2';font-weight:700;font-size:.72rem;color:var(--ink);
+  }
+
+  /* generic product grid */
+  .products-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;}
+
+  .bib-gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;}
+
+  /* ideas carousel */
+  .ideas-carousel{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;padding:6px 4px 14px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .ideas-carousel::-webkit-scrollbar{display:none;}
+  .idea-slide{flex:0 0 auto;width:230px;scroll-snap-align:start;border-radius:20px;overflow:hidden;box-shadow:0 10px 24px -14px rgba(63,58,52,0.22);border:1px solid rgba(63,58,52,0.06);}
+  .idea-slide img{width:100%;aspect-ratio:4/5;object-fit:cover;display:block;}
+  .ideas-carousel-wrap{position:relative;margin-bottom:36px;}
+  .carousel-arrow{
+    position:absolute;top:50%;transform:translateY(-50%);z-index:5;
+    width:42px;height:42px;border-radius:50%;border:1px solid rgba(63,58,52,0.08);
+    background:var(--white);color:var(--green-deep);font-size:1.6rem;line-height:1;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    box-shadow:0 8px 20px -8px rgba(63,58,52,0.3);
+  }
+  .carousel-arrow:hover{background:var(--green-pale);}
+  .arrow-left{left:-6px;}
+  .arrow-right{right:-6px;}
+
+  /* wave divider */
+  .wave-divider{width:100%;overflow:hidden;line-height:0;}
+  .wave-divider svg{width:100%;height:44px;display:block;}
+  @media (min-width:700px){.wave-divider svg{height:64px;}}
+
+  /* trust band */
+  .trust-band{display:flex;flex-wrap:wrap;justify-content:center;gap:32px 48px;padding:34px 0;}
+  .trust-item{display:flex;align-items:center;gap:10px;font-family:'Baloo 2';font-weight:700;font-size:.88rem;color:var(--ink);}
+  .trust-item svg{flex:0 0 auto;}
+  @media (max-width:560px){
+    .trust-band{gap:18px 26px;padding:24px 0;}
+    .trust-item{font-size:.78rem;}
+  }
+
+  /* mosaic */
+  .mosaic{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:110px;gap:14px;max-width:980px;margin:0 auto;}
+  .mosaic-item{border-radius:20px;overflow:hidden;box-shadow:0 10px 26px -16px rgba(63,58,52,0.28);}
+  .mosaic-item img{width:100%;height:100%;object-fit:cover;display:block;}
+  .mosaic .m1{grid-column:span 2;grid-row:span 3;}
+  .mosaic .m2{grid-column:span 2;grid-row:span 2;}
+  .mosaic .m3{grid-column:span 1;grid-row:span 2;}
+  .mosaic .m4{grid-column:span 1;grid-row:span 2;}
+  .mosaic .m5{grid-column:span 2;grid-row:span 2;}
+  .mosaic .m6{grid-column:span 2;grid-row:span 2;}
+  @media (max-width:700px){
+    .mosaic{grid-template-columns:repeat(2,1fr);grid-auto-rows:130px;gap:10px;}
+    .mosaic .m1{grid-column:span 2;grid-row:span 2;}
+    .mosaic .m2,.mosaic .m3,.mosaic .m4,.mosaic .m5,.mosaic .m6{grid-column:span 1;grid-row:span 2;}
+  }
+  .bib-item{border-radius:20px;overflow:hidden;aspect-ratio:4/5;box-shadow:0 14px 32px -16px rgba(63,58,52,0.16);}
+  .bib-item img{width:100%;height:100%;object-fit:cover;transition:transform .4s ease;}
+  .bib-item:hover img{transform:scale(1.05);}
+  .product-card{display:flex;flex-direction:column;}
+  .product-photo{border-radius:20px;overflow:hidden;aspect-ratio:4/5;margin-bottom:16px;box-shadow:0 14px 30px -16px rgba(63,58,52,0.16);}
+  .product-photo img{width:100%;height:100%;object-fit:cover;}
+  .product-card h3{font-size:1.05rem;margin-bottom:6px;}
+  .product-card p{color:var(--ink-soft);font-size:.86rem;font-weight:600;line-height:1.5;margin-bottom:14px;flex:1;}
+
+  /* about */
+  .about-grid{display:grid;grid-template-columns:0.85fr 1.15fr;gap:56px;align-items:center;}
+  .about-photo{border-radius:24px;overflow:hidden;aspect-ratio:1/1.05;box-shadow:0 20px 44px -20px rgba(63,58,52,0.2);}
+  .about-photo img{width:100%;height:100%;object-fit:cover;}
+  .about-text p{color:var(--ink-soft);font-weight:600;line-height:1.75;font-size:1rem;margin-bottom:16px;}
+
+  /* testimonials */
+  .testimonials-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;}
+  .t-card{background:var(--white);border-radius:22px;padding:30px 26px;box-shadow:0 12px 28px -16px rgba(63,58,52,0.1);}
+  .t-stars{color:var(--mustard);font-size:.95rem;letter-spacing:2px;margin-bottom:14px;}
+  .t-card p.quote{font-size:.92rem;color:var(--ink);font-weight:600;line-height:1.65;margin-bottom:16px;font-style:italic;}
+  .t-name{font-size:.82rem;color:var(--ink-soft);font-weight:800;}
+
+  /* instagram */
+  .insta-head{text-align:center;margin-bottom:36px;}
+  .insta-head h2{font-size:1.9rem;margin-bottom:8px;}
+  .insta-head a{color:var(--green-deep);font-weight:800;font-size:1rem;}
+  .insta-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+  .insta-item{aspect-ratio:1/1;border-radius:16px;overflow:hidden;}
+  .insta-item img{width:100%;height:100%;object-fit:cover;transition:transform .4s ease;}
+  .insta-item:hover img{transform:scale(1.08);}
+
+  /* faq */
+  .faq-list{max-width:760px;margin:0 auto;}
+  .faq-item{border-bottom:1px solid rgba(63,58,52,0.12);}
+  .faq-item summary{cursor:pointer;list-style:none;padding:24px 4px;display:flex;justify-content:space-between;align-items:center;font-family:'Baloo 2';font-size:1.08rem;font-weight:700;}
+  .faq-item summary::-webkit-details-marker{display:none;}
+  .faq-item summary .plus{width:26px;height:26px;border-radius:50%;background:var(--green-pale);color:var(--green-deep);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;margin-left:20px;transition:transform .3s ease;font-weight:800;}
+  .faq-item[open] summary .plus{transform:rotate(45deg);}
+  .faq-item .faq-a{padding:0 4px 24px;color:var(--ink-soft);font-weight:600;line-height:1.7;font-size:.94rem;max-width:640px;}
+
+  /* final cta */
+  .final-cta{background:linear-gradient(135deg,var(--green) 0%, var(--mustard) 100%);border-radius:32px;padding:70px 40px;text-align:center;margin:0 28px;}
+  .final-cta h2{font-size:2.2rem;max-width:600px;margin:0 auto 28px;color:var(--white);}
+
+  /* footer */
+  footer{padding:60px 0 30px;}
+  .footer-inner{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:32px;padding-bottom:32px;border-bottom:1px solid rgba(63,58,52,0.1);}
+  .footer-brand{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .footer-brand img{height:32px;}
+  .footer-brand span{font-family:'Baloo 2';font-weight:700;font-size:1.15rem;}
+  .footer-tag{color:var(--ink-soft);font-size:.86rem;max-width:260px;line-height:1.6;font-weight:600;}
+  .footer-links{display:flex;gap:48px;flex-wrap:wrap;}
+  .footer-col h4{font-size:.76rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:14px;font-weight:800;}
+  .footer-col a{display:block;font-weight:700;font-size:.9rem;margin-bottom:10px;opacity:.88;}
+  .footer-col a:hover{opacity:1;color:var(--green-deep);}
+  .footer-bottom{padding-top:24px;font-size:.78rem;color:var(--ink-soft);text-align:center;font-weight:600;}
+
+  .float-ig{
+    position:fixed;bottom:24px;right:24px;z-index:60;
+    background:linear-gradient(45deg,#f9ce34,#ee2a7b,#6228d7);
+    color:var(--white);width:58px;height:58px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;box-shadow:0 12px 26px rgba(63,58,52,0.3);
+    transition:transform .2s ease;
+  }
+  .float-ig:hover{transform:scale(1.08);}
+
+  @media (max-width:960px){
+    .boxes-grid{grid-template-columns:repeat(2,1fr);}
+    .porta-compare,.about-grid{grid-template-columns:1fr;}
+    .products-grid{grid-template-columns:repeat(2,1fr);}
+    .bib-gallery{grid-template-columns:repeat(2,1fr);}
+    .idea-slide{width:170px;}
+    .testimonials-grid{grid-template-columns:1fr;}
+    .insta-grid{grid-template-columns:repeat(3,1fr);}
+    .sil-gallery{grid-template-columns:repeat(3,1fr);}
+    nav .navlink{display:none;}
+    .hero-copy-center h1{font-size:2.2rem;}
+    .final-cta h2{font-size:1.7rem;}
+  }
+  @media (max-width:560px){
+    .products-grid{grid-template-columns:1fr;}
+    .boxes-grid{grid-template-columns:repeat(2,1fr);gap:10px;}
+    .box-body{padding:14px 14px 18px;gap:8px;}
+    .box-title-row h3{font-size:1rem;}
+    .box-price{font-size:1rem;}
+    .box-items li{font-size:.78rem;padding:3px 0 3px 16px;}
+    .box-items li::before{width:6px;height:6px;top:9px;}
+    .porta-catalog{grid-template-columns:1fr;}
+    .insta-grid{grid-template-columns:repeat(2,1fr);}
+    .sil-gallery{grid-template-columns:repeat(2,1fr);}
+    .footer-inner{flex-direction:column;}
+    .porta-imgs{grid-template-columns:1fr 1fr;}
+    .features{gap:8px;}
+    .feature-card{flex-direction:column;text-align:center;padding:14px 8px;gap:8px;}
+    .feature-card h3{font-size:.72rem;}
+    .feature-card p{display:none;}
+    .feature-icon{margin:0 auto;}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+
+  /* box detail modal */
+  .box-colors{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 14px 0;flex-wrap:wrap;}
+  .box-colors .bc-l{font-size:.7rem;font-weight:700;color:var(--ink-soft);margin-right:2px;}
+  .box-colors .bc{width:20px;height:20px;border-radius:6px;box-shadow:inset 0 0 0 1px rgba(63,58,52,0.12);display:inline-block;}
+  .box-colors + .box-body{padding-top:14px;}
+  @media(max-width:600px){.box-colors{gap:5px;padding:10px 6px 0;flex-wrap:nowrap}.box-colors .bc{width:16px;height:16px;border-radius:5px}.box-colors .bc-l{font-size:.62rem;margin-right:0}}
+  .box-card{cursor:pointer;transition:transform .25s ease, box-shadow .25s ease;}
+  .box-card:hover{transform:translateY(-3px);box-shadow:0 14px 28px -14px rgba(63,58,52,0.22);}
+  .box-hint{font-size:.7rem;font-weight:700;color:var(--green-deep);text-align:center;margin-top:-2px;}
+  .bm-overlay{position:fixed;inset:0;background:rgba(63,58,52,.45);backdrop-filter:blur(3px);z-index:100;display:none;align-items:center;justify-content:center;padding:16px;}
+  .bm-overlay.open{display:flex;}
+  .bm{background:var(--white);border-radius:26px;max-width:880px;width:100%;max-height:92vh;overflow:auto;display:grid;grid-template-columns:.9fr 1.1fr;position:relative;box-shadow:0 30px 70px -20px rgba(63,58,52,.4);}
+  .bm-photo img{width:100%;height:100%;object-fit:cover;display:block;min-height:320px;}
+  .bm-body{padding:34px 30px 30px;}
+  .bm-close{position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:50%;border:none;background:var(--white);color:var(--ink);font-size:1.3rem;cursor:pointer;box-shadow:0 6px 16px -6px rgba(63,58,52,.35);z-index:2;}
+  .bm-title{padding-right:34px;display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:6px;}
+  .bm-title h3{font-family:'Fraunces',serif;font-size:1.6rem;font-weight:600;}
+  .bm-price{font-family:'Baloo 2';font-weight:700;color:var(--green-deep);font-size:1.4rem;}
+  .bm-sub{color:var(--ink-soft);font-weight:600;font-size:.9rem;margin-bottom:18px;}
+  .bm-items{display:flex;flex-direction:column;gap:12px;margin-bottom:22px;}
+  .bm-item{display:flex;gap:14px;align-items:flex-start;background:var(--green-pale);border-radius:18px;padding:12px 14px;}
+  .bm-ico{flex:0 0 42px;height:42px;border-radius:50%;background:var(--white);display:flex;align-items:center;justify-content:center;}
+  .bm-ico.ph{flex:0 0 64px;height:64px;border-radius:16px;overflow:hidden;background:var(--white);}
+  .bm-ico.ph img{width:100%;height:100%;object-fit:cover;display:block;}
+  .bm-item h4{font-family:'Baloo 2';font-weight:700;font-size:1rem;color:var(--ink);line-height:1.2;margin-bottom:2px;}
+  .bm-item p{font-size:.84rem;color:var(--ink-soft);font-weight:600;line-height:1.45;}
+  .bm-note{display:block;margin-top:5px;font-size:.8rem;font-weight:800;color:var(--green-deep);}
+  .bm-link{display:inline-block;margin-top:5px;font-size:.8rem;font-weight:800;color:var(--green-deep);text-decoration:underline;text-underline-offset:3px;}
+  @media (max-width:700px){
+    .bm{grid-template-columns:1fr;}
+    .bm-photo img{min-height:0;max-height:260px;}
+    .bm-body{padding:22px 18px 22px;}
+  }
+
+  /* arma tu box */
+  .arma-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:900px;margin:0 auto;}
+  .ap{background:var(--white);border:1px solid rgba(63,58,52,0.08);border-radius:22px;padding:18px 16px;display:flex;flex-direction:column;gap:10px;box-shadow:0 6px 18px -12px rgba(63,58,52,0.12);transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;}
+  .ap.on{border-color:var(--green-deep);background:var(--green-pale);box-shadow:0 10px 24px -14px rgba(201,125,141,0.45);}
+  .ap-img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:16px;display:block;}
+  .ap-top{display:flex;align-items:center;gap:12px;}
+  .ap-ico{flex:0 0 44px;height:44px;border-radius:50%;background:var(--green-pale);display:flex;align-items:center;justify-content:center;}
+  .ap.on .ap-ico{background:var(--white);}
+  .ap h4{font-family:'Baloo 2';font-weight:700;font-size:1rem;line-height:1.15;color:var(--ink);}
+  .ap-price{font-family:'Baloo 2';font-weight:700;color:var(--green-deep);font-size:1.05rem;}
+  .ap-opt{display:flex;flex-direction:column;gap:6px;}
+  .ap-opt small{font-size:.74rem;font-weight:700;color:var(--ink-soft);}
+  .ap-chips{display:flex;gap:6px;flex-wrap:wrap;}
+  .chip{border:1.5px solid rgba(63,58,52,0.16);background:var(--white);color:var(--ink);border-radius:999px;padding:5px 12px;font-family:'Nunito';font-weight:700;font-size:.76rem;cursor:pointer;}
+  .chip.sel{border-color:var(--green-deep);background:var(--green);color:var(--white);}
+  .ap input[type=text]{width:100%;border:1.5px solid rgba(63,58,52,0.16);border-radius:12px;padding:8px 12px;font-family:'Nunito';font-weight:700;font-size:.85rem;color:var(--ink);background:var(--white);}
+  .ap input[type=text]:focus{outline:none;border-color:var(--green-deep);}
+  .ap-btn{margin-top:auto;border:none;cursor:pointer;border-radius:999px;padding:9px 14px;font-family:'Baloo 2';font-weight:700;font-size:.85rem;background:var(--green);color:var(--white);}
+  .ap-btn:disabled{opacity:.45;cursor:not-allowed;}
+  .ap.on .ap-btn{background:var(--white);color:var(--green-deep);border:1.5px solid var(--green-deep);}
+  .arma-sum{max-width:560px;margin:28px auto 0;background:var(--white);border:1px solid rgba(63,58,52,0.08);border-radius:24px;padding:24px 26px;box-shadow:0 12px 30px -16px rgba(63,58,52,0.14);}
+  .arma-sum h3{font-family:'Fraunces',serif;font-size:1.3rem;font-weight:600;margin-bottom:12px;}
+  .arma-empty{color:var(--ink-soft);font-weight:600;font-size:.92rem;}
+  .arma-line{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px dashed rgba(63,58,52,0.14);font-weight:600;font-size:.92rem;}
+  .arma-line span:first-child{flex:1;}
+  .arma-line b{font-family:'Baloo 2';color:var(--green-deep);}
+  .arma-x{border:none;background:none;color:var(--ink-soft);cursor:pointer;font-size:1.1rem;line-height:1;padding:0 4px;}
+  .arma-total{display:flex;justify-content:space-between;align-items:center;margin:14px 0 16px;font-family:'Baloo 2';font-weight:800;font-size:1.3rem;}
+  .arma-total b{color:var(--green-deep);}
+  .arma-note{font-size:.78rem;color:var(--ink-soft);font-weight:600;text-align:center;margin-top:10px;line-height:1.5;}
+  .arma-bar{position:fixed;left:16px;right:92px;bottom:16px;z-index:60;max-width:480px;margin:0 auto;display:none;align-items:center;justify-content:space-between;gap:12px;background:var(--white);border:1.5px solid var(--green-deep);border-radius:999px;padding:10px 12px 10px 20px;box-shadow:0 14px 30px -12px rgba(63,58,52,0.35);font-family:'Baloo 2';font-weight:700;}
+  .arma-bar.show{display:flex;}
+  .arma-bar b{color:var(--green-deep);}
+  .arma-toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--ink);color:var(--white);padding:12px 20px;border-radius:14px;font-weight:700;font-size:.88rem;z-index:120;display:none;max-width:90vw;text-align:center;}
+  .arma-toast.show{display:block;}
+  @media (max-width:700px){
+    .arma-grid{grid-template-columns:repeat(2,1fr);gap:10px;}
+    .ap{padding:14px 12px;}
+    .ap-top{flex-direction:column;align-items:flex-start;gap:8px;}
+    .ap h4{font-size:.92rem;}
+    .arma-sum{padding:20px 18px;}
+  }
+
+  /* ---------- Carrito ---------- */
+  .cart-link{position:relative;display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;color:var(--ink);transition:background .2s ease;}
+  .cart-link:hover,.cart-link[aria-current=page]{background:var(--white);color:var(--green-deep);}
+  .cart-count{position:absolute;top:-2px;right:-4px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--green-deep);color:var(--white);font-family:'Baloo 2';font-weight:700;font-size:.7rem;line-height:18px;text-align:center;}
+  .cart-count[hidden]{display:none;}
+
+  .drawer-overlay{position:fixed;inset:0;z-index:140;background:rgba(63,58,52,.45);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .25s ease;}
+  .drawer-overlay.open{opacity:1;pointer-events:auto;}
+  .drawer{position:fixed;top:0;bottom:0;right:0;z-index:150;width:min(420px,100%);background:var(--cream);display:flex;flex-direction:column;box-shadow:-12px 0 40px -12px rgba(63,58,52,.35);transform:translateX(100%);visibility:hidden;transition:transform .3s ease,visibility 0s linear .3s;}
+  .drawer.open{transform:none;visibility:visible;transition:transform .3s ease;}
+  .drawer-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid rgba(63,58,52,.08);background:var(--green-pale);}
+  .drawer-head h3{font-family:'Fraunces',serif;font-size:1.3rem;font-weight:600;}
+  .drawer-close{width:36px;height:36px;border-radius:50%;border:0;background:var(--white);color:var(--ink);font-size:1.4rem;line-height:1;cursor:pointer;}
+  .drawer-body{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;}
+  .drawer-foot{padding:16px 20px 20px;border-top:1px solid rgba(63,58,52,.08);background:var(--white);display:flex;flex-direction:column;gap:10px;}
+  .drawer-foot[hidden]{display:none;}
+  .drawer-foot .cart-total{display:flex;justify-content:space-between;align-items:baseline;}
+  .drawer-empty{margin:auto;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center;color:var(--ink-soft);}
+  .btn.disabled{opacity:.45;pointer-events:none;}
+  @media (prefers-reduced-motion:reduce){.drawer,.drawer.open,.drawer-overlay{transition:none;}}
+
+  .bm-field{display:flex;flex-direction:column;gap:6px;font-size:.85rem;font-weight:700;margin-bottom:10px;}
+  .bm-field[hidden]{display:none;}
+  .bm-field input,.cart-sum input:not([type=radio]){font:inherit;font-weight:600;border:1.5px solid rgba(63,58,52,.16);border-radius:12px;padding:10px 12px;background:var(--white);color:var(--ink);}
+  .bm-field input:focus,.cart-sum input:focus{outline:2px solid var(--green);outline-offset:1px;border-color:transparent;}
+  .bm-error,.cart-error{color:#A63D3D;font-size:.85rem;font-weight:700;min-height:1em;}
+  .bm-error:empty{display:none;}
+
+  .cart-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:28px;align-items:start;}
+  .cart-lines{display:flex;flex-direction:column;gap:12px;}
+  .cart-line{display:grid;grid-template-columns:76px 1fr auto;gap:16px;align-items:center;background:var(--white);border:1px solid rgba(63,58,52,.08);border-radius:20px;padding:12px;}
+  .cart-line.bad{border-color:rgba(166,61,61,.4);}
+  .cart-line img,.cart-ph{width:76px;height:76px;border-radius:14px;object-fit:cover;background:var(--green-pale);}
+  .cart-info h4{font-family:'Baloo 2';font-weight:700;font-size:1rem;line-height:1.2;}
+  .cart-meta{font-size:.82rem;color:var(--ink-soft);margin-top:2px;}
+  .qty{display:inline-flex;align-items:center;gap:4px;margin-top:8px;border:1.5px solid rgba(63,58,52,.12);border-radius:999px;padding:2px;}
+  .qty button{width:28px;height:28px;border:0;border-radius:50%;background:none;cursor:pointer;font-size:1.1rem;color:var(--ink);}
+  .qty button:hover{background:var(--green-pale);}
+  .qty span{min-width:20px;text-align:center;font-weight:800;font-variant-numeric:tabular-nums;}
+  .cart-price{display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
+  .cart-price b{font-family:'Baloo 2';font-size:1.1rem;color:var(--green-deep);font-variant-numeric:tabular-nums;}
+  .cart-remove{border:0;background:none;color:var(--ink-soft);font:inherit;font-size:.8rem;font-weight:700;cursor:pointer;text-decoration:underline;text-underline-offset:3px;}
+  .cart-remove:hover{color:#A63D3D;}
+
+  .cart-sum{position:sticky;top:90px;background:var(--white);border:1px solid rgba(63,58,52,.08);border-radius:24px;padding:24px;display:flex;flex-direction:column;gap:12px;box-shadow:0 12px 30px -16px rgba(63,58,52,.14);}
+  .cart-form{position:static;}
+  .resumen-head{display:flex;justify-content:space-between;align-items:baseline;}
+  .cart-line.ro{grid-template-columns:56px 1fr auto;padding:8px;border-radius:16px;}
+  .cart-line.ro img,.cart-line.ro .cart-ph{width:56px;height:56px;}
+  .cart-sum h3{font-family:'Fraunces',serif;font-size:1.3rem;font-weight:600;}
+  .cart-sum label{display:flex;flex-direction:column;gap:6px;font-size:.85rem;font-weight:700;}
+  .cart-sum label[hidden]{display:none;}
+  .cart-sum fieldset{border:0;display:flex;flex-direction:column;gap:6px;}
+  .cart-sum legend{font-size:.85rem;font-weight:800;margin-bottom:6px;}
+  .cart-sum label.opt{flex-direction:row;align-items:center;gap:10px;font-weight:600;cursor:pointer;}
+  .cart-sum label.opt input{accent-color:var(--green-deep);width:16px;height:16px;}
+  .cart-sum label.opt small{color:var(--ink-soft);}
+  .cart-totals{border-top:1px dashed rgba(63,58,52,.15);padding-top:12px;display:flex;flex-direction:column;gap:6px;font-size:.9rem;}
+  .cart-totals > div{display:flex;justify-content:space-between;}
+  .cart-totals > div[hidden]{display:none;}
+  .cart-total{font-size:1.1rem;font-weight:800;}
+  .cart-total b{font-family:'Baloo 2';color:var(--green-deep);font-size:1.4rem;}
+  .cart-note{font-size:.78rem;color:var(--ink-soft);text-align:center;}
+
+  .cart-empty,.cart-done{max-width:520px;margin:0 auto;text-align:center;background:var(--white);border-radius:24px;padding:36px 24px;border:1px solid rgba(63,58,52,.08);display:flex;flex-direction:column;gap:14px;align-items:center;}
+  .cart-empty[hidden],.cart-done[hidden],.cart-grid[hidden]{display:none;}
+  .cart-done h3{font-family:'Fraunces',serif;font-size:1.6rem;font-weight:600;}
+  .cart-num{font-family:'Baloo 2';font-weight:700;color:var(--green-deep);font-size:1.2rem;}
+  .cart-extra{background:var(--green-pale);border-radius:14px;padding:12px 16px;font-size:.9rem;white-space:pre-line;}
+
+  @media (max-width:860px){
+    .cart-grid{grid-template-columns:1fr;}
+    .cart-sum{position:static;}
+  }
+  @media (max-width:560px){
+    .cart-line{grid-template-columns:60px 1fr;}
+    .cart-line img,.cart-ph{width:60px;height:60px;}
+    .cart-price{grid-column:2;flex-direction:row;justify-content:space-between;align-items:center;}
+  }
+
+  /* Solo para la vista de diseño */
+  .diseno-nav{position:fixed;left:12px;bottom:12px;z-index:130;display:flex;align-items:center;gap:4px;flex-wrap:wrap;max-width:calc(100% - 100px);background:var(--ink);color:var(--white);border-radius:16px;padding:6px;font-size:.78rem;font-weight:700;box-shadow:0 8px 24px -8px rgba(0,0,0,.4);}
+  .diseno-nav b{padding:0 8px;opacity:.7;font-weight:800;}
+  .diseno-nav a,.diseno-nav button{color:var(--white);background:none;border:0;font:inherit;padding:6px 10px;border-radius:10px;cursor:pointer;}
+  .diseno-nav a.on{background:var(--green-deep);}
+  .diseno-nav a:hover,.diseno-nav button:hover{background:rgba(255,255,255,.15);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a class="brand" href="#inicio">
+      <img src="assets/img/marca/manolito.png" alt="Manolito">
+      <span class="brand-name">Manolito</span>
+    </a>
+    <nav>
+      <a class="navlink" href="#boxes">Boxes</a>
+      <a class="navlink" href="#portachupetes">Portachupetes</a>
+      <a class="navlink" href="#faq">Preguntas</a>
+      <a class="btn btn-green btn-sm" href="#arma-tu-box">Armá tu box</a>
+      <a class="cart-link" href="#checkout" aria-label="Ver carrito"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l-1 13H7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg><span class="cart-count" hidden>0</span></a>
+    </nav>
+  </div>
+</header>
+
+<div data-page="inicio">
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-photo-wide">
+      <img src="assets/img/boxes/boxes-de-nacimiento-manolito.jpg" alt="Boxes de nacimiento Manolito">
+    </div>
+  </div>
+  <div class="wrap hero-copy-center">
+    <span class="eyebrow-minimal">Regalos con amor</span>
+    <h1>Un mundo <span class="hl">mágico</span> para los más chiquitos</h1>
+    <p class="sub">Boxes de nacimiento y accesorios personalizados para acompañar los primeros momentos más especiales.</p>
+    <div class="hero-ctas">
+      <a class="btn btn-green" href="#boxes">Ver Boxes</a>
+      <a class="btn btn-green" href="#portachupetes">Ver Portachupetes</a>
+      <a class="btn btn-outline" href="https://instagram.com/manolito_uy" target="_blank" rel="noopener">Escribinos por Instagram</a>
+    </div>
+  </div>
+  <div class="wrap">
+    <div class="features">
+      <div class="feature-card">
+        <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C97D8D" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="7" width="13" height="10"/><path d="M14.5 10h4l3.5 3.5V17h-7.5z"/><circle cx="6" cy="19" r="1.6"/><circle cx="17.5" cy="19" r="1.6"/></svg></div>
+        <h3>Envíos a todo el país</h3>
+        <p>Cadetería en Montevideo y pick-up en zona Cordón.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C97D8D" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 3.5h5.5a1 1 0 0 1 1 1v5.5a1 1 0 0 1-.3.7l-9 9a1 1 0 0 1-1.4 0L3.3 15.7a1 1 0 0 1 0-1.4l9-9a1 1 0 0 1 .7-.3z"/><circle cx="15" cy="8" r="1.3"/></svg></div>
+        <h3>Personalización con nombre</h3>
+        <p>Cada detalle personalizado con el nombre de tu bebé.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C97D8D" stroke-width="1.6"><path d="M12 21s-7-4.35-9.5-8.5C.5 8.5 3 5 6.5 5c2 0 3.5 1 5.5 3 2-2 3.5-3 5.5-3C21 5 23.5 8.5 21.5 12.5 19 16.65 12 21 12 21z"/></svg></div>
+        <h3>Materiales seguros</h3>
+        <p>Algodón hipoalergénico, silicona libre de BPA y madera de haya.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<section class="section" id="boxes">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">Nuestro Catálogo</span>
+      <h2>Nuestras Boxes</h2>
+      <p>No son un simple regalo: pensadas y personalizadas con mucho amor en cada detalle.</p>
+    </div>
+
+    <div class="ideas-carousel-wrap">
+    <button class="carousel-arrow arrow-left" onclick="document.getElementById('boxesCarousel').scrollBy({left:-250,behavior:'smooth'})" aria-label="Anterior">&#8249;</button>
+    <div class="ideas-carousel" id="boxesCarousel" data-img="assets/img/boxes/carrusel-{n}.jpg" data-count="15" data-alt="Box Manolito {n}" data-item="idea-slide">
+    </div>
+    <button class="carousel-arrow arrow-right" onclick="document.getElementById('boxesCarousel').scrollBy({left:250,behavior:'smooth'})" aria-label="Siguiente">&#8250;</button>
+    </div>
+    <div class="boxes-grid">
+
+      <div class="box-card">
+        <div class="box-photo"><img src="assets/img/boxes/mini-box.jpg" alt="Mini box" loading="lazy"></div>
+        <div class="box-colors" aria-label="Colores disponibles: rosa, celeste, verde, beige"><span class="bc-l">Colores</span><span class="bc" style="background:#EDB6C1" title="Rosa"></span><span class="bc" style="background:#B7D2EA" title="Celeste"></span><span class="bc" style="background:#B8CDAC" title="Verde"></span><span class="bc" style="background:#E4D3BA" title="Beige"></span></div>
+        <div class="box-body">
+          <div class="box-title-row"><h3>Mini box</h3><span class="box-price">$890</span></div>
+          <ul class="box-items">
+            <li>Babero de algodón</li>
+            <li>Portachupete personalizado</li>
+          </ul>
+          <a class="btn btn-outline btn-sm box-cta" href="https://instagram.com/manolito_uy" target="_blank" rel="noopener">Consultar por Instagram</a>
+        </div>
+      </div>
+
+      <div class="box-card">
+        <div class="box-photo"><img src="assets/img/boxes/box-dulce-llegada.jpg" alt="Box Dulce llegada" loading="lazy"></div>
+        <div class="box-colors" aria-label="Colores disponibles: rosa, celeste, verde, beige"><span class="bc-l">Colores</span><span class="bc" style="background:#EDB6C1" title="Rosa"></span><span class="bc" style="background:#B7D2EA" title="Celeste"></span><span class="bc" style="background:#B8CDAC" title="Verde"></span><span class="bc" style="background:#E4D3BA" title="Beige"></span></div>
+        <div class="box-body">
+          <div class="box-title-row"><h3>Box Dulce llegada</h3><span class="box-price">$1390</span></div>
+          <ul class="box-items">
+            <li>Zapatitos tejidos</li>
+            <li>Babero de algodón</li>
+            <li>Portachupete personalizado</li>
+          </ul>
+          <a class="btn btn-outline btn-sm box-cta" href="https://instagram.com/manolito_uy" target="_blank" rel="noopener">Consultar por Instagram</a>
+        </div>
+      </div>
+
+      <div class="box-card">
+        <div class="box-photo"><img src="assets/img/boxes/box-esencial.jpg" alt="Box Esencial" loading="lazy"></div>
+        <div class="box-colors" aria-label="Colores disponibles: rosa, celeste, beige"><span class="bc-l">Colores</span><span class="bc" style="background:#EDB6C1" title="Rosa"></span><span class="bc" style="background:#B7D2EA" title="Celeste"></span><span class="bc" style="background:#E4D3BA" title="Beige"></span></div>
+        <div class="box-body">
+          <div class="box-title-row"><h3>Box Esencial</h3><span class="box-price">$1490</span></div>
+          <ul class="box-items">
+            <li>Estuche de silicona para chupete</li>
+            <li>Mordillo de silicona y madera</li>
+            <li>Portachupete personalizado</li>
+          </ul>
+          <a class="btn btn-outline btn-sm box-cta" href="https://instagram.com/manolito_uy" target="_blank" rel="noopener">Consultar por Instagram</a>
+        </div>
+      </div>
+
+      <div class="box-card">
+        <div class="box-photo"><img src="assets/img/boxes/box-dulce-suenos.jpg" alt="Box Dulce sueños" loading="lazy"></div>
+        <div class="box-colors" aria-label="Colores disponibles: rosa, celeste, beige"><span class="bc-l">Colores</span><span class="bc" style="background:#EDB6C1" title="Rosa"></span><span class="bc" style="background:#B7D2EA" title="Celeste"></span><span class="bc" style="background:#E4D3BA" title="Beige"></span></div>
+        <div class="box-body">
+          <div class="box-title-row"><h3>Box Dulce sueños</h3><span class="box-price">$1590</span></div>
+          <ul class="box-items">
+            <li>Trapito de apego</li>
+            <li>Portachupete personalizado</li>
+          </ul>
+          <a class="btn btn-outline btn-sm box-cta" href="https://instagram.com/manolito_uy" target="_blank" rel="noopener">Consultar por Instagram</a>
+        </div>
+      </div>
+
+      <div class="box-card">
+        <div class="box-photo"><img src="assets/img/boxes/box-primeros-mimos.jpg" alt="Box Primeros mimos" loading="lazy"></div>
+        <div class="box-colors" aria-label="Colores disponibles: rosa, celeste, beige"><span class="bc-l">Colores</span><span class="bc" style="background:#EDB6C1" title="Rosa"></span><span class="bc" style="background:#B7D2EA" title="Celeste"></span><span class="bc" style="background:#E4D3BA" title="Beige"></span></div>
+        <div class="box-body">
+          <div class="box-title-row"><h3>Box Primeros mimos</h3><span class="box-price">$1990</span></div>
+          <ul class="box-items">
+            <li>Zapatitos tejidos</li>
+            <li>Babero de algodón</li>
+            <li>Sonajero de tela suave y seguro</li>
+            <li>Portachupete personalizado</li>
+          </ul>
+          <a class="btn btn-outline btn-sm box-cta" href="https://instagram.com/manolito_uy" target="_blank" rel="noopener">Consultar por Instagram</a>
+        </div>
+      </div>
+
+      <div class="box-card">
+        <div class="box-photo"><img src="assets/img/boxes/box-pequeno-tesoro.jpg" alt="Box Pequeño tesoro" loading="lazy"></div>
+        <div class="box-colors" aria-label="Colores disponibles: rosa, celeste, beige"><span class="bc-l">Colores</span><span class="bc" style="background:#EDB6C1" title="Rosa"></span><span class="bc" style="background:#B7D2EA" title="Celeste"></span><span class="bc" style="background:#E4D3BA" title="Beige"></span></div>
+        <div class="box-body">
+          <div class="box-title-row"><h3>Box Pequeño tesoro</h3><span class="box-price">$2190</span></div>
+          <ul class="box-items">
+            <li>Trapito de apego</li>
+            <li>Zapatitos tejidos</li>
+            <li>Portachupete personalizado</li>
+          </ul>
+          <a class="btn btn-outline btn-sm box-cta" href="https://instagram.com/manolito_uy" target="_blank" rel="noopener">Consultar por Instagram</a>
+        </div>
+      </div>
+
+      <div class="box-card">
+        <div class="box-photo"><img src="assets/img/boxes/box-bienvenida.jpg" alt="Box Bienvenida" loading="lazy"></div>
+        <div class="box-colors" aria-label="Colores disponibles: rosa, celeste, beige"><span class="bc-l">Colores</span><span class="bc" style="background:#EDB6C1" title="Rosa"></span><span class="bc" style="background:#B7D2EA" title="Celeste"></span><span class="bc" style="background:#E4D3BA" title="Beige"></span></div>
+        <div class="box-body">
+          <div class="box-title-row"><h3>Box Bienvenida</h3><span class="box-price">$2490</span></div>
+          <ul class="box-items">
+            <li>Manta de muselina</li>
+            <li>Set de peine</li>
+            <li>Trapito de apego</li>
+          </ul>
+          <a class="btn btn-outline btn-sm box-cta" href="https://instagram.com/manolito_uy" target="_blank" rel="noopener">Consultar por Instagram</a>
+        </div>
+      </div>
+
+      <div class="box-card">
+        <div class="box-photo"><img src="assets/img/boxes/box-especial-manolito.jpg" alt="Box especial Manolito"></div>
+        <div class="box-colors" aria-label="Colores disponibles: rosa, celeste, beige"><span class="bc-l">Colores</span><span class="bc" style="background:#EDB6C1" title="Rosa"></span><span class="bc" style="background:#B7D2EA" title="Celeste"></span><span class="bc" style="background:#E4D3BA" title="Beige"></span></div>
+        <div class="box-body">
+          <span class="box-badge">COMPLETA</span>
+          <div class="box-title-row"><h3>Box especial Manolito</h3><span class="box-price">$3190</span></div>
+          <ul class="box-items">
+            <li>Manta de muselina</li>
+            <li>Babero de algodón</li>
+            <li>Zapatitos tejidos</li>
+            <li>Cepillo y peine de madera</li>
+            <li>Conejo de peluche</li>
+            <li>Portachupete personalizado</li>
+          </ul>
+          <a class="btn btn-outline btn-sm box-cta" href="https://instagram.com/manolito_uy" target="_blank" rel="noopener">Consultar por Instagram</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<div class="wave-divider" style="background:var(--white);">
+  <svg viewBox="0 0 1200 60" preserveAspectRatio="none"><path d="M0,20 C250,55 450,0 700,25 C950,50 1050,10 1200,25 L1200,60 L0,60 Z" style="fill:var(--green-pale);"></path></svg>
+</div>
+<section class="section" id="portachupetes" style="background:var(--green-pale);">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">Personalizados</span>
+      <h2>Portachupetes</h2>
+      <p>Suaves, lindos y seguros para el bebé, en silicona libre de BPA o madera natural. Mantienen el chupete de tu bebé a salvo y libre de suciedades. Ambos incluyen hasta 5 letras.</p>
+    </div>
+
+    
+
+    <div class="porta-price-table" style="margin-bottom:44px;">
+      <div class="price-row"><span>Personalizado de madera</span><span>$790</span></div>
+      <div class="price-row"><span>Personalizado de silicona</span><span>$790</span></div>
+      <div class="price-row"><span>Sin personalizar</span><span>$690</span></div>
+    </div>
+
+    <div class="porta-catalog">
+      <figure class="porta-card">
+        <div class="porta-slider">
+          <div class="porta-track" data-img="assets/img/portachupetes/silicona-{n}.jpg" data-count="3" data-alt="Modelos de portachupetes de silicona {n}" data-item="porta-slide"></div>
+          <button class="carousel-arrow arrow-left" type="button" aria-label="Anterior">&#8249;</button>
+          <button class="carousel-arrow arrow-right" type="button" aria-label="Siguiente">&#8250;</button>
+          <div class="porta-dots"></div>
+        </div>
+        <figcaption><h3>Silicona</h3><span>Libre de BPA · colores a elección</span></figcaption>
+      </figure>
+      <figure class="porta-card">
+        <div class="porta-slider">
+          <div class="porta-track" data-img="assets/img/portachupetes/madera-{n}.jpg" data-count="1" data-alt="Modelos de portachupetes de madera {n}" data-item="porta-slide"></div>
+          <button class="carousel-arrow arrow-left" type="button" aria-label="Anterior">&#8249;</button>
+          <button class="carousel-arrow arrow-right" type="button" aria-label="Siguiente">&#8250;</button>
+          <div class="porta-dots"></div>
+        </div>
+        <figcaption><h3>Madera</h3><span>Madera natural de haya</span></figcaption>
+      </figure>
+    </div>
+
+    <p class="porta-footnote">*Precio hasta 5 letras, por cada letra adicional se suman $20.<br>Silicona de grado alimenticio, libre de BPA · Colores a elección, sujeto a stock.</p>
+  </div>
+</section>
+
+<section class="section" style="padding:0;background:var(--white);">
+  <div class="wrap">
+    <div class="trust-band">
+      <div class="trust-item">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C97D8D" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/></svg>
+        Presentación en caja de regalo
+      </div>
+      <div class="trust-item">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C97D8D" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Ideal para nacimientos, bautismos y baby showers
+      </div>
+      <div class="trust-item">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C97D8D" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.4 7.6L3 20l1-5.2A8.5 8.5 0 1 1 21 11.5z"/></svg>
+        Te asesoramos por Instagram
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="coleccion">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">Más productos</span>
+      <h2>Baberos de algodón</h2>
+      <p>Muselina suave con broche ajustable.</p>
+    </div>
+    <div class="bib-gallery" data-img="assets/img/baberos/babero-{n}.jpg" data-count="6" data-alt="Babero de algodón" data-item="bib-item">
+    </div>
+  </div>
+</section>
+
+<section class="section" style="background:linear-gradient(180deg, rgba(251,237,240,0) 0%, rgba(251,237,240,0.9) 100%);">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">Inspirate</span>
+      <h2>Ideas</h2>
+      <p>Como cada bebé es único, nuestros sets también lo son. Elegí modelo, color y detalle que más te gusten para crear algo verdaderamente único y especial.</p>
+    </div>
+    <div class="ideas-carousel-wrap">
+    <button class="carousel-arrow arrow-left" onclick="document.getElementById('ideasCarousel').scrollBy({left:-250,behavior:'smooth'})" aria-label="Anterior">&#8249;</button>
+    <div class="ideas-carousel" id="ideasCarousel" data-img="assets/img/ideas-box/idea-{n}.jpg" data-count="20" data-alt="Idea de box Manolito {n}" data-item="idea-slide">
+    </div>
+    <button class="carousel-arrow arrow-right" onclick="document.getElementById('ideasCarousel').scrollBy({left:250,behavior:'smooth'})" aria-label="Siguiente">&#8250;</button>
+    </div>
+  </div>
+</section>
+
+
+<section class="section" style="background:var(--green-pale);">
+  <div class="wrap about-grid">
+    <div class="about-photo"><img src="assets/img/marca/manolito-artesanal.jpg" alt="Manolito artesanal" loading="lazy"></div>
+    <div class="about-text">
+      <span class="kicker" style="font-family:'Baloo 2';font-weight:700;color:var(--green-deep);display:block;margin-bottom:8px;">Sobre Nosotros</span>
+      <h2 style="margin-bottom:20px;">Hecho con amor para los más chiquitos</h2>
+      <p>Creamos accesorios y juguetes para acompañar al bebé desde sus primeros días de vida. Cada pieza es realizada con especial cuidado, utilizando materiales seguros: hilos de algodón suaves e hipoalergénicos, silicona de grado alimenticio libre de BPA y madera de haya.</p>
+      <p>Son el regalo perfecto para nacimientos, bautismos, baby showers y cualquier ocasión que merezca emocionar de verdad.</p>
+    </div>
+  </div>
+</section>
+
+<div class="wave-divider" style="background:var(--green-pale);">
+  <svg viewBox="0 0 1200 60" preserveAspectRatio="none"><path d="M0,25 C250,10 450,55 700,30 C950,5 1050,45 1200,25 L1200,60 L0,60 Z" style="fill:var(--white);"></path></svg>
+</div>
+<section class="section" id="faq">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">Preguntas frecuentes</span>
+      <h2>¿Tenés dudas?</h2>
+    </div>
+    <div class="faq-list">
+      <details class="faq-item" open>
+        <summary>¿Cómo hago mi pedido? <span class="plus">+</span></summary>
+        <div class="faq-a">Elegís el modelo y nos escribís por Instagram. Para reservar tu pedido se abona una seña del 50%.</div>
+      </details>
+      <details class="faq-item">
+        <summary>¿Cuánto demora la personalización? <span class="plus">+</span></summary>
+        <div class="faq-a">Como cada pedido es personalizado, el tiempo puede variar según el modelo y el stock disponible. Portachupetes, mordillos y baberos suelen tener entrega más rápida — te confirmamos el plazo al coordinar.</div>
+      </details>
+      <details class="faq-item">
+        <summary>¿Realizan envíos? <span class="plus">+</span></summary>
+        <div class="faq-a">Sí, hacemos envíos a todo el país. Dentro de Montevideo trabajamos con servicio de cadetería (el costo queda a cargo del cliente), y también hay pick-up disponible en Montevideo, zona Cordón.</div>
+      </details>
+      <details class="faq-item">
+        <summary>¿Puedo armar mi propia box? <span class="plus">+</span></summary>
+        <div class="faq-a">¡Sí! Elegí tus productos en <a href="#arma-tu-box" style="color:var(--green-deep);font-weight:700;">Armá tu box</a>, o escribinos por Instagram y armamos juntos una selección a tu gusto.</div>
+      </details>
+      <details class="faq-item">
+        <summary>¿Qué métodos de pago aceptan? <span class="plus">+</span></summary>
+        <div class="faq-a">Transferencia bancaria, Giro Abitab / Red Pagos, Prex / Mi Dinero, y Mercado Pago (con 10% adicional).</div>
+      </details>
+    </div>
+  </div>
+</section>
+<div class="bm-overlay" id="boxModal" aria-hidden="true">
+  <div class="bm" role="dialog" aria-modal="true" aria-labelledby="bmTitle">
+    <button class="bm-close" id="bmClose" aria-label="Cerrar">&times;</button>
+    <div class="bm-photo"><img id="bmImg" alt="" loading="lazy"></div>
+    <div class="bm-body">
+      <div class="bm-title"><h3 id="bmTitle"></h3><span class="bm-price" id="bmPrice"></span></div>
+      <p class="bm-sub">Esto es lo que trae tu box:</p>
+      <div class="bm-items" id="bmItems"></div>
+      <div id="bmBuy">
+        <label class="bm-field" id="bmNameWrap">Nombre del bebé para el portachupete<input id="bmName" maxlength="20" placeholder="Ej: Lucas" autocomplete="off"></label>
+        <p class="bm-error" id="bmError" role="alert"></p>
+        <button class="btn btn-green" id="bmAdd" type="button" style="width:100%;">Agregar al carrito</button>
+      </div>
+      <a class="btn btn-outline" style="width:100%;margin-top:10px;" href="https://instagram.com/manolito_uy" target="_blank" rel="noopener">Consultar por Instagram</a>
+    </div>
+  </div>
+</div>
+</div>
+
+<div data-page="arma-tu-box" hidden>
+<section class="section" id="arma" style="background:var(--white);">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">A tu medida</span>
+      <h2>Armá tu box</h2>
+      <p>Elegí los productos que más te gusten y mirá cómo se suma el total. Después nos mandás tu armado por Instagram.</p>
+    </div>
+    <div class="arma-grid" id="armaGrid"></div>
+    <div class="arma-sum" id="armaSum">
+      <h3>Tu box</h3>
+      <div id="armaList"></div>
+      <div class="arma-total" id="armaTotalRow" style="display:none;"><span>Total</span><b id="armaTotal">$0</b></div>
+      <button class="btn btn-green" id="armaCart" type="button" style="width:100%;display:none;">Agregar al carrito</button>
+      <button class="btn btn-outline" id="armaSend" type="button" style="width:100%;display:none;margin-top:10px;">Pedir por Instagram</button>
+      <p class="arma-note" id="armaNote">Todavía no agregaste nada. ¡Empezá tocando "Agregar"!</p>
+    </div>
+  </div>
+</section>
+<div class="arma-bar" id="armaBar"><span><span id="armaBarN">0</span> productos · <b id="armaBarT">$0</b></span><a class="btn btn-green btn-sm" href="#arma">Ver mi box</a></div>
+<div class="arma-toast" id="armaToast" role="status"></div>
+</div>
+
+<div data-page="checkout" hidden>
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">Checkout</span>
+      <h2>Finalizar compra</h2>
+    </div>
+
+    <div class="cart-empty" id="checkoutVacio" hidden>
+      <p>Tu carrito está vacío.</p>
+      <div class="hero-ctas">
+        <a class="btn btn-green" href="#boxes">Ver boxes</a>
+        <a class="btn btn-outline" href="#arma-tu-box">Armá tu box</a>
+      </div>
+    </div>
+
+    <div class="cart-grid" id="checkoutLleno" hidden>
+      <form class="cart-sum cart-form" id="checkout" novalidate>
+        <h3>Tus datos</h3>
+        <label>Nombre y apellido<input name="nombre" required minlength="2" maxlength="80" autocomplete="name"></label>
+        <label>Teléfono<input name="telefono" type="tel" required minlength="6" maxlength="30" autocomplete="tel"></label>
+        <label>Email<input name="email" type="email" required maxlength="120" autocomplete="email"></label>
+
+        <fieldset>
+          <legend>Entrega</legend>
+          <label class="opt"><input type="radio" name="entrega" value="pickup" checked> Pick-up en Cordón (Montevideo)</label>
+          <label class="opt"><input type="radio" name="entrega" value="cadeteria"> Cadetería en Montevideo</label>
+          <label class="opt"><input type="radio" name="entrega" value="interior"> Envío al interior</label>
+        </fieldset>
+        <label id="dirWrap">Dirección<input name="direccion" maxlength="200" autocomplete="street-address"></label>
+
+        <fieldset>
+          <legend>Pago</legend>
+          <label class="opt"><input type="radio" name="pago" value="transferencia" checked> Transferencia bancaria</label>
+          <label class="opt"><input type="radio" name="pago" value="abitab_redpagos"> Giro Abitab / Red Pagos</label>
+          <label class="opt"><input type="radio" name="pago" value="prex_midinero"> Prex / Mi Dinero</label>
+          <label class="opt" id="payMP" hidden><input type="radio" name="pago" value="mercadopago"> Mercado Pago <small>(+10%)</small></label>
+        </fieldset>
+      </form>
+
+      <aside class="cart-sum">
+        <div class="resumen-head"><h3>Tu pedido</h3><button type="button" class="cart-remove" id="editarCarrito">Editar</button></div>
+        <div class="cart-lines" id="resumenLineas"></div>
+        <div class="cart-totals">
+          <div><span>Subtotal</span><span id="totSub">$0</span></div>
+          <div id="rowRecargo" hidden><span>Recargo Mercado Pago</span><span id="totRecargo">$0</span></div>
+          <div class="cart-total"><span>Total</span><b id="totTotal">$0</b></div>
+        </div>
+        <p class="cart-note">El envío se coordina aparte: la cadetería la paga quien recibe.</p>
+        <button class="btn btn-green" id="confirmar" type="submit" form="checkout" style="width:100%;">Confirmar pedido</button>
+        <p class="cart-error" id="cartError" role="alert"></p>
+      </aside>
+    </div>
+
+    <div class="cart-done" id="checkoutGracias" hidden>
+      <h3 id="gTitulo"></h3>
+      <p class="cart-num" id="gNumero"></p>
+      <p id="gTexto"></p>
+      <p class="cart-extra" id="gExtra" hidden></p>
+      <a class="btn btn-green" href="#inicio">Volver al inicio</a>
+    </div>
+  </div>
+</section>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-inner">
+      <div>
+        <div class="footer-brand">
+          <img src="assets/img/marca/manolito.png" alt="Manolito">
+          <span>Manolito</span>
+        </div>
+        <p class="footer-tag">Regalos de bienvenida y accesorios personalizados para los más chiquitos.</p>
+      </div>
+      <div class="footer-links">
+        <div class="footer-col">
+          <h4>Contacto</h4>
+          <a href="https://instagram.com/manolito_uy" target="_blank" rel="noopener">Instagram</a>
+        </div>
+        <div class="footer-col">
+          <h4>Explorar</h4>
+          <a href="#coleccion">Colección</a>
+          <a href="#boxes">Boxes</a>
+          <a href="#portachupetes">Portachupetes</a>
+        </div>
+        <div class="footer-col">
+          <h4>Envíos</h4>
+          <a href="#" style="opacity:.88;">A todo Uruguay</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">© Manolito — Hecho con amor para los más chiquitos</div>
+  </div>
+</footer>
+
+<a class="float-ig" href="https://instagram.com/manolito_uy" target="_blank" rel="noopener" aria-label="Seguinos en Instagram">
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>
+</a>
+
+<nav class="diseno-nav" aria-label="Vista de diseño"><b>Vista de diseño</b><a href="#inicio">Inicio</a><a href="#arma-tu-box">Armá tu box</a><a href="#checkout">Checkout</a><button type="button" onclick="Carrito.abrir()">Abrir carrito</button></nav>
+
+<script>
+// ===== Vista de diseño: backend simulado en el navegador (no hace falta servidor) =====
+(function(){
+  var COL=['Rosa','Celeste','Beige'];
+  function prod(id,nombre,precio,colores,personalizable){return {id:id,nombre:nombre,precio:precio,colores:colores,personalizable:!!personalizable,foto:'assets/img/arma-tu-box/producto-'+id+'.jpg',stock:null,activo:true};}
+  var PRODUCTOS=[
+    prod('trapito','Trapito de apego',890,COL), prod('zapatitos','Zapatitos tejidos',490,COL), prod('babero','Babero de algodón',190,null),
+    prod('manta','Manta de muselina',890,COL.concat('Estampada')), prod('peine','Set de peine bamboo',690,null), prod('sonajero','Sonajero de tela',690,null),
+    prod('guarda','Guardachupete de silicona',390,COL), prod('mordillo','Mordillo de silicona',490,COL), prod('porta','Portachupete personalizado',790,null,true)
+  ];
+  function box(id,nombre,precio,foto,items){return {id:id,nombre:nombre,precio:precio,foto:'assets/img/boxes/'+foto,items:items,activo:true};}
+  var P='Portachupete personalizado';
+  var BOXES=[
+    box('mini-box','Mini box',890,'mini-box.jpg',['Babero de algodón',P]),
+    box('dulce-llegada','Box Dulce llegada',1390,'box-dulce-llegada.jpg',['Zapatitos tejidos','Babero de algodón',P]),
+    box('esencial','Box Esencial',1490,'box-esencial.jpg',['Estuche de silicona para chupete','Mordillo de silicona y madera',P]),
+    box('dulce-suenos','Box Dulce sueños',1590,'box-dulce-suenos.jpg',['Trapito de apego',P]),
+    box('primeros-mimos','Box Primeros mimos',1990,'box-primeros-mimos.jpg',['Zapatitos tejidos','Babero de algodón','Sonajero de tela suave y seguro',P]),
+    box('pequeno-tesoro','Box Pequeño tesoro',2190,'box-pequeno-tesoro.jpg',['Trapito de apego','Zapatitos tejidos',P]),
+    box('bienvenida','Box Bienvenida',2490,'box-bienvenida.jpg',['Manta de muselina','Set de peine','Trapito de apego']),
+    box('especial-manolito','Box especial Manolito',3190,'box-especial-manolito.jpg',['Manta de muselina','Babero de algodón','Zapatitos tejidos','Cepillo y peine de madera','Conejo de peluche',P])
+  ];
+  function buscar(lista,id){return lista.filter(function(x){return x.id===id;})[0];}
+
+  // Mismas reglas que backend/src/pedidos.ts
+  function linea(it){
+    var cant=it.cantidad||1;
+    if(it.tipo==='box'){
+      var b=buscar(BOXES,it.id); if(!b) throw new Error('La box "'+it.id+'" no existe');
+      if(!it.nombreBebe&&b.items.some(function(i){return /portachupete/i.test(i);})) throw new Error('Falta el nombre del bebé para el portachupete de '+b.nombre);
+      return {tipo:'box',id:b.id,nombre:b.nombre,cantidad:cant,nombreBebe:it.nombreBebe,precioUnitario:b.precio,total:b.precio*cant,foto:b.foto};
+    }
+    var p=buscar(PRODUCTOS,it.id); if(!p) throw new Error('El producto "'+it.id+'" no existe');
+    if(it.color&&!(p.colores||[]).includes(it.color)) throw new Error('Color "'+it.color+'" no disponible para '+p.nombre);
+    if(!it.nombreBebe&&p.personalizable) throw new Error('Falta el nombre del bebé para '+p.nombre);
+    var letras=(it.nombreBebe||'').replace(/\s+/g,'').length;
+    var unit=p.precio+(p.personalizable?Math.max(0,letras-5)*20:0);
+    return {tipo:'producto',id:p.id,nombre:p.nombre,cantidad:cant,color:it.color,nombreBebe:it.nombreBebe,precioUnitario:unit,total:unit*cant,foto:p.foto};
+  }
+  function totales(lineas,pago){
+    var sub=lineas.reduce(function(s,l){return s+l.total;},0), rec=pago==='mercadopago'?Math.round(sub*0.1):0;
+    return {subtotal:sub,recargo:rec,total:sub+rec};
+  }
+  function nombreDe(it){var x=buscar(it.tipo==='box'?BOXES:PRODUCTOS,it.id);return x&&x.nombre;}
+
+  var API={
+    'GET /api/productos':function(){return PRODUCTOS;},
+    'GET /api/boxes':function(){return BOXES;},
+    'POST /api/eventos':function(){return null;},
+    'POST /api/carrito':function(b){
+      var lineas=[],avisos=[];
+      (b.items||[]).forEach(function(it,i){
+        try{var l=linea(it);l.i=i;lineas.push(l);}catch(e){avisos.push({i:i,nombre:nombreDe(it),error:e.message});}
+      });
+      var t=totales(lineas,b.pago);
+      return {lineas:lineas,avisos:avisos,subtotal:t.subtotal,recargo:t.recargo,total:t.total,mercadopago:true};
+    },
+    'POST /api/pedidos':function(b){
+      var t=totales(b.items.map(linea),b.pago);
+      return {id:Math.floor(100+Math.random()*900),subtotal:t.subtotal,recargo:t.recargo,total:t.total,
+        instrucciones:b.pago==='mercadopago'?'(Vista de diseño) En la web real, acá se redirige a Mercado Pago para pagar.':'Te vamos a escribir para coordinar el pago y la entrega.'};
+    }
+  };
+
+  window.fetch=function(url,opts){
+    var metodo=(opts&&opts.method)||'GET', ruta=String(url).replace(/^.*?(\/api\/)/,'/api/');
+    var h=API[metodo+' '+ruta];
+    if(!h) return Promise.reject(new Error('Sin simulación para '+metodo+' '+ruta));
+    try{
+      var data=h(opts&&opts.body?JSON.parse(opts.body):{});
+      return Promise.resolve(new Response(data==null?null:JSON.stringify(data),{status:data==null?204:200,headers:{'Content-Type':'application/json'}}));
+    }catch(e){
+      return Promise.resolve(new Response(JSON.stringify({error:e.message}),{status:400,headers:{'Content-Type':'application/json'}}));
+    }
+  };
+})();
+
+</script>
+<script>
+window.MIMG={"trapito": "assets/img/arma-tu-box/producto-trapito.jpg", "zapatitos": "assets/img/arma-tu-box/producto-zapatitos.jpg", "peine": "assets/img/arma-tu-box/producto-peine.jpg", "babero": "assets/img/arma-tu-box/producto-babero.jpg", "manta": "assets/img/arma-tu-box/producto-manta.jpg", "guarda": "assets/img/arma-tu-box/producto-guarda.jpg", "sonajero": "assets/img/arma-tu-box/producto-sonajero.jpg", "mordillo": "assets/img/arma-tu-box/producto-mordillo.jpg", "porta": "assets/img/arma-tu-box/producto-porta.jpg"};
+
+// Métricas de uso anónimas (sin cookies): ver /admin
+window.track=function(tipo,ref){
+  try{fetch('/api/eventos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tipo:tipo,ref:ref||''}),keepalive:true}).catch(function(){});}catch(e){}
+};
+track('visita',location.pathname);
+document.addEventListener('click',function(e){if(e.target.closest('a[href*="instagram.com"]'))track('instagram',location.pathname);});
+
+// Galerías: genera las imágenes numeradas a partir de data-img="ruta-{n}.jpg" y data-count
+document.querySelectorAll('[data-img]').forEach(function(g){
+  for(var n=1;n<=+g.dataset.count;n++){
+    var d=document.createElement('div'), im=document.createElement('img');
+    d.className=g.dataset.item; im.loading='lazy';
+    im.src=g.dataset.img.replace('{n}',n); im.alt=g.dataset.alt.replace('{n}',n);
+    d.appendChild(im); g.appendChild(d);
+  }
+});
+
+// Sliders de a una foto (portachupetes): flechas, puntitos y vuelta al inicio al llegar al final
+document.querySelectorAll('.porta-slider').forEach(function(s){
+  var track=s.querySelector('.porta-track'), n=track.children.length, dots=s.querySelector('.porta-dots');
+  if(n<2){s.classList.add('single');return;}
+  function cur(){return Math.round(track.scrollLeft/track.clientWidth);}
+  function go(i){track.scrollTo({left:((i+n)%n)*track.clientWidth,behavior:'smooth'});}
+  for(var i=0;i<n;i++){
+    var b=document.createElement('button'); b.type='button'; b.setAttribute('aria-label','Ver foto '+(i+1));
+    b.addEventListener('click',go.bind(null,i)); dots.appendChild(b);
+  }
+  function upd(){var c=cur();[].forEach.call(dots.children,function(b,j){b.classList.toggle('on',j===c);});}
+  track.addEventListener('scroll',upd); upd();
+  s.querySelector('.arrow-left').addEventListener('click',function(){go(cur()-1);});
+  s.querySelector('.arrow-right').addEventListener('click',function(){go(cur()+1);});
+});
+
+
+(function(){
+  var S='fill="none" stroke="#C97D8D" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"';
+  function ico(p){return '<svg width="22" height="22" viewBox="0 0 24 24" '+S+'>'+p+'</svg>';}
+  var P={
+    babero:{i:ico('<path d="M5 4c1 4 3 6 7 6s6-2 7-6"/><path d="M5 4l-1 9a8 8 0 0 0 16 0l-1-9"/>'),d:'Babero de muselina de algodón, suave e hipoalergénico, con broche ajustable.'},
+    porta:{i:ico('<circle cx="12" cy="5" r="2.5"/><path d="M12 7.5V10"/><circle cx="7" cy="14" r="2"/><circle cx="12" cy="16" r="2"/><circle cx="17" cy="14" r="2"/>'),d:'Con el nombre de tu bebé (hasta 5 letras), en silicona libre de BPA o madera natural.',n:'<a class="bm-link" href="#portachupetes">Ver modelos en la sección Portachupetes</a>'},
+    zapatitos:{i:ico('<path d="M4 6h7v6l7 2a2 2 0 0 1 2 2v2H4z"/><path d="M4 12h7"/>'),d:'Zapatitos tejidos con carita, suaves y abrigados para los primeros días.',n:'<span class="bm-note">Colores disponibles: rosa, celeste y beige.</span>'},
+    sonajero:{i:ico('<circle cx="12" cy="8" r="4.5"/><path d="M12 12.5V16"/><circle cx="12" cy="19" r="2.5"/>'),d:'Sonajero de tela suave y seguro, ideal para estimular y calmar al bebé.'},
+    trapito:{i:ico('<path d="M12 21s-7-4.35-9.5-8.5C.5 8.5 3 5 6.5 5c2 0 3.5 1 5.5 3 2-2 3.5-3 5.5-3C21 5 23.5 8.5 21.5 12.5 19 16.65 12 21 12 21z"/>'),d:'Trapito de apego de muselina, suave y abrazable, su compañero para dormir.',n:'<span class="bm-note">Colores disponibles: rosa, celeste y beige.</span>'},
+    estuche:{i:ico('<circle cx="12" cy="13" r="7"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="6.5" r="2.5"/>'),d:'Estuche de silicona suave para guardar y llevar el chupete siempre limpio.',n:'<span class="bm-note">Colores disponibles: rosa, celeste y beige.</span>'},
+    mordillo:{i:ico('<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="3"/>'),d:'Mordillo de silicona y madera natural, seguro y libre de BPA para aliviar las encías.',n:'<span class="bm-note">Colores disponibles: rosa, celeste y beige.</span>'},
+    manta:{i:ico('<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 10h16M4 14h16"/>'),d:'Manta de muselina, liviana y suave, ideal para abrigar al bebé.',n:'<span class="bm-note">Colores disponibles: rosa, celeste, beige y estampada.</span>'},
+    cepillo:{i:ico('<rect x="6" y="3" width="6" height="12" rx="3"/><path d="M9 15v6"/><path d="M16 4v17M14 5h4M14 9h4M14 13h4"/>'),d:'Set de cepillo de cerdas suaves y peine de madera natural para cuidar el pelito del bebé.'},
+    sonPel:{i:ico('<circle cx="12" cy="7" r="4"/><path d="M12 11v4"/><rect x="9" y="15" width="6" height="6" rx="3"/>'),d:'Sonajero de peluche suave, con sonido delicado para estimular al bebé.'},
+    peluche:{i:ico('<path d="M8 9c-1-4 0-6 2-6s2 3 1 6"/><path d="M13 9c-1-3 0-6 2-6s2 3 1 6"/><circle cx="12" cy="13" r="4"/><path d="M8 21l1-4h6l1 4"/>'),d:'Conejo de peluche suave y seguro, el compañero ideal para abrazar.'},
+    muneco:{i:ico('<path d="M8 9c-1-4 0-6 2-6s2 3 1 6"/><path d="M13 9c-1-3 0-6 2-6s2 3 1 6"/><circle cx="12" cy="13" r="4"/><path d="M8 21l1-4h6l1 4"/>'),d:'Muñeco o trapito de apego, tu elección. Suave y seguro para abrazar.'}
+  };
+  var IM=window.MIMG||{};
+  P.trapito.img=IM.trapito; P.zapatitos.img=IM.zapatitos; P.cepillo.img=IM.peine; P.babero.img=IM.babero; P.manta.img=IM.manta; P.estuche.img=IM.guarda; P.sonajero.img=IM.sonajero; P.mordillo.img=IM.mordillo; P.porta.img=IM.porta;
+  function pick(t){
+    t=t.toLowerCase();
+    if(t.indexOf('manta')>-1)return P.manta;
+    if(t.indexOf('cepillo')>-1||t.indexOf('peine')>-1)return P.cepillo;
+    if(t.indexOf('sonajero de peluche')>-1)return P.sonPel;
+    if(t.indexOf('peluche')>-1)return P.peluche;
+    if(t.indexOf('estuche')>-1)return P.estuche;
+    if(t.indexOf('mordillo')>-1)return P.mordillo;
+    if(t.indexOf('babero')>-1)return P.babero;
+    if(t.indexOf('portachupete')>-1)return P.porta;
+    if(t.indexOf('zapatito')>-1)return P.zapatitos;
+    if(t.indexOf('sonajero')>-1)return P.sonajero;
+    if(t.indexOf('mu\u00f1eco')>-1)return P.muneco;
+    return P.trapito;
+  }
+  var ov=document.getElementById('boxModal');
+  if(!ov) return; // solo en la página de inicio
+
+  // Precios y boxes activas desde el admin; si la API no responde quedan los del HTML
+  fetch('/api/boxes').then(function(r){return r.ok?r.json():[];}).then(function(list){
+    if(!list.length) return;
+    var m={}; list.forEach(function(b){m[b.nombre]=b;});
+    document.querySelectorAll('.box-card').forEach(function(card){
+      var b=m[card.querySelector('h3').textContent.trim()];
+      if(!b){card.style.display='none';return;}
+      card.querySelector('.box-price').textContent='$'+b.precio;
+      card.dataset.boxId=b.id;
+    });
+  }).catch(function(){});
+  var actual=null;
+  function open(card){
+    actual=card;
+    var img=card.querySelector('.box-photo img');
+    document.getElementById('bmImg').src=img?img.src:'';
+    var t=card.querySelector('h3').textContent;
+    document.getElementById('bmImg').alt=t;
+    document.getElementById('bmTitle').textContent=t;
+    track('box_ver',t);
+    document.getElementById('bmPrice').textContent=card.querySelector('.box-price').textContent;
+    var box=document.getElementById('bmItems'); box.innerHTML='';
+    card.querySelectorAll('.box-items li').forEach(function(li){
+      var n=li.textContent, p=pick(n), d=document.createElement('div');
+      d.className='bm-item';
+      d.innerHTML=(p.img?'<div class="bm-ico ph"><img alt="" src="'+p.img+'"></div>':'<div class="bm-ico">'+p.i+'</div>')+'<div><h4></h4><p>'+p.d+'</p>'+(p.n||'')+'</div>';
+      d.querySelector('h4').textContent=n;
+      var lk=d.querySelector('.bm-link'); if(lk) lk.addEventListener('click',close);
+      box.appendChild(d);
+    });
+    // Sin id no hay backend: solo queda consultar por Instagram
+    document.getElementById('bmBuy').hidden=!card.dataset.boxId;
+    document.getElementById('bmNameWrap').hidden=!/portachupete/i.test(card.querySelector('.box-items').textContent);
+    document.getElementById('bmName').value=''; document.getElementById('bmError').textContent='';
+    ov.classList.add('open'); ov.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden';
+  }
+  function close(){ov.classList.remove('open');ov.setAttribute('aria-hidden','true');document.body.style.overflow='';}
+  document.querySelectorAll('.box-card').forEach(function(card){
+    var hint=document.createElement('div'); hint.className='box-hint'; hint.textContent='Ver qué trae';
+    var cta=card.querySelector('.box-cta'); if(cta) cta.parentNode.insertBefore(hint,cta);
+    card.addEventListener('click',function(e){ if(e.target.closest('.box-cta'))return; open(card); });
+  });
+  document.getElementById('bmClose').addEventListener('click',close);
+  document.getElementById('bmAdd').addEventListener('click',function(){
+    var nombre=document.getElementById('bmName').value.trim();
+    if(!document.getElementById('bmNameWrap').hidden&&!nombre){
+      document.getElementById('bmError').textContent='Escribí el nombre del bebé para el portachupete.';
+      document.getElementById('bmName').focus(); return;
+    }
+    Carrito.agregar({tipo:'box',id:actual.dataset.boxId,nombreBebe:nombre||undefined});
+    close(); Carrito.abrir();
+  });
+  ov.addEventListener('click',function(e){if(e.target===ov)close();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
+})();
+
+</script>
+<script>
+// Carrito compartido entre páginas: vive en localStorage y se muestra en un panel lateral (derecha).
+// Los precios siempre los calcula el servidor (/api/carrito).
+(function(){
+  var KEY='manolito-carrito';
+  function leer(){try{return JSON.parse(localStorage.getItem(KEY))||[];}catch(e){return [];}}
+  function guardar(items){
+    try{localStorage.setItem(KEY,JSON.stringify(items));}catch(e){}
+    contador(); window.dispatchEvent(new Event('carrito'));
+  }
+  function igual(a,b){return a.tipo===b.tipo&&a.id===b.id&&(a.color||'')===(b.color||'')&&(a.nombreBebe||'')===(b.nombreBebe||'');}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function plata(n){return '$'+Number(n||0).toLocaleString('es-UY');}
+
+  function contador(){
+    var n=leer().reduce(function(s,i){return s+i.cantidad;},0);
+    document.querySelectorAll('.cart-count').forEach(function(el){el.textContent=n;el.hidden=!n;});
+  }
+
+  function cotizar(pago){
+    return fetch('/api/carrito',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:leer(),pago:pago||'transferencia'})})
+      .then(function(r){if(!r.ok)throw new Error('No pudimos cargar los precios. Probá de nuevo en un rato.');return r.json();});
+  }
+
+  // Líneas del carrito; editable = con cantidades y "Quitar"
+  function lineasHTML(items,c,editable){
+    var porI={},avI={};
+    c.lineas.forEach(function(l){porI[l.i]=l;});
+    c.avisos.forEach(function(a){avI[a.i]=a;});
+    return items.map(function(it,i){
+      var l=porI[i], av=avI[i];
+      var detalle=[it.color,it.nombreBebe?'“'+it.nombreBebe+'”':''].filter(Boolean).join(' · ');
+      return '<article class="cart-line'+(av?' bad':'')+(editable?'':' ro')+'" data-i="'+i+'">'+
+        (l&&l.foto?'<img src="'+esc(l.foto)+'" alt="">':'<div class="cart-ph"></div>')+
+        '<div class="cart-info"><h4>'+esc(l?l.nombre:(av&&av.nombre)||'Producto no disponible')+'</h4>'+
+          (detalle?'<p class="cart-meta">'+esc(detalle)+'</p>':'')+
+          (av?'<p class="cart-error">'+esc(av.error)+'</p>':
+           editable?'<div class="qty"><button type="button" data-d="-1" aria-label="Uno menos">−</button><span>'+it.cantidad+'</span><button type="button" data-d="1" aria-label="Uno más">+</button></div>':
+           '<p class="cart-meta">Cantidad: '+it.cantidad+'</p>')+
+        '</div>'+
+        '<div class="cart-price">'+(l?'<b>'+plata(l.total)+'</b>':'')+(editable?'<button type="button" class="cart-remove">Quitar</button>':'')+'</div>'+
+      '</article>';
+    }).join('');
+  }
+
+  // ---------- Panel lateral ----------
+  var panel, overlay, abierto=false, volverA=null;
+
+  function crearPanel(){
+    overlay=document.createElement('div'); overlay.className='drawer-overlay';
+    panel=document.createElement('aside');
+    panel.className='drawer'; panel.setAttribute('role','dialog'); panel.setAttribute('aria-modal','true');
+    panel.setAttribute('aria-labelledby','drawerTitle'); panel.setAttribute('aria-hidden','true');
+    panel.innerHTML=
+      '<header class="drawer-head"><h3 id="drawerTitle">Tu carrito</h3><button type="button" class="drawer-close" aria-label="Cerrar carrito">&times;</button></header>'+
+      '<div class="drawer-body" id="drawerLines"></div>'+
+      '<footer class="drawer-foot" id="drawerFoot">'+
+        '<div class="cart-total"><span>Subtotal</span><b id="drawerSub">$0</b></div>'+
+        '<p class="cart-error" id="drawerError"></p>'+
+        '<a class="btn btn-green" id="drawerGo" href="#checkout">Ir al checkout</a>'+
+        '<p class="cart-note">El envío y el medio de pago se eligen en el checkout.</p>'+
+      '</footer>';
+    document.body.appendChild(overlay); document.body.appendChild(panel);
+
+    overlay.addEventListener('click',cerrar);
+    panel.querySelector('.drawer-close').addEventListener('click',cerrar);
+    document.addEventListener('keydown',function(e){if(e.key==='Escape'&&abierto)cerrar();});
+    // En la página de checkout el botón solo cierra el panel
+    panel.querySelector('#drawerGo').addEventListener('click',function(e){
+      if(location.hash==='#checkout'){e.preventDefault();cerrar();}
+    });
+    panel.querySelector('#drawerLines').addEventListener('click',function(e){
+      var line=e.target.closest('.cart-line'), b=e.target.closest('button'); if(!line||!b) return;
+      var items=leer(), i=+line.dataset.i;
+      if(b.classList.contains('cart-remove')) items.splice(i,1);
+      else if(b.dataset.d) items[i].cantidad=Math.max(1,Math.min(20,items[i].cantidad+(+b.dataset.d)));
+      guardar(items);
+    });
+  }
+
+  function pintarPanel(){
+    var items=leer(), cuerpo=panel.querySelector('#drawerLines');
+    panel.querySelector('#drawerFoot').hidden=!items.length;
+    if(!items.length){
+      cuerpo.innerHTML='<div class="drawer-empty"><p>Tu carrito está vacío.</p><a class="btn btn-outline btn-sm" href="#boxes">Ver boxes</a><a class="btn btn-outline btn-sm" href="#arma-tu-box">Armá tu box</a></div>';
+      return;
+    }
+    cotizar().then(function(c){
+      cuerpo.innerHTML=lineasHTML(items,c,true);
+      panel.querySelector('#drawerSub').textContent=plata(c.subtotal);
+      var malos=c.avisos.length;
+      panel.querySelector('#drawerError').textContent=malos?'Quitá los productos marcados para continuar.':'';
+      panel.querySelector('#drawerGo').classList.toggle('disabled',!!malos);
+    }).catch(function(err){cuerpo.innerHTML='<p class="cart-error">'+esc(err.message)+'</p>';});
+  }
+
+  function abrir(){
+    if(!panel) crearPanel();
+    volverA=document.activeElement;
+    pintarPanel();
+    abierto=true;
+    panel.setAttribute('aria-hidden','false');
+    panel.classList.add('open'); overlay.classList.add('open');
+    document.body.style.overflow='hidden';
+    panel.querySelector('.drawer-close').focus();
+  }
+  function cerrar(){
+    abierto=false;
+    panel.setAttribute('aria-hidden','true');
+    panel.classList.remove('open'); overlay.classList.remove('open');
+    document.body.style.overflow='';
+    if(volverA&&volverA.focus) volverA.focus();
+  }
+
+  window.addEventListener('carrito',function(){if(abierto)pintarPanel();});
+  window.addEventListener('storage',function(e){if(e.key===KEY){contador();window.dispatchEvent(new Event('carrito'));}}); // otra pestaña
+
+  // El ícono del header abre el panel (sin JS, el link lleva al checkout)
+  document.querySelectorAll('.cart-link').forEach(function(a){
+    a.addEventListener('click',function(e){e.preventDefault();abrir();});
+  });
+
+  window.Carrito={
+    items:leer,
+    guardar:guardar,
+    vaciar:function(){guardar([]);},
+    cotizar:cotizar,
+    lineasHTML:lineasHTML,
+    abrir:abrir,
+    // item: {tipo:'producto'|'box', id, cantidad?, color?, nombreBebe?}. Abre el panel para mostrar lo agregado.
+    agregar:function(item){
+      var items=leer(), nuevo={tipo:item.tipo,id:item.id,cantidad:item.cantidad||1};
+      if(item.color) nuevo.color=item.color;
+      if(item.nombreBebe) nuevo.nombreBebe=item.nombreBebe;
+      var ya=items.filter(function(x){return igual(x,nuevo);})[0];
+      if(ya) ya.cantidad=Math.min(20,ya.cantidad+nuevo.cantidad); else items.push(nuevo);
+      guardar(items);
+    }
+  };
+
+  contador();
+})();
+
+</script>
+<script>
+(function(){
+  var S='fill="none" stroke="#C97D8D" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"';
+  function ico(p){return '<svg width="22" height="22" viewBox="0 0 24 24" '+S+'>'+p+'</svg>';}
+  var COL=['Rosa','Celeste','Beige'], COL4=['Rosa','Celeste','Beige','Estampada'], IM=window.MIMG||{};
+  var P=[
+    {id:'trapito',n:'Trapito de apego',p:890,c:COL,img:IM.trapito,i:'<path d="M12 21s-7-4.35-9.5-8.5C.5 8.5 3 5 6.5 5c2 0 3.5 1 5.5 3 2-2 3.5-3 5.5-3C21 5 23.5 8.5 21.5 12.5 19 16.65 12 21 12 21z"/>'},
+    {id:'zapatitos',n:'Zapatitos tejidos',p:490,c:COL,img:IM.zapatitos,i:'<path d="M4 6h7v6l7 2a2 2 0 0 1 2 2v2H4z"/><path d="M4 12h7"/>'},
+    {id:'babero',n:'Babero de algodón',p:190,img:IM.babero,i:'<path d="M5 4c1 4 3 6 7 6s6-2 7-6"/><path d="M5 4l-1 9a8 8 0 0 0 16 0l-1-9"/>'},
+    {id:'manta',n:'Manta de muselina',p:890,c:COL4,img:IM.manta,i:'<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 10h16M4 14h16"/>'},
+    {id:'peine',n:'Set de peine bamboo',p:690,img:IM.peine,i:'<rect x="6" y="3" width="6" height="12" rx="3"/><path d="M9 15v6"/><path d="M16 4v17M14 5h4M14 9h4M14 13h4"/>'},
+    {id:'sonajero',n:'Sonajero de tela',p:690,img:IM.sonajero,i:'<circle cx="12" cy="7" r="4"/><path d="M12 11v4"/><rect x="9" y="15" width="6" height="6" rx="3"/>'},
+    {id:'guarda',n:'Guardachupete de silicona',p:390,c:COL,img:IM.guarda,i:'<circle cx="12" cy="13" r="7"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="6.5" r="2.5"/>'},
+    {id:'mordillo',n:'Mordillo de silicona',p:490,c:COL,img:IM.mordillo,i:'<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="3"/>'},
+    {id:'porta',n:'Portachupete personalizado',p:790,name:1,img:IM.porta,i:'<circle cx="12" cy="5" r="2.5"/><path d="M12 7.5V10"/><circle cx="7" cy="14" r="2"/><circle cx="12" cy="16" r="2"/><circle cx="17" cy="14" r="2"/>'}
+  ];
+  var st={}; // id -> {color,name}
+  var grid=document.getElementById('armaGrid');
+
+  function letters(s){return (s||'').replace(/\s+/g,'').length;}
+  function price(p){
+    if(p.name){var l=letters(st[p.id]&&st[p.id].name);return p.p+(l>5?(l-5)*20:0);}
+    return p.p;
+  }
+  function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e;}
+
+  P.forEach(function(p){
+    var card=el('div','ap'); card.id='ap-'+p.id;
+    var top=el('div','ap-top');
+    if(p.img){var im=document.createElement('img');im.className='ap-img';im.alt=p.n;im.src=p.img;card.appendChild(im);}
+    var ic=el('div','ap-ico'); ic.innerHTML=ico(p.i);
+    var tx=el('div'); tx.appendChild(el('h4',null,p.n)); var pr=el('div','ap-price','$'+p.p); pr.id='apr-'+p.id; tx.appendChild(pr);
+    if(!p.img) top.appendChild(ic); top.appendChild(tx); card.appendChild(top);
+    if(p.c){
+      var o=el('div','ap-opt'); o.appendChild(el('small',null,'Color'));
+      var ch=el('div','ap-chips');
+      p.c.forEach(function(cn){
+        var b=el('button','chip',cn); b.type='button';
+        b.addEventListener('click',function(){
+          st[p.id]=st[p.id]||{}; st[p.id].color=(st[p.id].color===cn)?null:cn;
+          if(!st[p.id].on){st[p.id].on=true;}
+          render();
+        });
+        ch.appendChild(b);
+      });
+      o.appendChild(ch); card.appendChild(o);
+    }
+    if(p.name){
+      var o2=el('div','ap-opt'); o2.appendChild(el('small',null,'Nombre del bebé (hasta 5 letras, $20 por letra extra)'));
+      var inp=document.createElement('input'); inp.type='text'; inp.maxLength=20; inp.placeholder='Ej: Lucas';
+      inp.addEventListener('input',function(){
+        st[p.id]=st[p.id]||{}; st[p.id].name=inp.value.trim();
+        if(inp.value.trim()&&!st[p.id].on){st[p.id].on=true;}
+        render();
+      });
+      o2.appendChild(inp); card.appendChild(o2);
+    }
+    var btn=el('button','ap-btn','Agregar'); btn.type='button';
+    btn.addEventListener('click',function(){
+      st[p.id]=st[p.id]||{}; st[p.id].on=!st[p.id].on; if(st[p.id].on)track('arma_agregar',p.id); render();
+    });
+    card.appendChild(btn);
+    grid.appendChild(card);
+  });
+
+  function lineText(p){
+    var s=st[p.id]||{}, t=p.n;
+    if(p.c) t+=' ('+(s.color?s.color.toLowerCase():'color a elegir')+')';
+    if(p.name) t+=' '+(s.name?'"'+s.name+'"':'(nombre a definir)');
+    return t;
+  }
+
+  function render(){
+    var total=0,count=0,list=document.getElementById('armaList'); list.innerHTML='';
+    P.forEach(function(p){
+      var s=st[p.id]||{}, card=document.getElementById('ap-'+p.id);
+      card.classList.toggle('on',!!s.on);
+      if(p.agotado) s.on=false;
+      var bt=card.querySelector('.ap-btn'); bt.disabled=!!p.agotado; bt.textContent=p.agotado?'Sin stock':(s.on?'Quitar':'Agregar');
+      card.querySelectorAll('.chip').forEach(function(b){b.classList.toggle('sel',!!(s.color&&b.textContent===s.color));});
+      document.getElementById('apr-'+p.id).textContent='$'+price(p);
+      if(s.on){
+        count++; total+=price(p);
+        var row=el('div','arma-line'); row.appendChild(el('span',null,lineText(p)));
+        row.appendChild(el('b',null,'$'+price(p)));
+        var x=el('button','arma-x','×'); x.type='button'; x.setAttribute('aria-label','Quitar '+p.n);
+        x.addEventListener('click',function(){st[p.id].on=false;render();});
+        row.appendChild(x); list.appendChild(row);
+      }
+    });
+    document.getElementById('armaTotal').textContent='$'+total;
+    document.getElementById('armaTotalRow').style.display=count?'flex':'none';
+    document.getElementById('armaSend').style.display=count?'block':'none';
+    document.getElementById('armaCart').style.display=count?'block':'none';
+    document.getElementById('armaNote').textContent=count?'Agregalo al carrito para pedirlo online, o mandanos tu armado por Instagram.':'Todavía no agregaste nada. ¡Empezá tocando "Agregar"!';
+    document.getElementById('armaBarN').textContent=count;
+    document.getElementById('armaBarT').textContent='$'+total;
+    bar.dataset.count=count; updBar();
+  }
+
+  var bar=document.getElementById('armaBar'), sec=document.getElementById('arma'), visible=false;
+  function updBar(){bar.classList.toggle('show',+bar.dataset.count>0 && !visible);}
+  if('IntersectionObserver' in window){
+    new IntersectionObserver(function(en){visible=en[0].isIntersecting;updBar();},{threshold:0.05}).observe(sec);
+  }
+
+  function toast(m){var t=document.getElementById('armaToast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},4500);}
+
+  document.getElementById('armaCart').addEventListener('click',function(){
+    var elegidos=P.filter(function(p){return st[p.id]&&st[p.id].on;});
+    for(var k=0;k<elegidos.length;k++){
+      var p=elegidos[k], s=st[p.id];
+      if(p.c&&!s.color){toast('Elegí el color de '+p.n+'.');return;}
+      if(p.name&&!s.name){toast('Escribí el nombre del bebé para el portachupete.');return;}
+    }
+    elegidos.forEach(function(p){
+      var s=st[p.id];
+      Carrito.agregar({tipo:'producto',id:p.id,color:s.color||undefined,nombreBebe:p.name?s.name:undefined});
+      s.on=false;
+    });
+    render();
+    Carrito.abrir();
+  });
+
+  document.getElementById('armaSend').addEventListener('click',function(){
+    var lines=['¡Hola Manolito! Quiero armar mi box:'],total=0;
+    P.forEach(function(p){var s=st[p.id]; if(s&&s.on){lines.push('- '+lineText(p)+' — $'+price(p)); total+=price(p);}});
+    lines.push('Total: $'+total);
+    var msg=lines.join('\n'), ok=false;
+    track('arma_enviar');
+    try{ if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(msg);ok=true;} }catch(e){}
+    if(!ok){
+      try{var ta=document.createElement('textarea');ta.value=msg;document.body.appendChild(ta);ta.select();ok=document.execCommand('copy');document.body.removeChild(ta);}catch(e){}
+    }
+    toast(ok?'¡Pedido copiado! Pegalo en el chat de Instagram.':'Abrimos Instagram. Contanos qué productos elegiste.');
+    window.open('https://instagram.com/manolito_uy','_blank','noopener');
+  });
+  render();
+
+  // Precio, stock y productos activos desde el admin; si la API no responde quedan los de arriba
+  fetch('/api/productos').then(function(r){return r.ok?r.json():[];}).then(function(list){
+    if(!list.length) return;
+    var m={}; list.forEach(function(d){m[d.id]=d;});
+    P.forEach(function(p){
+      var d=m[p.id], card=document.getElementById('ap-'+p.id);
+      if(!d){card.style.display='none';if(st[p.id])st[p.id].on=false;return;}
+      p.p=d.precio; p.agotado=d.stock===0;
+      var im=card.querySelector('.ap-img'); if(im&&d.foto) im.src=d.foto;
+    });
+    render();
+  }).catch(function(){});
+})();
+
+</script>
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id);};
+  function plata(n){return '$'+Number(n||0).toLocaleString('es-UY');}
+  var form=$('checkout'), cot=null;
+
+  function mostrar(cual){
+    $('checkoutVacio').hidden=cual!=='vacio';
+    $('checkoutLleno').hidden=cual!=='lleno';
+    $('checkoutGracias').hidden=cual!=='gracias';
+  }
+
+  function pago(){var r=form.querySelector('input[name=pago]:checked');return r?r.value:'transferencia';}
+  function entrega(){return form.querySelector('input[name=entrega]:checked').value;}
+
+  // ---- Resumen del pedido (se edita desde el panel del carrito) ----
+  function cotizar(){
+    var items=Carrito.items();
+    if(!items.length){mostrar('vacio');return;}
+    mostrar('lleno');
+    Carrito.cotizar(pago()).then(function(c){
+      cot=c;
+      $('resumenLineas').innerHTML=Carrito.lineasHTML(items,c,false);
+      $('payMP').hidden=!c.mercadopago;
+      if(!c.mercadopago&&pago()==='mercadopago'){form.querySelector('input[name=pago][value=transferencia]').checked=true;cotizar();return;}
+      $('totSub').textContent=plata(c.subtotal);
+      $('rowRecargo').hidden=!c.recargo; $('totRecargo').textContent=plata(c.recargo);
+      $('totTotal').textContent=plata(c.total);
+      $('cartError').textContent=c.avisos.length?'Hay productos con problemas: tocá "Editar" y quitalos.':'';
+    }).catch(function(err){$('resumenLineas').innerHTML='<p class="cart-error">'+err.message+'</p>';});
+  }
+  window.addEventListener('carrito',cotizar);
+  $('editarCarrito').addEventListener('click',function(){Carrito.abrir();});
+
+  // ---- Formulario ----
+  function actualizarDireccion(){
+    var pick=entrega()==='pickup';
+    $('dirWrap').hidden=pick; form.direccion.required=!pick;
+  }
+  form.addEventListener('change',function(e){
+    if(e.target.name==='entrega') actualizarDireccion();
+    if(e.target.name==='pago') cotizar();
+  });
+  actualizarDireccion();
+
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    $('cartError').textContent='';
+    if(!form.reportValidity()) return;
+    if(!cot||cot.avisos.length){$('cartError').textContent='Hay productos con problemas: tocá "Editar" y quitalos.';return;}
+    var btn=$('confirmar'); btn.disabled=true; btn.textContent='Enviando…';
+    var body={
+      cliente:{nombre:form.nombre.value,telefono:form.telefono.value,email:form.email.value,direccion:entrega()==='pickup'?undefined:form.direccion.value},
+      entrega:entrega(), pago:pago(), items:Carrito.items()
+    };
+    fetch('/api/pedidos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+      .then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error(d.detalles?d.detalles.join(' · '):d.error);return d;});})
+      .then(function(d){
+        window.removeEventListener('carrito',cotizar);
+        Carrito.vaciar();
+        if(d.pagoUrl){location.href=d.pagoUrl;return;}
+        gracias(d.id,'¡Gracias! Recibimos tu pedido.','Total: '+plata(d.total)+'. Te mandamos el detalle a '+body.cliente.email+'.',d.instrucciones);
+      })
+      .catch(function(err){$('cartError').textContent=err.message||'No pudimos enviar el pedido. Probá de nuevo.';})
+      .then(function(){btn.disabled=false;btn.textContent='Confirmar pedido';});
+  });
+
+  function gracias(id,titulo,texto,extra){
+    window.removeEventListener('carrito',cotizar);
+    mostrar('gracias');
+    $('gTitulo').textContent=titulo;
+    $('gNumero').textContent='Pedido #'+id;
+    $('gTexto').textContent=texto;
+    $('gExtra').textContent=extra||''; $('gExtra').hidden=!extra;
+    window.scrollTo(0,0);
+  }
+
+  // ---- Vuelta desde Mercado Pago: checkout.html?pedido=ID&pago=ok|pendiente|error ----
+  var q=new URLSearchParams(location.search);
+  if(q.get('pedido')){
+    var id=q.get('pedido'), st=q.get('pago');
+    if(st==='ok') gracias(id,'¡Pago recibido!','Gracias por tu compra. Te mandamos el detalle por mail.');
+    else if(st==='pendiente') gracias(id,'Tu pago está pendiente','Cuando Mercado Pago lo confirme te avisamos por mail.');
+    else gracias(id,'El pago no se completó','Tu pedido quedó guardado. Escribinos por Instagram y lo coordinamos por otro medio.');
+  } else cotizar();
+})();
+
+</script>
+<script>
+// ===== Vista de diseño: navegación entre "páginas" dentro del mismo archivo =====
+(function(){
+  var PAGINAS=['inicio','arma-tu-box','checkout'];
+  function ir(){
+    var h=decodeURIComponent(location.hash.slice(1))||'inicio', pag=h, el=null;
+    if(PAGINAS.indexOf(h)<0){el=document.getElementById(h);var w=el&&el.closest('[data-page]');pag=w?w.dataset.page:'inicio';}
+    document.querySelectorAll('[data-page]').forEach(function(p){p.hidden=p.dataset.page!==pag;});
+    document.querySelectorAll('.diseno-nav a').forEach(function(a){a.classList.toggle('on',a.getAttribute('href')==='#'+pag);});
+    var x=document.querySelector('.drawer.open .drawer-close'); if(x) x.click();
+    if(el) el.scrollIntoView(); else window.scrollTo(0,0);
+  }
+  window.addEventListener('hashchange',ir); ir();
+})();
+</script>
+</body>
+</html>

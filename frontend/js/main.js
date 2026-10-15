@@ -137,11 +137,11 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
     function mark(i){
       if(i===cur) return; cur=i;
       [].forEach.call(dots.children,function(d,k){d.classList.toggle('on',k===i);});
-      sw.forEach(function(b,k){b.classList.toggle('on',k===i);});
+      sw.forEach(function(b,k){b.classList.toggle('on',(b.dataset.slide!==undefined?+b.dataset.slide:k)===i);});
       imgs.forEach(function(im,k){im.classList.toggle('cur',k===i);});
     }
     track.addEventListener('scroll',function(){ mark(Math.round(track.scrollLeft/(track.clientWidth||1))); },{passive:true});
-    sw.forEach(function(b,k){ b.addEventListener('click',function(e){e.stopPropagation();go(k);}); });
+    sw.forEach(function(b,k){ b.addEventListener('click',function(e){e.stopPropagation();go(b.dataset.slide!==undefined?+b.dataset.slide:k);}); });
     ph.querySelector('.bs-prev').addEventListener('click',function(e){e.stopPropagation();go(cur-1);});
     ph.querySelector('.bs-next').addEventListener('click',function(e){e.stopPropagation();go(cur+1);});
     mark(0);

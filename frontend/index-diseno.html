@@ -581,7 +581,7 @@
 
       <div class="box-card">
         <div class="box-photo bs"><div class="bs-track"><img src="assets/img/boxes/mini-box.jpg" alt="Mini box, color rosa"><img src="assets/img/boxes/mini-box-celeste.jpg" alt="Mini box, color celeste" loading="lazy"><img src="assets/img/boxes/mini-box-verde.jpg" alt="Mini box, color verde" loading="lazy"><img src="assets/img/boxes/mini-box-beige.jpg" alt="Mini box, color beige" loading="lazy"></div><button type="button" class="bs-arrow bs-prev" aria-label="Foto anterior">&#8249;</button><button type="button" class="bs-arrow bs-next" aria-label="Foto siguiente">&#8250;</button><div class="bs-dots"></div></div>
-        <div class="box-colors" aria-label="Colores disponibles: rosa, celeste, verde, beige"><span class="bc-l">Colores</span><button type="button" class="bc" style="background:#EDB6C1" title="Rosa" aria-label="Ver foto en color rosa"></button><button type="button" class="bc" style="background:#B7D2EA" title="Celeste" aria-label="Ver foto en color celeste"></button><button type="button" class="bc" style="background:#B8CDAC" title="Verde" aria-label="Ver foto en color verde"></button><button type="button" class="bc" style="background:#E4D3BA" title="Beige" aria-label="Ver foto en color beige"></button></div>
+        <div class="box-colors" aria-label="Colores disponibles: rosa, celeste, verde, beige"><span class="bc-l">Colores</span><button type="button" class="bc" data-slide="0" style="background:#EDB6C1" title="Rosa" aria-label="Ver foto en color rosa"></button><button type="button" class="bc" data-slide="1" style="background:#B7D2EA" title="Celeste" aria-label="Ver foto en color celeste"></button><button type="button" class="bc" data-slide="2" style="background:#B8CDAC" title="Verde" aria-label="Ver foto en color verde"></button><button type="button" class="bc" data-slide="3" style="background:#E4D3BA" title="Beige" aria-label="Ver foto en color beige"></button></div>
         <div class="box-body">
           <div class="box-title-row"><h3>Mini box</h3><span class="box-price">$890</span></div>
           <ul class="box-items">
@@ -593,10 +593,10 @@
       </div>
 
       <div class="box-card">
-        <div class="box-photo"><img src="assets/img/boxes/box-dulce-llegada.jpg" alt="Box Dulce llegada" loading="lazy"></div>
-        <div class="box-colors" aria-label="Colores disponibles: rosa, celeste, verde, beige"><span class="bc-l">Colores</span><span class="bc" style="background:#EDB6C1" title="Rosa"></span><span class="bc" style="background:#B7D2EA" title="Celeste"></span><span class="bc" style="background:#B8CDAC" title="Verde"></span><span class="bc" style="background:#E4D3BA" title="Beige"></span></div>
+        <div class="box-photo bs"><div class="bs-track"><img src="assets/img/boxes/box-dulce-llegada.jpg" alt="Box detalles especiales, portada"><img src="assets/img/boxes/box-dulce-llegada-rosa.jpg" alt="Box detalles especiales, color rosa" loading="lazy"><img src="assets/img/boxes/box-dulce-llegada-celeste.jpg" alt="Box detalles especiales, color celeste" loading="lazy"><img src="assets/img/boxes/box-dulce-llegada-verde.jpg" alt="Box detalles especiales, colores verde y beige" loading="lazy"></div><button type="button" class="bs-arrow bs-prev" aria-label="Foto anterior">&#8249;</button><button type="button" class="bs-arrow bs-next" aria-label="Foto siguiente">&#8250;</button><div class="bs-dots"></div></div>
+        <div class="box-colors" aria-label="Colores disponibles: rosa, celeste, verde, beige"><span class="bc-l">Colores</span><button type="button" class="bc" data-slide="1" style="background:#EDB6C1" title="Rosa" aria-label="Ver foto en color rosa"></button><button type="button" class="bc" data-slide="2" style="background:#B7D2EA" title="Celeste" aria-label="Ver foto en color celeste"></button><button type="button" class="bc" data-slide="3" style="background:#B8CDAC" title="Verde" aria-label="Ver foto en color verde"></button><button type="button" class="bc" data-slide="3" style="background:#E4D3BA" title="Beige" aria-label="Ver foto en color beige"></button></div>
         <div class="box-body">
-          <div class="box-title-row"><h3>Box Dulce llegada</h3><span class="box-price">$1390</span></div>
+          <div class="box-title-row"><h3>Box detalles especiales</h3><span class="box-price">$1490</span></div>
           <ul class="box-items">
             <li>Zapatitos tejidos</li>
             <li>Babero de algodón</li>
@@ -995,7 +995,7 @@
   var P='Portachupete personalizado';
   var BOXES=[
     box('mini-box','Mini box',890,'mini-box.jpg',['Babero de algodón',P]),
-    box('dulce-llegada','Box Dulce llegada',1390,'box-dulce-llegada.jpg',['Zapatitos tejidos','Babero de algodón',P]),
+    box('dulce-llegada','Box detalles especiales',1490,'box-dulce-llegada.jpg',['Zapatitos tejidos','Babero de algodón',P]),
     box('esencial','Box Esencial',1490,'box-esencial.jpg',['Estuche de silicona para chupete','Mordillo de silicona y madera',P]),
     box('dulce-suenos','Box Dulce sueños',1590,'box-dulce-suenos.jpg',['Trapito de apego',P]),
     box('primeros-mimos','Box Primeros mimos',1990,'box-primeros-mimos.jpg',['Zapatitos tejidos','Babero de algodón','Sonajero de tela suave y seguro',P]),
@@ -1602,11 +1602,11 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
     function mark(i){
       if(i===cur) return; cur=i;
       [].forEach.call(dots.children,function(d,k){d.classList.toggle('on',k===i);});
-      sw.forEach(function(b,k){b.classList.toggle('on',k===i);});
+      sw.forEach(function(b,k){b.classList.toggle('on',(b.dataset.slide!==undefined?+b.dataset.slide:k)===i);});
       imgs.forEach(function(im,k){im.classList.toggle('cur',k===i);});
     }
     track.addEventListener('scroll',function(){ mark(Math.round(track.scrollLeft/(track.clientWidth||1))); },{passive:true});
-    sw.forEach(function(b,k){ b.addEventListener('click',function(e){e.stopPropagation();go(k);}); });
+    sw.forEach(function(b,k){ b.addEventListener('click',function(e){e.stopPropagation();go(b.dataset.slide!==undefined?+b.dataset.slide:k);}); });
     ph.querySelector('.bs-prev').addEventListener('click',function(e){e.stopPropagation();go(cur-1);});
     ph.querySelector('.bs-next').addEventListener('click',function(e){e.stopPropagation();go(cur+1);});
     mark(0);

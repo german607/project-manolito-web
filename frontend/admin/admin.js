@@ -124,7 +124,10 @@ function tabla(sel, items, tipo) {
         <td><img class="thumb" src="../${esc(p.foto)}" alt="" ${conStock ? 'title="Cambiar foto"' : 'style="cursor:default"'}>${conStock ? '<input type="file" accept="image/jpeg,image/png,image/webp" hidden>' : ''}</td>
         <td>${esc(p.nombre)}</td>
         <td><input type="number" name="precio" min="0" step="10" value="${p.precio}" aria-label="Precio de ${esc(p.nombre)}"></td>
-        ${conStock ? `<td><input type="number" name="stock" min="0" placeholder="∞" value="${p.stock ?? ''}" aria-label="Stock de ${esc(p.nombre)}"></td>` : ''}
+        ${conStock ? `<td><div class="stock-cell">
+          <input type="number" name="stock" min="0" value="${p.stockCargado ?? ''}" ${p.controlaStock ? '' : 'disabled'} aria-label="Stock de ${esc(p.nombre)}">
+          <label class="switch" title="Activado: se vende sin mirar la cantidad"><input type="checkbox" name="ignorar" ${p.controlaStock ? '' : 'checked'}> <span>Ignorar stock</span></label>
+        </div></td>` : ''}
         <td><label class="switch"><input type="checkbox" name="activo" ${p.activo ? 'checked' : ''}> <span>${p.activo ? 'Sí' : 'No'}</span></label></td>
         <td><button class="btn sm" disabled>Guardar</button></td>
       </tr>`).join('')}</tbody>`;
@@ -132,16 +135,22 @@ function tabla(sel, items, tipo) {
   t.querySelectorAll('tbody tr').forEach(tr => {
     const btn = tr.querySelector('.btn');
     const campo = n => tr.querySelector(`[name=${n}]`);
-    tr.addEventListener('input', () => { btn.disabled = false; });
+    tr.addEventListener('input', e => {
+      btn.disabled = false;
+      if (e.target.name === 'ignorar') campo('stock').disabled = e.target.checked;
+    });
 
     btn.addEventListener('click', async () => {
       const body = { precio: Number(campo('precio').value), activo: campo('activo').checked };
-      if (conStock) body.stock = campo('stock').value === '' ? null : Number(campo('stock').value);
+      if (conStock) {
+        body.controlaStock = !campo('ignorar').checked;
+        body.stock = campo('stock').value === '' ? null : Number(campo('stock').value);
+      }
       try {
         const p = await api(`/${tipo}/${tr.dataset.id}`, { method: 'PATCH', body });
         btn.disabled = true;
         tr.classList.toggle('off', !p.activo);
-        tr.querySelector('.switch span').textContent = p.activo ? 'Sí' : 'No';
+        campo('activo').nextElementSibling.textContent = p.activo ? 'Sí' : 'No';
         toast('Guardado ✓');
       } catch (err) { toast(err.message); }
     });
@@ -172,11 +181,13 @@ async function cargarPedidos() {
   const estado = $('#filtroEstado').value;
   const pedidos = await api('/pedidos' + (estado ? '?estado=' + estado : ''));
   const fecha = s => new Date(s.replace(' ', 'T') + 'Z').toLocaleString('es-UY', { timeZone: 'America/Montevideo', dateStyle: 'short', timeStyle: 'short' });
+  // Sin pagar se cancela solo a las 2 h (VENCE_HORAS en backend/src/pedidos.ts)
+  const vence = s => new Date(new Date(s.replace(' ', 'T') + 'Z').getTime() + 2 * 3600_000).toLocaleTimeString('es-UY', { timeZone: 'America/Montevideo', hour: '2-digit', minute: '2-digit' });
   $('#listaPedidos').innerHTML = pedidos.length ? pedidos.map(p => `
     <article class="card pedido" data-id="${p.id}">
       <div>
         <h3>#${p.id} · ${esc(p.nombre)}</h3>
-        <p class="meta">${fecha(p.creado)} · ${esc(p.telefono)} · ${esc(p.email)}</p>
+        <p class="meta">${fecha(p.creado)}${p.estado === 'pendiente' ? ` · <b>vence ${vence(p.creado)}</b>` : ''} · ${esc(p.telefono)} · ${esc(p.email)}</p>
         <p class="meta">${ENTREGA[p.entrega] || esc(p.entrega)}${p.direccion ? ' — ' + esc(p.direccion) : ''} · Pago: ${esc(p.pago)}</p>
       </div>
       <div>

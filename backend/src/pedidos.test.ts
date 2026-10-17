@@ -18,8 +18,8 @@ test('portachupete: 5 letras incluidas, $20 por letra extra', async () => {
 });
 
 test('portachupete: guarda el modelo elegido en la línea', async () => {
-  const c = await cotizar([{ tipo: 'producto', id: 'porta', nombreBebe: 'Ema', modelo: 'Silicona, foto 2' }]);
-  assert.equal(c.lineas[0].modelo, 'Silicona, foto 2');
+  const c = await cotizar([{ tipo: 'producto', id: 'porta', nombreBebe: 'Ema', modelo: 'Silicona N° 2' }]);
+  assert.equal(c.lineas[0].modelo, 'Silicona N° 2');
 });
 
 test('suma productos, boxes y cantidades', async () => {

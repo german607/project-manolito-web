@@ -70,13 +70,13 @@
   });
 
   // Selector de modelos de portachupete: lista todas las láminas de fotos y se elige material + lámina + detalle
-  var LAM={Silicona:3,Madera:1}, mod=null;
+  var LAM={Silicona:22,Madera:9}, mod=null;
   function abrirModelos(p){
     var s=st[p.id]=st[p.id]||{};
     if(!mod){
       mod=el('div','pm'); mod.setAttribute('role','dialog'); mod.setAttribute('aria-modal','true');
       mod.innerHTML='<div class="pm-box"><button type="button" class="pm-x" aria-label="Cerrar">&times;</button>'+
-        '<h3>Elegí el modelo de tu portachupete</h3><p class="pm-sub">Tocá la foto que más te guste. Podés contarnos colores o detalles abajo.</p>'+
+        '<h3>Elegí el modelo de tu portachupete</h3><p class="pm-sub">Tocá el que más te guste. Podés contarnos qué cambiarías (colores, figura) abajo.</p>'+
         '<div class="pm-tabs"></div><div class="pm-grid"></div>'+
         '<label class="pm-l">Colores o detalles (opcional)<input type="text" maxlength="60" placeholder="Ej: arcoíris pastel, clip de madera"></label>'+
         '<button type="button" class="btn btn-green pm-ok" style="width:100%">Listo</button></div>';
@@ -93,17 +93,17 @@
         b.onclick=function(){mat=m;lam=0;pintar();}; tabs.appendChild(b);
       });
       for(var n=1;n<=LAM[mat];n++){(function(n){
-        var f=el('button','pm-img'+(n===lam?' sel':'')); f.type='button'; f.setAttribute('aria-label','Elegir lámina '+n+' de '+mat);
-        var im=document.createElement('img'); im.alt='Modelos de portachupetes de '+mat.toLowerCase()+' '+n; im.src='assets/img/portachupetes/'+mat.toLowerCase()+'-'+n+'.jpg'; f.appendChild(im);
-        f.appendChild(el('span','pm-tag',n===lam?'✓ Elegida':'Elegir esta'));
+        var f=el('button','pm-img'+(n===lam?' sel':'')); f.type='button'; f.setAttribute('aria-label','Elegir modelo '+n+' de '+mat);
+        var im=document.createElement('img'); im.alt='Portachupete de '+mat.toLowerCase()+', modelo '+n; im.loading='lazy'; im.src='assets/img/portachupetes/modelos/'+mat.toLowerCase()+'-'+n+'.jpg'; f.appendChild(im);
+        f.appendChild(el('span','pm-tag',n===lam?'✓ N° '+n:'N° '+n));
         f.onclick=function(){lam=n;pintar();}; g.appendChild(f);
       })(n);}
     }
     function cerrar(){mod.classList.remove('show');document.body.style.overflow='';}
     mod.querySelector('.pm-ok').onclick=function(){
-      if(!lam){toast('Tocá una foto para elegir el modelo.');return;}
+      if(!lam){toast('Tocá un modelo para elegirlo.');return;}
       s.mat=mat; s.lam=lam; s.det=inp.value.trim();
-      s.modelo=mat+', foto '+lam+(s.det?' — '+s.det:''); s.on=true;
+      s.modelo=mat+' N° '+lam+(s.det?' — '+s.det:''); s.on=true;
       cerrar(); track('arma_modelo',p.id); render();
     };
     mod._cerrar=cerrar; pintar(); mod.classList.add('show'); document.body.style.overflow='hidden';

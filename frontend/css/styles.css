@@ -92,8 +92,7 @@
   .hero-card p.sub{margin:18px auto 26px;font-size:1.08rem;color:var(--ink-soft);max-width:500px;line-height:1.65;font-weight:600;}
   .hero-card .hero-ctas{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;}
   .hero-trust{list-style:none;padding:0;margin:22px 0 0;display:flex;gap:8px 22px;flex-wrap:wrap;justify-content:center;font-weight:700;font-size:.86rem;color:var(--ink-soft);}
-  .hero-trust li{position:relative;padding-left:16px;}
-  .hero-trust li::before{content:"";position:absolute;left:0;top:.45em;width:8px;height:8px;border-radius:50%;background:var(--green);}
+  .hero-trust li{position:relative;}
   .ha-badge{position:absolute;right:-26px;top:-30px;width:118px;height:118px;border-radius:50%;background:var(--green-deep);color:var(--white);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;transform:rotate(10deg);box-shadow:0 14px 26px -12px rgba(63,58,52,.4);line-height:1.15;}
   .ha-badge b{font-family:'Baloo 2';font-size:1.2rem;line-height:1.05;}
   .ha-badge span{font-size:.7rem;font-weight:800;letter-spacing:.02em;}

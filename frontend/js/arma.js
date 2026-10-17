@@ -147,7 +147,7 @@
     document.getElementById('armaTotalRow').style.display=count?'flex':'none';
     document.getElementById('armaSend').style.display=count?'block':'none';
     document.getElementById('armaCart').style.display=count?'block':'none';
-    document.getElementById('armaNote').textContent=count?'Agregalo al carrito para pedirlo online, o mandanos tu armado por Instagram.':'Todavía no agregaste nada. ¡Empezá tocando "Agregar"!';
+    document.getElementById('armaNote').textContent=count>=2?'Agregalo al carrito para pedirlo online, o mandanos tu armado por Instagram.':count?'Elegí al menos 2 productos para armar tu box.':'Todavía no agregaste nada. Elegí al menos 2 productos tocando "Agregar".';
     document.getElementById('armaBarN').textContent=count;
     document.getElementById('armaBarT').textContent='$'+total;
     bar.dataset.count=count; updBar();
@@ -163,6 +163,7 @@
 
   document.getElementById('armaCart').addEventListener('click',function(){
     var elegidos=P.filter(function(p){return st[p.id]&&st[p.id].on;});
+    if(elegidos.length<2){toast('Elegí al menos 2 productos para armar tu box.');return;} // el servidor también lo controla
     for(var k=0;k<elegidos.length;k++){
       var p=elegidos[k], s=st[p.id];
       if(p.c&&!s.color){toast('Elegí el color de '+p.n+'.');return;}
@@ -170,13 +171,14 @@
       if(p.name&&!s.name){toast('Escribí el nombre del bebé para el portachupete.');return;}
       if(p.modelo&&!s.modelo){toast('Elegí el modelo del portachupete.');abrirModelos(p);return;}
     }
+    var armado='a'+Date.now().toString(36); // agrupa los productos de este armado (el servidor exige 2 distintos por armado)
     elegidos.forEach(function(p){
       var s=st[p.id];
-      Carrito.agregar({tipo:'producto',id:p.id,color:s.color||undefined,estampado:(p.est&&s.color==='Estampada')?s.estampado:undefined,nombreBebe:p.name?s.name:undefined,modelo:p.modelo?s.modelo:undefined});
+      Carrito.agregar({tipo:'producto',id:p.id,color:s.color||undefined,estampado:(p.est&&s.color==='Estampada')?s.estampado:undefined,nombreBebe:p.name?s.name:undefined,modelo:p.modelo?s.modelo:undefined,armado:armado});
       s.on=false;
     });
     render();
-    Carrito.abrir();
+    Carrito.abrir(); track('carrito_agregar','armado');
   });
 
   document.getElementById('armaSend').addEventListener('click',function(){

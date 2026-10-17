@@ -29,8 +29,16 @@
 - [x] Subida de fotos de productos
 
 ## Reglas de compra (pedido por la dueña)
-- [ ] **Nombre del bebé obligatorio**: `POST /api/pedidos` debe rechazar (400) cualquier portachupete personalizado, y cualquier box que lo traiga, sin `nombreBebe` (no vacío, sin solo espacios, máx. 20). Hoy se valida para `porta` y las boxes con portachupete; revisar que cubra todos los caminos (carrito, "Armá tu box" y la compra directa desde la sección Portachupetes) y agregar test para cada uno
-- [ ] **Mínimo de 2 productos en "Armá tu box"**: no se puede comprar un armado con menos de 2 productos distintos. El portachupete se puede comprar solo desde su sección, así que el carrito debe mandar el origen (ej. `origen: 'arma'`) y el servidor rechazar (400) si ese armado trae menos de 2 productos. Agregar test. El frontend (`arma.js`) deberá mostrar el aviso "Elegí al menos 2 productos"
+- [x] **Nombre del bebé obligatorio**: el servidor rechaza (400) el portachupete y las boxes que lo traen sin `nombreBebe` (vacío o solo espacios; máx. 20). Cubre los tres caminos (sección Portachupetes, "Armá tu box" y boxes, más la cotización del carrito), con tests de cada uno
+- [x] **Mínimo de 2 productos en "Armá tu box"**: cada armado lleva un id (`armado`) que genera `arma.js`; el servidor exige 2 productos distintos por armado (cada armado por separado, no se suman entre sí) y rechaza productos sueltos que no sean el portachupete. El carrito marca el armado incompleto y `arma.js` avisa "Elegí al menos 2 productos". Con tests. En el admin y en los mails cada producto dice a qué armado pertenece ("Armado 1"), y el admin ahora también muestra el modelo del portachupete
+
+## Trackeo
+- [x] **Historial de cambios** (tabla `historial`, pestaña Historial del admin): precios, stock, activo y fotos de productos y boxes; creación y cambios de estado de pedidos. Guarda quién (email del admin, cliente, `mercadopago`, `sistema`, `migración`), cuándo y el antes → después. Se escribe en la misma transacción que el cambio
+- [x] **Métricas de ventas** en el Resumen del admin: vendido, ticket promedio, más vendidos, medios de pago, formas de entrega y embudo visita → carrito → checkout → pedido → pago (carritos abandonados). Eventos anónimos nuevos: `carrito_agregar`, `checkout`
+- [x] **Bases por entorno**: el log de arranque muestra entorno y base; procedimiento en `DEPLOY.md`
+- [x] Migración 1: precios nuevos de las boxes y etiqueta PREMIUM (staging tenía los viejos porque `seed.ts` no actualiza bases existentes)
+- [ ] Crear el entorno de producción siguiendo `DEPLOY.md`
+- [ ] Historial: limpiar registros de más de 2 años si la tabla crece mucho (hoy no hace falta)
 
 ## Seguridad
 

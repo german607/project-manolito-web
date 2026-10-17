@@ -34,7 +34,7 @@ $('#logout').addEventListener('click', async () => {
 
 // ---------- Pestañas ----------
 
-const CARGAR = { resumen: cargarResumen, productos: cargarProductos, boxes: cargarBoxes, pedidos: cargarPedidos };
+const CARGAR = { resumen: cargarResumen, productos: cargarProductos, boxes: cargarBoxes, pedidos: cargarPedidos, historial: cargarHistorial };
 const tabActual = () => (CARGAR[location.hash.slice(1)] ? location.hash.slice(1) : 'resumen');
 
 function abrirTab(tab) {
@@ -70,6 +70,22 @@ async function cargarResumen() {
   ranking('#topBoxes', d.boxesVistas, r => r.ref);
   ranking('#topProductos', d.productosAgregados, r => nombre[r.ref] || r.ref);
 
+  // ---- Ventas ----
+  const v = d.ventas, abandonos = Math.max(0, (t.checkout || 0) - d.embudo[3].n);
+  $('#kpisVentas').innerHTML = [
+    ['Vendido', plata(v.resumen.total)], ['Pedidos pagados', v.resumen.pedidos], ['Ticket promedio', plata(v.resumen.ticket)],
+    ['Carritos abandonados', abandonos],
+  ].map(([k, x]) => `<div class="kpi"><small>${k}</small><b>${typeof x === 'string' ? x : (x || 0).toLocaleString('es-UY')}</b></div>`).join('');
+  const base = Math.max(1, d.embudo[0].n);
+  $('#embudo').innerHTML = `<div class="rank">${d.embudo.map((p, i) => {
+    const previo = i ? d.embudo[i - 1].n : 0;
+    const pct = i && previo ? ` <small>· ${Math.round((p.n / previo) * 100)}% del paso anterior</small>` : '';
+    return `<div class="rank-row embudo-paso"><span>${p.paso}${pct}</span><b>${p.n.toLocaleString('es-UY')}</b><div class="track"><div class="fill" style="width:${Math.min(100, (p.n / base) * 100)}%"></div></div></div>`;
+  }).join('')}</div>`;
+  ranking('#masVendidos', v.masVendidos, r => `${r.ref} (${r.unidades} u.)`, plata);
+  ranking('#porPago', v.porPago, r => `${PAGOS[r.ref] || r.ref} (${r.pedidos})`, plata);
+  ranking('#porEntrega', v.porEntrega, r => ENTREGA[r.ref] || r.ref);
+
   const bajo = d.stockBajo;
   $('#stockAlert').hidden = !bajo.length;
   $('#stockAlert').innerHTML = `<span aria-hidden="true">⚠</span><span><b>Stock bajo:</b> ${bajo.map(p => `${esc(p.nombre)} (${p.stock})`).join(', ')}</span>`;
@@ -89,10 +105,13 @@ function grafico(filas) {
     <div class="x"><span>${ddmm(filas[0].dia)}</span><span>${ddmm(medio.dia)}</span><span>${ddmm(filas[filas.length - 1].dia)}</span></div>`;
 }
 
-function ranking(sel, filas, etiqueta) {
+const ENTREGA = { cadeteria: 'Cadetería', pickup: 'Pick-up Cordón', interior: 'Interior' };
+const PAGOS = { transferencia: 'Transferencia', abitab_redpagos: 'Abitab / Red Pagos', prex_midinero: 'Prex / Mi Dinero', mercadopago: 'Mercado Pago' };
+
+function ranking(sel, filas, etiqueta, formato = n => n.toLocaleString('es-UY')) {
   const max = Math.max(1, ...filas.map(f => f.n));
   $(sel).innerHTML = filas.length
-    ? `<div class="rank">${filas.map(f => `<div class="rank-row"><span>${esc(etiqueta(f))}</span><b>${f.n}</b><div class="track"><div class="fill" style="width:${(f.n / max) * 100}%"></div></div></div>`).join('')}</div>`
+    ? `<div class="rank">${filas.map(f => `<div class="rank-row"><span>${esc(etiqueta(f))}</span><b>${formato(f.n)}</b><div class="track"><div class="fill" style="width:${(f.n / max) * 100}%"></div></div></div>`).join('')}</div>`
     : '<p class="empty">Sin datos en este período.</p>';
 }
 
@@ -160,7 +179,6 @@ function tabla(sel, items, tipo) {
 // ---------- Pedidos ----------
 
 const ESTADOS = ['pendiente', 'pagado', 'enviado', 'entregado', 'cancelado'];
-const ENTREGA = { cadeteria: 'Cadetería', pickup: 'Pick-up Cordón', interior: 'Interior' };
 $('#filtroEstado').addEventListener('change', () => cargarPedidos().catch(err => toast(err.message)));
 
 async function cargarPedidos() {
@@ -180,7 +198,7 @@ async function cargarPedidos() {
         <p class="tot">${plata(p.total)}</p>
         <select class="estado" aria-label="Estado del pedido ${p.id}">${ESTADOS.map(e => `<option ${e === p.estado ? 'selected' : ''}>${e}</option>`).join('')}</select>
       </div>
-      <ul>${p.items.map(l => `<li>${l.cantidad} × ${esc(l.nombre)}${l.color ? ` (${esc(l.color)})` : ''}${l.nombreBebe ? ` “${esc(l.nombreBebe)}”` : ''} — ${plata(l.total)}</li>`).join('')}</ul>
+      <ul>${(armados => p.items.map(l => `<li>${l.armado ? `<b>Armado ${armados.indexOf(l.armado) + 1}:</b> ` : ''}${l.cantidad} × ${esc(l.nombre)}${l.color ? ` (${esc(l.color)})` : ''}${l.nombreBebe ? ` “${esc(l.nombreBebe)}”` : ''}${l.modelo ? ` · Modelo: ${esc(l.modelo)}` : ''} — ${plata(l.total)}</li>`).join(''))([...new Set(p.items.map(l => l.armado).filter(Boolean))])}</ul>
     </article>`).join('')
     : '<p class="empty card">No hay pedidos todavía. Van a aparecer acá cuando la web tenga checkout.</p>';
 
@@ -199,3 +217,23 @@ fetch('/api/auth/yo').then(r => r.json()).then(({ usuario }) => {
   $('#app').hidden = false;
   abrirTab(tabActual());
 }).catch(irAlLogin);
+
+// ---------- Historial ----------
+
+const CAMPOS = { precio: 'Precio', stockCargado: 'Stock', controlaStock: 'Controla stock', activo: 'Activo', estado: 'Estado', foto: 'Foto', total: 'Total', pago: 'Pago' };
+const ACCIONES = { crear: 'Creó', editar: 'Editó', foto: 'Cambió la foto de', estado: 'Cambió el estado de' };
+const valor = (campo, x) => x === null || x === undefined ? '—' : typeof x === 'boolean' ? (x ? 'sí' : 'no')
+  : campo === 'precio' || campo === 'total' ? plata(x) : campo === 'pago' ? PAGOS[x] || x : campo === 'foto' ? 'imagen' : String(x);
+$('#filtroHistorial').addEventListener('change', () => cargarHistorial().catch(err => toast(err.message)));
+
+async function cargarHistorial() {
+  const entidad = $('#filtroHistorial').value;
+  const [filas, prods, bxs] = await Promise.all([api('/historial' + (entidad ? '?entidad=' + entidad : '')), api('/productos'), api('/boxes')]);
+  const nombres = Object.fromEntries([...prods, ...bxs].map(x => [x.id, x.nombre]));
+  const fecha = s => new Date(s).toLocaleString('es-UY', { timeZone: 'America/Montevideo', dateStyle: 'short', timeStyle: 'short' });
+  const que = h => h.entidad === 'pedido' ? `pedido #${h.entidad_id}` : nombres[h.entidad_id] || h.entidad_id; // los nombres de las boxes ya dicen "Box ..."
+  $('#tablaHistorial').innerHTML = filas.length ? `<thead><tr><th>Cuándo</th><th>Quién</th><th>Qué</th><th>Cambio</th></tr></thead><tbody>${filas.map(h => `
+    <tr><td>${fecha(h.cuando)}</td><td class="quien">${esc(h.autor)}</td><td>${esc(ACCIONES[h.accion] || h.accion)} ${esc(que(h))}</td>
+      <td class="cambio">${Object.entries(h.cambios).map(([c, [a, b]]) => `${esc(CAMPOS[c] || c)}: ${a === null ? '' : `<s>${esc(valor(c, a))}</s> → `}<b>${esc(valor(c, b))}</b>`).join('<br>')}</td></tr>`).join('')}</tbody>`
+    : '<tbody><tr><td class="empty">Todavía no hay cambios registrados.</td></tr></tbody>';
+}

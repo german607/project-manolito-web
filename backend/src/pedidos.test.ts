@@ -1,7 +1,7 @@
 import './test-setup.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { calcular, cambiarEstado, buscarPedido, insertar, vencerPedidos, PedidoInput } from './pedidos.js';
+import { armadosIncompletos, calcular, cambiarEstado, buscarPedido, insertar, vencerPedidos, PedidoInput } from './pedidos.js';
 import { productos, boxes, q, q1 } from './db.js';
 
 const pedido = (items: unknown[], pago = 'transferencia') => PedidoInput.parse({
@@ -30,8 +30,9 @@ test('color Estampada pide contar qué estampado', async () => {
 });
 
 test('suma productos, boxes y cantidades', async () => {
-  const c = await cotizar([{ tipo: 'producto', id: 'babero', cantidad: 2 }, { tipo: 'box', id: 'mini-box', nombreBebe: 'Ema' }]);
-  assert.equal(c.subtotal, 190 * 2 + 890);
+  const c = await cotizar([{ tipo: 'producto', id: 'babero', armado: 'a1', cantidad: 2 }, { tipo: 'box', id: 'mini-box', nombreBebe: 'Ema' }]);
+  const [babero, mini] = [(await productos.uno('babero'))!.precio, (await boxes.una('mini-box'))!.precio]; // leídos de la base: no se rompe si cambian los precios
+  assert.equal(c.subtotal, babero * 2 + mini);
 });
 
 test('Mercado Pago agrega 10%', async () => {
@@ -40,8 +41,8 @@ test('Mercado Pago agrega 10%', async () => {
 });
 
 test('rechaza color inexistente y producto desconocido', async () => {
-  await assert.rejects(cotizar([{ tipo: 'producto', id: 'trapito', color: 'Verde' }]));
-  await assert.rejects(cotizar([{ tipo: 'producto', id: 'nada' }]));
+  await assert.rejects(cotizar([{ tipo: 'producto', id: 'trapito', armado: 'a1', color: 'Verde' }]), /Color/);
+  await assert.rejects(cotizar([{ tipo: 'producto', id: 'nada', armado: 'a1' }]));
 });
 
 test('el portachupete y las boxes que lo traen piden el nombre del bebé', async () => {
@@ -58,7 +59,7 @@ test('las boxes no cobran letras extra en el portachupete', async () => {
 
 test('un pedido sin pagar vence a las 2 horas, devuelve el stock y se puede reactivar', async () => {
   await setStock(['babero'], 3);
-  const id = await comprar([{ tipo: 'producto', id: 'babero', cantidad: 2 }]);
+  const id = await comprar([{ tipo: 'producto', id: 'babero', armado: 'a1', cantidad: 2 }]);
   assert.equal(await stock('babero'), 1);
 
   assert.equal(await vencerPedidos(), 0, 'recién creado no vence');
@@ -106,7 +107,7 @@ test('"Ignorar stock": se vende sin mirar ni tocar la cantidad, y al volver a co
   const p = (await productos.uno('mordillo'))!;
   assert.deepEqual([p.stock, p.stockCargado, p.controlaStock], [null, 0, false]);
 
-  await comprar([{ tipo: 'producto', id: 'mordillo', cantidad: 4 }, { tipo: 'box', id: 'esencial', nombreBebe: 'Ema' }]); // con stock 0 igual se vende
+  await comprar([{ tipo: 'producto', id: 'mordillo', armado: 'a1', cantidad: 4 }, { tipo: 'box', id: 'esencial', nombreBebe: 'Ema' }]); // con stock 0 igual se vende
   assert.equal((await productos.uno('mordillo'))!.stockCargado, 0, 'no se descontó');
   assert.equal((await boxes.una('esencial'))!.agotada, false);
 
@@ -117,8 +118,59 @@ test('"Ignorar stock": se vende sin mirar ni tocar la cantidad, y al volver a co
 
 test('dos compras simultáneas de la última unidad: pasa una sola', async () => {
   await setStock(['zapatitos'], 1);
-  const compra = () => comprar([{ tipo: 'producto', id: 'zapatitos' }]);
+  const compra = () => comprar([{ tipo: 'producto', id: 'zapatitos', armado: 'a1' }]);
   const r = await Promise.allSettled([compra(), compra(), compra()]);
   assert.equal(r.filter(x => x.status === 'fulfilled').length, 1);
   assert.equal(await stock('zapatitos'), 0, 'nunca queda negativo');
+});
+
+// ---------- Reglas de compra (pedidas por la dueña) ----------
+
+test('nombre del bebé obligatorio en todos los caminos: sección Portachupetes, Armá tu box y boxes', async () => {
+  // Sección Portachupetes: suelto, con modelo
+  await assert.doesNotReject(cotizar([{ tipo: 'producto', id: 'porta', nombreBebe: 'Lola', modelo: 'Silicona N° 3' }]));
+  await assert.rejects(cotizar([{ tipo: 'producto', id: 'porta', modelo: 'Silicona N° 3' }]), /nombre del bebé/);
+  await assert.rejects(cotizar([{ tipo: 'producto', id: 'porta', nombreBebe: '   ', modelo: 'Silicona N° 3' }]), /nombre del bebé/, 'solo espacios cuenta como vacío');
+  assert.throws(() => pedido([{ tipo: 'producto', id: 'porta', nombreBebe: 'x'.repeat(21) }]), 'más de 20 letras se rechaza');
+  // Armá tu box: el portachupete dentro de un armado
+  await assert.rejects(cotizar([{ tipo: 'producto', id: 'porta', armado: 'a1' }, { tipo: 'producto', id: 'babero', armado: 'a1' }]), /nombre del bebé/);
+  // Boxes que traen portachupete
+  await assert.rejects(cotizar([{ tipo: 'box', id: 'mini-box', nombreBebe: '  ' }]), /nombre del bebé/);
+});
+
+test('Armá tu box: mínimo 2 productos distintos por armado', () => {
+  const inc = (items: unknown[]) => [...armadosIncompletos(pedido(items).items)];
+  assert.deepEqual(inc([{ tipo: 'producto', id: 'babero', armado: 'a1' }]), ['a1'], 'un solo producto');
+  assert.deepEqual(inc([{ tipo: 'producto', id: 'babero', armado: 'a1', cantidad: 3 }]), ['a1'], 'cantidad no cuenta como distinto');
+  assert.deepEqual(inc([{ tipo: 'producto', id: 'trapito', armado: 'a1', color: 'Rosa' }, { tipo: 'producto', id: 'trapito', armado: 'a1', color: 'Celeste' }]), ['a1'], 'dos colores del mismo producto no alcanzan');
+  assert.deepEqual(inc([{ tipo: 'producto', id: 'babero', armado: 'a1' }, { tipo: 'producto', id: 'manta', armado: 'a1' }]), [], 'dos distintos: ok');
+  assert.deepEqual(inc([
+    { tipo: 'producto', id: 'babero', armado: 'a1' }, { tipo: 'producto', id: 'manta', armado: 'a1' },
+    { tipo: 'producto', id: 'mordillo', armado: 'a2' },
+  ]), ['a2'], 'cada armado se controla por separado: no se suman entre sí');
+  assert.deepEqual(inc([{ tipo: 'producto', id: 'porta', nombreBebe: 'Lola' }, { tipo: 'box', id: 'esencial', nombreBebe: 'Lola' }]), [], 'portachupete suelto y boxes no son armados');
+});
+
+test('Armá tu box: los productos no se venden sueltos (salvo el portachupete) y las boxes no van en un armado', async () => {
+  await assert.rejects(cotizar([{ tipo: 'producto', id: 'babero' }]), /Armá tu box/, 'un babero sin armado se rechaza');
+  await assert.doesNotReject(cotizar([{ tipo: 'producto', id: 'porta', nombreBebe: 'Lola' }]), 'el portachupete sí, desde su sección');
+  await assert.rejects(cotizar([{ tipo: 'box', id: 'mini-box', nombreBebe: 'Ema', armado: 'a1' }]), /no van dentro de un armado/);
+});
+
+// ---------- Historial ----------
+
+test('historial: se registra quién creó el pedido y cada cambio de estado; lo que falla no queda registrado', async () => {
+  const historial = async (id: number) => (await q<{ autor: string; accion: string; cambios: Record<string, unknown[]> }>(
+    "SELECT autor, accion, cambios FROM historial WHERE entidad = 'pedido' AND entidad_id = $1 ORDER BY id", [String(id)]));
+  await setStock(['sonajero', 'peine'], 1);
+  const input = pedido([{ tipo: 'producto', id: 'sonajero', armado: 'h1' }, { tipo: 'producto', id: 'peine', armado: 'h1' }]);
+  const id = await insertar(input, await calcular(input, productos.uno, boxes.una), null, 'cliente');
+  await cambiarEstado(id, 'cancelado', undefined, 'admin@manolito.com');
+  await cambiarEstado(id, 'cancelado', undefined, 'admin@manolito.com'); // mismo estado: no es un cambio
+  await setStock(['sonajero'], 0);
+  await assert.rejects(cambiarEstado(id, 'pagado', 'mp-1', 'mercadopago'), /stock suficiente/);
+
+  const h = await historial(id);
+  assert.deepEqual(h.map(x => [x.autor, x.accion]), [['cliente', 'crear'], ['admin@manolito.com', 'estado']]);
+  assert.deepEqual(h[1].cambios, { estado: ['pendiente', 'cancelado'] });
 });

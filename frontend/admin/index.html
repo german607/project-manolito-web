@@ -21,6 +21,7 @@
       <button role="tab" data-tab="productos">Productos</button>
       <button role="tab" data-tab="boxes">Boxes</button>
       <button role="tab" data-tab="pedidos">Pedidos</button>
+      <button role="tab" data-tab="historial">Historial</button>
     </nav>
     <button class="link" id="logout">Salir</button>
   </header>
@@ -38,6 +39,17 @@
       <h3>Visitas por día</h3>
       <div class="chart" id="chart"></div>
     </div>
+    <h2 class="sub">Ventas</h2>
+    <div class="kpis" id="kpisVentas"></div>
+    <div class="grid2">
+      <div class="card"><h3>Del visitante al pago</h3><div id="embudo"></div></div>
+      <div class="card"><h3>Más vendidos</h3><div id="masVendidos"></div></div>
+    </div>
+    <div class="grid2">
+      <div class="card"><h3>Medios de pago</h3><div id="porPago"></div></div>
+      <div class="card"><h3>Formas de entrega</h3><div id="porEntrega"></div></div>
+    </div>
+    <h2 class="sub">Uso de la web</h2>
     <div class="grid3">
       <div class="card"><h3>Páginas más vistas</h3><div id="topPaginas"></div></div>
       <div class="card"><h3>Boxes más vistas</h3><div id="topBoxes"></div></div>
@@ -53,6 +65,16 @@
   <section class="panel" id="tab-boxes" hidden>
     <div class="row-head"><h2>Boxes</h2></div>
     <div class="card table-wrap"><table id="tablaBoxes"></table></div>
+  </section>
+
+  <section class="panel" id="tab-historial" hidden>
+    <div class="row-head">
+      <h2>Historial de cambios</h2>
+      <select id="filtroHistorial" aria-label="Filtrar historial">
+        <option value="">Todo</option><option value="producto">Productos</option><option value="box">Boxes</option><option value="pedido">Pedidos</option>
+      </select>
+    </div>
+    <div class="card table-wrap"><table id="tablaHistorial"></table></div>
   </section>
 
   <section class="panel" id="tab-pedidos" hidden>

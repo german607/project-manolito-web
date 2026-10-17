@@ -103,8 +103,7 @@
   .hero-card p.sub{margin:18px auto 26px;font-size:1.08rem;color:var(--ink-soft);max-width:500px;line-height:1.65;font-weight:600;}
   .hero-card .hero-ctas{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;}
   .hero-trust{list-style:none;padding:0;margin:22px 0 0;display:flex;gap:8px 22px;flex-wrap:wrap;justify-content:center;font-weight:700;font-size:.86rem;color:var(--ink-soft);}
-  .hero-trust li{position:relative;padding-left:16px;}
-  .hero-trust li::before{content:"";position:absolute;left:0;top:.45em;width:8px;height:8px;border-radius:50%;background:var(--green);}
+  .hero-trust li{position:relative;}
   .ha-badge{position:absolute;right:-26px;top:-30px;width:118px;height:118px;border-radius:50%;background:var(--green-deep);color:var(--white);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;transform:rotate(10deg);box-shadow:0 14px 26px -12px rgba(63,58,52,.4);line-height:1.15;}
   .ha-badge b{font-family:'Baloo 2';font-size:1.2rem;line-height:1.05;}
   .ha-badge span{font-size:.7rem;font-weight:800;letter-spacing:.02em;}
@@ -676,7 +675,7 @@
   <div class="wrap hero-wrap">
     <div class="hero-card">
       <span class="eyebrow-minimal">Regalos con amor</span>
-      <h1>Un mundo <span class="hl">mágico</span> para los más chiquitos</h1>
+      <h1>Regalos especiales para <span class="hl">momentos especiales</span></h1>
       <p class="sub">Boxes de nacimiento y accesorios personalizados para acompañar los primeros momentos más especiales.</p>
       <div class="hero-ctas">
         <a class="btn btn-green" href="#portachupetes">Comprar portachupete</a>
@@ -1412,7 +1411,7 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
     try{localStorage.setItem(KEY,JSON.stringify(items));}catch(e){}
     contador(); window.dispatchEvent(new Event('carrito'));
   }
-  function igual(a,b){return a.tipo===b.tipo&&a.id===b.id&&(a.color||'')===(b.color||'')&&(a.nombreBebe||'')===(b.nombreBebe||'')&&(a.modelo||'')===(b.modelo||'')&&(a.estampado||'')===(b.estampado||'');}
+  function igual(a,b){return a.tipo===b.tipo&&a.id===b.id&&(a.color||'')===(b.color||'')&&(a.nombreBebe||'')===(b.nombreBebe||'')&&(a.modelo||'')===(b.modelo||'')&&(a.estampado||'')===(b.estampado||'')&&(a.armado||'')===(b.armado||'');}
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function plata(n){return '$'+Number(n||0).toLocaleString('es-UY');}
 
@@ -1428,12 +1427,13 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
 
   // Líneas del carrito; editable = con cantidades y "Quitar"
   function lineasHTML(items,c,editable){
+    var armados=[]; items.forEach(function(it){if(it.armado&&armados.indexOf(it.armado)<0)armados.push(it.armado);});
     var porI={},avI={};
     c.lineas.forEach(function(l){porI[l.i]=l;});
     c.avisos.forEach(function(a){avI[a.i]=a;});
     return items.map(function(it,i){
       var l=porI[i], av=avI[i];
-      var detalle=[it.color==='Estampada'&&it.estampado?'Estampada: '+it.estampado:it.color,it.nombreBebe?'“'+it.nombreBebe+'”':'',it.modelo].filter(Boolean).join(' · ');
+      var detalle=[it.armado?'Armado '+(armados.indexOf(it.armado)+1):'',it.color==='Estampada'&&it.estampado?'Estampada: '+it.estampado:it.color,it.nombreBebe?'“'+it.nombreBebe+'”':'',it.modelo].filter(Boolean).join(' · ');
       return '<article class="cart-line'+(av?' bad':'')+(editable?'':' ro')+'" data-i="'+i+'">'+
         (l&&l.foto?'<img src="'+esc(l.foto)+'" alt="">':'<div class="cart-ph"></div>')+
         '<div class="cart-info"><h4>'+esc(l?l.nombre:(av&&av.nombre)||'Producto no disponible')+'</h4>'+
@@ -1538,6 +1538,7 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
       if(item.nombreBebe) nuevo.nombreBebe=item.nombreBebe;
       if(item.modelo) nuevo.modelo=item.modelo;
       if(item.estampado) nuevo.estampado=item.estampado;
+      if(item.armado) nuevo.armado=item.armado;
       var ya=items.filter(function(x){return igual(x,nuevo);})[0];
       if(ya) ya.cantidad=Math.min(20,ya.cantidad+nuevo.cantidad); else items.push(nuevo);
       guardar(items);
@@ -1698,7 +1699,7 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
     document.getElementById('armaTotalRow').style.display=count?'flex':'none';
     document.getElementById('armaSend').style.display=count?'block':'none';
     document.getElementById('armaCart').style.display=count?'block':'none';
-    document.getElementById('armaNote').textContent=count?'Agregalo al carrito para pedirlo online, o mandanos tu armado por Instagram.':'Todavía no agregaste nada. ¡Empezá tocando "Agregar"!';
+    document.getElementById('armaNote').textContent=count>=2?'Agregalo al carrito para pedirlo online, o mandanos tu armado por Instagram.':count?'Elegí al menos 2 productos para armar tu box.':'Todavía no agregaste nada. Elegí al menos 2 productos tocando "Agregar".';
     document.getElementById('armaBarN').textContent=count;
     document.getElementById('armaBarT').textContent='$'+total;
     bar.dataset.count=count; updBar();
@@ -1714,6 +1715,7 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
 
   document.getElementById('armaCart').addEventListener('click',function(){
     var elegidos=P.filter(function(p){return st[p.id]&&st[p.id].on;});
+    if(elegidos.length<2){toast('Elegí al menos 2 productos para armar tu box.');return;} // el servidor también lo controla
     for(var k=0;k<elegidos.length;k++){
       var p=elegidos[k], s=st[p.id];
       if(p.c&&!s.color){toast('Elegí el color de '+p.n+'.');return;}
@@ -1721,13 +1723,14 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
       if(p.name&&!s.name){toast('Escribí el nombre del bebé para el portachupete.');return;}
       if(p.modelo&&!s.modelo){toast('Elegí el modelo del portachupete.');abrirModelos(p);return;}
     }
+    var armado='a'+Date.now().toString(36); // agrupa los productos de este armado (el servidor exige 2 distintos por armado)
     elegidos.forEach(function(p){
       var s=st[p.id];
-      Carrito.agregar({tipo:'producto',id:p.id,color:s.color||undefined,estampado:(p.est&&s.color==='Estampada')?s.estampado:undefined,nombreBebe:p.name?s.name:undefined,modelo:p.modelo?s.modelo:undefined});
+      Carrito.agregar({tipo:'producto',id:p.id,color:s.color||undefined,estampado:(p.est&&s.color==='Estampada')?s.estampado:undefined,nombreBebe:p.name?s.name:undefined,modelo:p.modelo?s.modelo:undefined,armado:armado});
       s.on=false;
     });
     render();
-    Carrito.abrir();
+    Carrito.abrir(); track('carrito_agregar','armado');
   });
 
   document.getElementById('armaSend').addEventListener('click',function(){

@@ -90,6 +90,46 @@
   .hero-copy-center .hero-ctas{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;}
   .hero-photo-wide{border-radius:26px;overflow:hidden;box-shadow:0 24px 50px -22px rgba(63,58,52,0.22);margin-bottom:40px;}
   .hero-photo-wide img{width:100%;display:block;}
+
+  /* portada */
+  .hero{background:linear-gradient(180deg,var(--green-pale) 0%,var(--white) 100%);padding:48px 0 30px;}
+  .hero-grid{display:grid;grid-template-columns:1.02fr 1fr;gap:48px;align-items:center;margin-bottom:48px;}
+  .hero-copy{text-align:left;}
+  .hero-copy h1{font-size:3.1rem;letter-spacing:-.4px;line-height:1.08;}
+  .hero-copy h1 .hl{color:var(--green-deep);font-style:italic;}
+  .hero-copy p.sub{margin:20px 0 28px;font-size:1.08rem;color:var(--ink-soft);max-width:480px;line-height:1.65;font-weight:600;}
+  .hero-copy .hero-ctas{display:flex;gap:12px;flex-wrap:wrap;}
+  .hero-trust{list-style:none;padding:0;margin:26px 0 0;display:flex;gap:8px 22px;flex-wrap:wrap;font-weight:700;font-size:.86rem;color:var(--ink-soft);}
+  .hero-trust li{position:relative;padding-left:16px;}
+  .hero-trust li::before{content:"";position:absolute;left:0;top:.45em;width:8px;height:8px;border-radius:50%;background:var(--green);}
+  .hero-art{position:relative;height:540px;}
+  .ha-blob{position:absolute;border-radius:50%;filter:blur(2px);}
+  .ha-b1{width:420px;height:420px;right:-30px;top:10px;background:rgba(237,182,193,.35);}
+  .ha-b2{width:240px;height:240px;left:10px;bottom:0;background:rgba(183,210,234,.38);}
+  .ha-img{position:absolute;object-fit:cover;border:7px solid var(--white);border-radius:26px;box-shadow:0 26px 50px -22px rgba(63,58,52,.35);}
+  .ha-main{width:62%;aspect-ratio:4/5;left:19%;top:8px;z-index:2;}
+  .ha-back{width:44%;aspect-ratio:4/5;left:0;bottom:6px;transform:rotate(-7deg);z-index:1;}
+  .ha-front{width:44%;aspect-ratio:4/5;right:0;bottom:-6px;transform:rotate(6deg);z-index:3;}
+  .ha-badge{position:absolute;z-index:4;right:6%;top:6px;width:104px;height:104px;border-radius:50%;background:var(--green-deep);color:var(--white);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;transform:rotate(10deg);box-shadow:0 14px 26px -12px rgba(63,58,52,.4);}
+  .ha-badge b{font-family:'Baloo 2';font-size:1.5rem;line-height:1;}
+  .ha-badge span{font-size:.7rem;font-weight:800;letter-spacing:.02em;}
+  @media (max-width:900px){
+    .hero-grid{grid-template-columns:1fr;gap:30px;text-align:center;}
+    .hero-copy{text-align:center;}
+    .hero-copy h1{font-size:2.3rem;}
+    .hero-copy p.sub{margin-left:auto;margin-right:auto;}
+    .hero-copy .hero-ctas,.hero-trust{justify-content:center;}
+    .hero-art{height:430px;max-width:440px;margin:0 auto;width:100%;}
+  }
+  @media (max-width:560px){
+    .hero{padding-top:28px;}
+    .hero-copy h1{font-size:1.9rem;}
+    .hero-copy .hero-ctas .btn{flex:1 1 100%;text-align:center;}
+    .hero-art{height:340px;}
+    .ha-img{border-width:5px;border-radius:20px;}
+    .ha-badge{width:84px;height:84px;}
+    .ha-badge b{font-size:1.2rem;}
+  }
   .features{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
 
   .section{padding:96px 0;}
@@ -618,19 +658,24 @@
 
 <div data-page="inicio">
 <section class="hero">
-  <div class="wrap">
-    <div class="hero-photo-wide">
-      <img src="assets/img/boxes/boxes-de-nacimiento-manolito.jpg" alt="Boxes de nacimiento Manolito">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <span class="eyebrow-minimal">Regalos con amor</span>
+      <h1>Un mundo <span class="hl">mágico</span> para los más chiquitos</h1>
+      <p class="sub">Boxes de nacimiento y accesorios personalizados para acompañar los primeros momentos más especiales.</p>
+      <div class="hero-ctas">
+        <a class="btn btn-green" href="#portachupetes">Comprar portachupete</a>
+        <a class="btn btn-green" href="#boxes">Comprar box</a>
+        <a class="btn btn-outline" href="#arma-tu-box">Armá tu box</a>
+      </div>
+      <ul class="hero-trust"><li>Hechos a mano</li><li>Con el nombre de tu bebé</li><li>Envíos a todo el país</li></ul>
     </div>
-  </div>
-  <div class="wrap hero-copy-center">
-    <span class="eyebrow-minimal">Regalos con amor</span>
-    <h1>Un mundo <span class="hl">mágico</span> para los más chiquitos</h1>
-    <p class="sub">Boxes de nacimiento y accesorios personalizados para acompañar los primeros momentos más especiales.</p>
-    <div class="hero-ctas">
-      <a class="btn btn-green" href="#portachupetes">Comprar portachupete</a>
-      <a class="btn btn-green" href="#boxes">Comprar box</a>
-      <a class="btn btn-outline" href="#arma-tu-box">Armá tu box</a>
+    <div class="hero-art" aria-hidden="false">
+      <span class="ha-blob ha-b1"></span><span class="ha-blob ha-b2"></span>
+      <img class="ha-img ha-back" src="assets/img/boxes/box-especial-manolito.jpg" alt="Box especial Manolito en celeste">
+      <img class="ha-img ha-main" src="assets/img/boxes/box-dulce-suenos-rosa.jpg" alt="Box Dulce sueños en rosa con portachupete personalizado">
+      <img class="ha-img ha-front" src="assets/img/boxes/box-primeros-mimos.jpg" alt="Box Primeros mimos">
+      <div class="ha-badge"><b>100%</b><span>personalizado</span></div>
     </div>
   </div>
   <div class="wrap">

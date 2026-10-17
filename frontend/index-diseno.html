@@ -104,7 +104,7 @@
   .feature-card p{color:var(--ink-soft);font-size:.76rem;font-weight:600;line-height:1.4;}
 
   /* boxes */
-  .boxes-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;max-width:520px;margin:0 auto;}
+  .boxes-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin:0 auto;}
   .box-card{background:var(--white);border-radius:22px;overflow:hidden;box-shadow:0 6px 18px -12px rgba(63,58,52,0.12);display:flex;flex-direction:column;}
   .box-photo{aspect-ratio:4/5;overflow:hidden;background:var(--white);}
   .box-photo img{width:100%;height:100%;object-fit:cover;}
@@ -118,14 +118,14 @@
     font-family:'Baloo 2';font-weight:800;font-size:.85rem;color:var(--ink);
     box-shadow:0 4px 10px rgba(63,58,52,0.15);
   }
-  .box-body{padding:26px 28px 30px;display:flex;flex-direction:column;gap:14px;flex:1;}
-  .box-title-row{display:flex;justify-content:space-between;align-items:center;gap:12px;}
-  .box-title-row h3{font-size:1.35rem;}
-  .box-price{font-family:'Baloo 2';font-weight:700;color:var(--green-deep);font-size:1.25rem;white-space:nowrap;}
+  .box-body{padding:18px 18px 22px;display:flex;flex-direction:column;gap:12px;flex:1;}
+  .box-title-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px 12px;}
+  .box-title-row h3{font-size:1.1rem;}
+  .box-price{font-family:'Baloo 2';font-weight:700;color:var(--green-deep);font-size:1.1rem;white-space:nowrap;}
   .box-badge{display:inline-block;background:var(--mustard);color:var(--white);font-size:.72rem;font-weight:800;padding:4px 12px;border-radius:999px;letter-spacing:.03em;width:fit-content;}
   .box-items{list-style:none;padding:0;}
-  .box-items li{padding:5px 0 5px 22px;position:relative;color:var(--ink-soft);font-weight:600;font-size:.94rem;}
-  .box-items li::before{content:"";position:absolute;left:0;top:12px;width:8px;height:8px;border-radius:50%;background:var(--green);}
+  .box-items li{padding:4px 0 4px 20px;position:relative;color:var(--ink-soft);font-weight:600;font-size:.86rem;}
+  .box-items li::before{content:"";position:absolute;left:0;top:10px;width:8px;height:8px;border-radius:50%;background:var(--green);}
   .box-cta{margin-top:6px;align-self:stretch;text-align:center;padding:9px 10px;font-size:.72rem;white-space:normal;line-height:1.3;}
 
   /* portachupetes compare */
@@ -938,8 +938,7 @@
     <div class="section-head">
       <span class="kicker">A tu medida</span>
       <h2>Armá tu box</h2>
-      <p>Elegí los productos que más te gusten y mirá cómo se suma el total. Después nos mandás tu armado por Instagram.</p>
-      <p class="arma-guide"><b>Armá tu box como más te guste:</b> elegí los productos que quieras y después bajá hasta <a href="#armaSum">“Tu box”</a> para ver el total. <a class="arma-down" href="#armaSum">Ver mi total ↓</a></p>
+      <p class="arma-guide"><b>Armá tu box como más te guste.</b> Seleccioná los productos que quieras y armamos tu box especial, lista para regalar. Cuando termines, bajá hasta <a href="#armaSum">“Tu box”</a> para ver el total. <a class="arma-down" href="#armaSum">Ver mi total ↓</a></p>
     </div>
     <div class="arma-grid" id="armaGrid"></div>
     <div class="arma-sum" id="armaSum">

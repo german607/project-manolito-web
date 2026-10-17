@@ -444,6 +444,9 @@
   .pb-total b{color:var(--green-deep);}
   .pb-hint{font-size:.82rem;font-weight:700;color:var(--ink-soft);margin-bottom:14px;}
   .pb-note{font-size:.78rem;font-weight:600;color:var(--ink-soft);text-align:center;margin-top:10px;line-height:1.5;}
+  .arma-guide{margin-top:10px;font-weight:600;}
+  .arma-guide a{color:var(--green-deep);font-weight:800;}
+  .arma-down{display:inline-block;margin-left:6px;}
   .arma-bar{position:fixed;left:16px;right:92px;bottom:16px;z-index:60;max-width:480px;margin:0 auto;display:none;align-items:center;justify-content:space-between;gap:12px;background:var(--white);border:1.5px solid var(--green-deep);border-radius:999px;padding:10px 12px 10px 20px;box-shadow:0 14px 30px -12px rgba(63,58,52,0.35);font-family:'Baloo 2';font-weight:700;}
   .arma-bar.show{display:flex;}
   .arma-bar b{color:var(--green-deep);}
@@ -600,6 +603,7 @@
     </a>
     <nav>
       <div class="nav-links" id="navLinks">
+        <a class="navlink" href="#inicio" onclick="window.scrollTo({top:0,behavior:'smooth'})">Inicio</a>
         <a class="navlink" href="#boxes">Boxes</a>
         <a class="navlink" href="#portachupetes">Portachupetes</a>
         <a class="navlink" href="#ingresar" data-cuenta>Ingresar</a>
@@ -790,7 +794,7 @@
     <div class="section-head">
       <span class="kicker">Personalizados</span>
       <h2>Portachupetes</h2>
-      <p>Suaves, lindos y seguros para el bebé, en silicona libre de BPA o madera natural. Mantienen el chupete de tu bebé a salvo y libre de suciedades. Ambos incluyen hasta 5 letras.</p>
+      <p>Suaves, lindos y seguros para el bebé, en silicona libre de BPA o madera natural. Mantienen el chupete de tu bebé a salvo y libre de suciedades.</p>
     </div>
 
     
@@ -934,6 +938,7 @@
       <span class="kicker">A tu medida</span>
       <h2>Armá tu box</h2>
       <p>Elegí los productos que más te gusten y mirá cómo se suma el total. Después nos mandás tu armado por Instagram.</p>
+      <p class="arma-guide"><b>Armá tu box como más te guste:</b> elegí los productos que quieras y después bajá hasta <a href="#armaSum">“Tu box”</a> para ver el total. <a class="arma-down" href="#armaSum">Ver mi total ↓</a></p>
     </div>
     <div class="arma-grid" id="armaGrid"></div>
     <div class="arma-sum" id="armaSum">

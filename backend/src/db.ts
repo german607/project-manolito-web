@@ -66,7 +66,7 @@ const ESQUEMA = `
     precio   integer NOT NULL CHECK (precio >= 0),
     items    jsonb NOT NULL,             -- lo que trae, para mostrar
     foto     text,
-    etiqueta text,                       -- ej. "COMPLETA"
+    etiqueta text,                       -- ej. "PREMIUM"
     activo   boolean NOT NULL DEFAULT true
   );
 

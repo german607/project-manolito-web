@@ -1,0 +1,6 @@
+# No se publican en Vercel
+TODO.md
+index-diseno.html
+# Las imágenes salen del bucket (vía Railway, ver vercel.json): si Vercel tuviera su copia,
+# una foto cambiada desde el admin seguiría mostrándose vieja
+assets/img/

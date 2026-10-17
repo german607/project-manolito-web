@@ -73,7 +73,8 @@ la base no se puede descargar desde la web.
 
 ### Antes de salir a producción
 - [x] Cancelar un pedido devuelve el stock (hoy se descuenta al crear el pedido y nunca vuelve)
-- [x] Fotos subidas desde el admin guardadas en Postgres (tabla `fotos`, servidas en `/api/fotos/:id`): sobreviven a los deploys y entran en los backups. Se verifica que sean imágenes por sus primeros bytes
+- [x] Imágenes del sitio y fotos subidas desde el admin en el bucket de Railway (`imagenes.ts`), servidas en las mismas rutas `/assets/img/...`. Sin bucket (desarrollo) salen del disco. La vista de diseño sigue usando las del repo
+- [ ] Railway no hace backups de los buckets: guardar una copia de las imágenes (`aws s3 sync` del bucket a otro lado)
 
 ### Pagos
 - [x] Pedidos sin pagar (cualquier medio) se cancelan solos a las 2 h, devuelven el stock y se avisa al cliente. Mercado Pago deja de aceptar el pago a la misma hora; si igual entra uno tarde, se reactiva el pedido o se avisa para devolver la plata
@@ -98,6 +99,9 @@ la base no se puede descargar desde la web.
 
 ## Fase 6 — Producción
 - [ ] Hosting en Railway: servicio web (este repo) + servicio Postgres. Config en `railway.json` y `package.json` de la raíz
+- [x] Frontend en Vercel (`frontend/vercel.json`): reenvía `/api` y `/assets/img` a Railway. El dominio de Railway redirige a la web (`FRONTEND_URL`)
+- [ ] Configurar `TRUST_PROXY` (probablemente 2: Vercel + Railway) y verificarlo en `/api/admin/diagnostico` comparando con https://ifconfig.me
+- [ ] Quien le pegue directo a Railway puede inventar su IP y esquivar los límites por IP. El login ya tiene límite por cuenta; para pedidos y eventos, evaluar exigir un header secreto que solo ponga Vercel (Vercel Middleware)
 - [ ] Dominio propio con HTTPS (ej. `manolito.com.uy`)
 - [x] Variables de entorno en `.env` (Mercado Pago, mail, contraseña del admin)
 - [ ] Backups automáticos del Postgres de Railway

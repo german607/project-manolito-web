@@ -124,13 +124,6 @@ const ESQUEMA = `
     PRIMARY KEY (dia, tipo, ref)
   );
 
-  -- Fotos subidas desde el admin. En la base y no en disco: en Railway el disco se borra en cada deploy
-  CREATE TABLE IF NOT EXISTS fotos (
-    producto_id text PRIMARY KEY REFERENCES productos(id),
-    tipo        text NOT NULL,           -- image/jpeg | image/png | image/webp
-    datos       bytea NOT NULL
-  );
-
   CREATE TABLE IF NOT EXISTS migraciones (
     n        integer PRIMARY KEY,
     aplicada timestamptz NOT NULL DEFAULT now()

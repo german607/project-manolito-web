@@ -11,7 +11,7 @@
     {id:'sonajero',n:'Sonajero de tela',p:690,img:IM.sonajero,i:'<circle cx="12" cy="7" r="4"/><path d="M12 11v4"/><rect x="9" y="15" width="6" height="6" rx="3"/>'},
     {id:'guarda',n:'Guardachupete de silicona',p:390,c:COL,img:IM.guarda,i:'<circle cx="12" cy="13" r="7"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="6.5" r="2.5"/>'},
     {id:'mordillo',n:'Mordillo de silicona',p:490,c:COL,img:IM.mordillo,i:'<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="3"/>'},
-    {id:'porta',n:'Portachupete personalizado',p:790,name:1,img:IM.porta,i:'<circle cx="12" cy="5" r="2.5"/><path d="M12 7.5V10"/><circle cx="7" cy="14" r="2"/><circle cx="12" cy="16" r="2"/><circle cx="17" cy="14" r="2"/>'}
+    {id:'porta',n:'Portachupete personalizado',p:790,name:1,modelo:1,img:IM.porta,i:'<circle cx="12" cy="5" r="2.5"/><path d="M12 7.5V10"/><circle cx="7" cy="14" r="2"/><circle cx="12" cy="16" r="2"/><circle cx="17" cy="14" r="2"/>'}
   ];
   var st={}; // id -> {color,name}
   var grid=document.getElementById('armaGrid');
@@ -44,6 +44,13 @@
       });
       o.appendChild(ch); card.appendChild(o);
     }
+    if(p.modelo){
+      var o3=el('div','ap-opt'); o3.appendChild(el('small',null,'Modelo'));
+      var mb=el('button','btn btn-outline btn-sm ap-model','Ver y elegir modelo'); mb.type='button'; mb.id='apm-'+p.id;
+      mb.addEventListener('click',function(){abrirModelos(p);});
+      o3.appendChild(mb); card.appendChild(o3);
+      var im0=card.querySelector('.ap-img'); if(im0){im0.style.cursor='pointer';im0.addEventListener('click',function(){abrirModelos(p);});}
+    }
     if(p.name){
       var o2=el('div','ap-opt'); o2.appendChild(el('small',null,'Nombre del bebé (hasta 5 letras, $20 por letra extra)'));
       var inp=document.createElement('input'); inp.type='text'; inp.maxLength=20; inp.placeholder='Ej: Lucas';
@@ -62,10 +69,51 @@
     grid.appendChild(card);
   });
 
+  // Selector de modelos de portachupete: lista todas las láminas de fotos y se elige material + lámina + detalle
+  var LAM={Silicona:3,Madera:1}, mod=null;
+  function abrirModelos(p){
+    var s=st[p.id]=st[p.id]||{};
+    if(!mod){
+      mod=el('div','pm'); mod.setAttribute('role','dialog'); mod.setAttribute('aria-modal','true');
+      mod.innerHTML='<div class="pm-box"><button type="button" class="pm-x" aria-label="Cerrar">&times;</button>'+
+        '<h3>Elegí el modelo de tu portachupete</h3><p class="pm-sub">Tocá la foto que más te guste. Podés contarnos colores o detalles abajo.</p>'+
+        '<div class="pm-tabs"></div><div class="pm-grid"></div>'+
+        '<label class="pm-l">Colores o detalles (opcional)<input type="text" maxlength="60" placeholder="Ej: arcoíris pastel, clip de madera"></label>'+
+        '<button type="button" class="btn btn-green pm-ok" style="width:100%">Listo</button></div>';
+      document.body.appendChild(mod);
+      mod.addEventListener('click',function(e){if(e.target===mod||e.target.className==='pm-x')cerrar();});
+      document.addEventListener('keydown',function(e){if(e.key==='Escape'&&mod.classList.contains('show'))cerrar();});
+    }
+    var mat=s.mat||'Silicona', lam=s.lam||0, tabs=mod.querySelector('.pm-tabs'), g=mod.querySelector('.pm-grid'), inp=mod.querySelector('input');
+    inp.value=s.det||'';
+    function pintar(){
+      tabs.innerHTML=''; g.innerHTML='';
+      Object.keys(LAM).forEach(function(m){
+        var b=el('button','chip'+(m===mat?' sel':''),m); b.type='button';
+        b.onclick=function(){mat=m;lam=0;pintar();}; tabs.appendChild(b);
+      });
+      for(var n=1;n<=LAM[mat];n++){(function(n){
+        var f=el('button','pm-img'+(n===lam?' sel':'')); f.type='button'; f.setAttribute('aria-label','Elegir lámina '+n+' de '+mat);
+        var im=document.createElement('img'); im.alt='Modelos de portachupetes de '+mat.toLowerCase()+' '+n; im.src='assets/img/portachupetes/'+mat.toLowerCase()+'-'+n+'.jpg'; f.appendChild(im);
+        f.appendChild(el('span','pm-tag',n===lam?'✓ Elegida':'Elegir esta'));
+        f.onclick=function(){lam=n;pintar();}; g.appendChild(f);
+      })(n);}
+    }
+    function cerrar(){mod.classList.remove('show');document.body.style.overflow='';}
+    mod.querySelector('.pm-ok').onclick=function(){
+      if(!lam){toast('Tocá una foto para elegir el modelo.');return;}
+      s.mat=mat; s.lam=lam; s.det=inp.value.trim();
+      s.modelo=mat+', foto '+lam+(s.det?' — '+s.det:''); s.on=true;
+      cerrar(); track('arma_modelo',p.id); render();
+    };
+    mod._cerrar=cerrar; pintar(); mod.classList.add('show'); document.body.style.overflow='hidden';
+  }
+
   function lineText(p){
     var s=st[p.id]||{}, t=p.n;
     if(p.c) t+=' ('+(s.color?s.color.toLowerCase():'color a elegir')+')';
     if(p.name) t+=' '+(s.name?'"'+s.name+'"':'(nombre a definir)');
+    if(p.modelo) t+=' — modelo: '+(s.modelo||'a definir');
     return t;
   }
 
@@ -77,6 +125,7 @@
       if(p.agotado) s.on=false;
       var bt=card.querySelector('.ap-btn'); bt.disabled=!!p.agotado; bt.textContent=p.agotado?'Sin stock':(s.on?'Quitar':'Agregar');
       card.querySelectorAll('.chip').forEach(function(b){b.classList.toggle('sel',!!(s.color&&b.textContent===s.color));});
+      if(p.modelo){var mbb=document.getElementById('apm-'+p.id); if(mbb) mbb.textContent=s.modelo?'Modelo: '+s.modelo+' (cambiar)':'Ver y elegir modelo';}
       document.getElementById('apr-'+p.id).textContent='$'+price(p);
       if(s.on){
         count++; total+=price(p);
@@ -111,10 +160,11 @@
       var p=elegidos[k], s=st[p.id];
       if(p.c&&!s.color){toast('Elegí el color de '+p.n+'.');return;}
       if(p.name&&!s.name){toast('Escribí el nombre del bebé para el portachupete.');return;}
+      if(p.modelo&&!s.modelo){toast('Elegí el modelo del portachupete.');abrirModelos(p);return;}
     }
     elegidos.forEach(function(p){
       var s=st[p.id];
-      Carrito.agregar({tipo:'producto',id:p.id,color:s.color||undefined,nombreBebe:p.name?s.name:undefined});
+      Carrito.agregar({tipo:'producto',id:p.id,color:s.color||undefined,nombreBebe:p.name?s.name:undefined,modelo:p.modelo?s.modelo:undefined});
       s.on=false;
     });
     render();

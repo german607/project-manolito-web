@@ -7,7 +7,7 @@
     try{localStorage.setItem(KEY,JSON.stringify(items));}catch(e){}
     contador(); window.dispatchEvent(new Event('carrito'));
   }
-  function igual(a,b){return a.tipo===b.tipo&&a.id===b.id&&(a.color||'')===(b.color||'')&&(a.nombreBebe||'')===(b.nombreBebe||'');}
+  function igual(a,b){return a.tipo===b.tipo&&a.id===b.id&&(a.color||'')===(b.color||'')&&(a.nombreBebe||'')===(b.nombreBebe||'')&&(a.modelo||'')===(b.modelo||'');}
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function plata(n){return '$'+Number(n||0).toLocaleString('es-UY');}
 
@@ -28,7 +28,7 @@
     c.avisos.forEach(function(a){avI[a.i]=a;});
     return items.map(function(it,i){
       var l=porI[i], av=avI[i];
-      var detalle=[it.color,it.nombreBebe?'“'+it.nombreBebe+'”':''].filter(Boolean).join(' · ');
+      var detalle=[it.color,it.nombreBebe?'“'+it.nombreBebe+'”':'',it.modelo].filter(Boolean).join(' · ');
       return '<article class="cart-line'+(av?' bad':'')+(editable?'':' ro')+'" data-i="'+i+'">'+
         (l&&l.foto?'<img src="'+esc(l.foto)+'" alt="">':'<div class="cart-ph"></div>')+
         '<div class="cart-info"><h4>'+esc(l?l.nombre:(av&&av.nombre)||'Producto no disponible')+'</h4>'+
@@ -131,6 +131,7 @@
       var items=leer(), nuevo={tipo:item.tipo,id:item.id,cantidad:item.cantidad||1};
       if(item.color) nuevo.color=item.color;
       if(item.nombreBebe) nuevo.nombreBebe=item.nombreBebe;
+      if(item.modelo) nuevo.modelo=item.modelo;
       var ya=items.filter(function(x){return igual(x,nuevo);})[0];
       if(ya) ya.cantidad=Math.min(20,ya.cantidad+nuevo.cantidad); else items.push(nuevo);
       guardar(items);

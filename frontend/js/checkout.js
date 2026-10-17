@@ -31,6 +31,13 @@
   window.addEventListener('carrito',cotizar);
   $('editarCarrito').addEventListener('click',function(){Carrito.abrir();});
 
+  // Con sesión iniciada, el pedido queda en la cuenta y se completan nombre y email
+  fetch('/api/auth/yo').then(function(r){return r.json();}).then(function(d){
+    var u=d.usuario; if(!u) return;
+    if(!form.nombre.value) form.nombre.value=u.nombre;
+    if(!form.email.value) form.email.value=u.email;
+  }).catch(function(){});
+
   // ---- Formulario ----
   function actualizarDireccion(){
     var pick=entrega()==='pickup';

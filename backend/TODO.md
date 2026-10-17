@@ -1,7 +1,7 @@
 # TODO — Backend
 
 ## Fase 1 — Catálogo
-- [x] Base de datos: SQLite (un archivo, sin servidor)
+- [x] Base de datos: Postgres (Railway en producción, Docker en desarrollo: `docker compose up -d`). Antes era SQLite
 - [x] Tablas `productos` (nombre, precio, colores, foto, activo) y `boxes` (con sus productos)
 - [x] Script de carga inicial con los productos que hoy están en `frontend/js/main.js`
 - [x] `GET /api/productos` y `GET /api/boxes`
@@ -56,7 +56,7 @@ la base no se puede descargar desde la web.
 ### Media
 - [ ] Headers de seguridad (`X-Powered-By` ya está oculto): agregar `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `frame-ancestors 'none'` / `X-Frame-Options: DENY` (evita que metan el admin en un iframe para engañar clicks)
 - [ ] Content-Security-Policy: permitir solo scripts propios y Google Fonts. Requiere sacar los 4 `onclick=` inline del `index.html` (ver frontend/TODO.md)
-- [ ] Fotos subidas: verificar que el archivo sea realmente una imagen (primeros bytes JPG/PNG/WebP), no solo el `Content-Type` que manda el navegador
+- [x] Fotos subidas: se verifica que el archivo sea realmente una imagen (primeros bytes JPG/PNG/WebP), no solo el `Content-Type` que manda el navegador
 - [ ] `/api/eventos` acepta cualquier `ref` (probado: crea una fila por cada texto distinto, la base puede crecer sin límite). Aceptar solo páginas, boxes y productos que existen
 - [ ] Sin `RESEND_API_KEY` los mails, con nombre, teléfono y dirección del cliente, se escriben en la consola. En producción, fallar en vez de loguear datos personales
 - [ ] Verificar el header `Origin` en los requests del admin que modifican datos (defensa extra además de `SameSite`)
@@ -66,20 +66,20 @@ la base no se puede descargar desde la web.
 ### Baja
 - [ ] La página de "¡Pago recibido!" cree lo que dice la URL (`?pago=ok`): consultar el estado real del pedido al servidor
 - [ ] Revisar dependencias automáticamente (Dependabot o `npm audit` en CI)
-- [ ] Backups de la base: guardarlos en un lugar privado, porque tienen datos personales de clientes
+- [ ] Backups de la base: activar los backups de Postgres en Railway y que no sean públicos (tienen datos personales de clientes)
 - [ ] Logs de producción sin datos personales (nombre, teléfono, email, dirección)
 
 ## Fase 5b — Pendientes detectados al revisar el código
 
 ### Antes de salir a producción
 - [x] Cancelar un pedido devuelve el stock (hoy se descuenta al crear el pedido y nunca vuelve)
-- [ ] Fotos subidas desde el admin en un disco persistente: hoy se guardan dentro de `frontend/assets` y se pierden en cada deploy
+- [x] Fotos subidas desde el admin guardadas en Postgres (tabla `fotos`, servidas en `/api/fotos/:id`): sobreviven a los deploys y entran en los backups. Se verifica que sean imágenes por sus primeros bytes
 
 ### Pagos
 - [x] Pedidos sin pagar (cualquier medio) se cancelan solos a las 2 h, devuelven el stock y se avisa al cliente. Mercado Pago deja de aceptar el pago a la misma hora; si igual entra uno tarde, se reactiva el pedido o se avisa para devolver la plata
 - [ ] Webhook: manejar reembolsos y contracargos (`refunded`, `charged_back`) y verificar que la moneda sea UYU
 - [ ] Mail al cliente cuando el pago se confirma (hoy solo hay mail al crear y al enviar)
-- [ ] Confirmar con Manolito si las boxes cobran $20 por letra extra en el portachupete (hoy no)
+- [x] Las boxes no cobran $20 por letra extra en el portachupete (confirmado 2026-10-16); el recargo es solo para el portachupete suelto
 
 ### Catálogo desde el admin
 - [x] Interruptor "Ignorar stock" por producto: se vende sin mirar la cantidad y sin descontarla; la cantidad cargada se conserva
@@ -89,23 +89,31 @@ la base no se puede descargar desde la web.
 - [ ] Editar desde el admin qué productos trae cada box (hoy se carga del catálogo inicial)
 
 ### Mantenimiento
-- [x] Migraciones de la base (`PRAGMA user_version`, lista `MIGRACIONES` en `db.ts`): para cambiar la estructura de una base que ya tiene datos, agregar una función al final de la lista
+- [x] Compras simultáneas de la última unidad: el stock se bloquea por fila (`SELECT ... FOR UPDATE`), con test
+- [x] Migraciones de la base (tabla `migraciones`, lista `MIGRACIONES` en `db.ts`): para cambiar la estructura o el catálogo de una base que ya tiene datos, agregar una función al final de la lista
 - [ ] Tests de lo sensible: firma del webhook, login del admin, descuento y devolución de stock
 - [ ] Log de requests y errores (para saber qué pasó cuando algo falla en producción)
-- [ ] Sesiones del admin en la base (hoy en memoria: reiniciar el server cierra la sesión)
-- [ ] Fijar la versión de Node (`engines` en `package.json`), porque `better-sqlite3` se compila para cada versión
+- [x] Sesiones en la base (tabla `sesiones`, token guardado como hash): reiniciar el server no desloguea a nadie
+- [x] Versión de Node fijada (`engines` >=20.12). Con Postgres (`pg`) ya no hay módulos nativos que compilar
 
 ## Fase 6 — Producción
-- [ ] Hosting con disco persistente para SQLite (Railway / Render / Fly.io)
+- [ ] Hosting en Railway: servicio web (este repo) + servicio Postgres. Config en `railway.json` y `package.json` de la raíz
 - [ ] Dominio propio con HTTPS (ej. `manolito.com.uy`)
 - [x] Variables de entorno en `.env` (Mercado Pago, mail, contraseña del admin)
-- [ ] Backup diario del archivo de la base
+- [ ] Backups automáticos del Postgres de Railway
 
 ## Fase 7 — Legal
 - [ ] Ver con el contador la facturación electrónica (CFE)
 - [ ] Datos personales (Ley 18.331): cuánto tiempo se guardan los datos de los pedidos y cómo borrarlos si un cliente lo pide
 
+## Cuentas de usuario
+- [x] Registro e ingreso de clientes (`/api/auth`), contraseñas con scrypt, mismo mensaje de error para email inexistente o clave incorrecta
+- [x] El admin ingresa por el mismo login: su cuenta sale de `ADMIN_EMAIL` + `ADMIN_PASSWORD` y se crea o actualiza al arrancar
+- [x] Los pedidos de clientes logueados quedan asociados a su cuenta (`pedidos.usuario_id`); comprar sin cuenta sigue permitido
+- [ ] **Recuperar contraseña** por mail (link con token que vence): necesita Resend configurado. Hasta entonces, un cliente que olvida la clave no puede recuperarla
+- [ ] Historial de pedidos del cliente (`GET /api/cuenta/pedidos`)
+- [ ] Verificar el email al registrarse (hoy cualquiera puede registrarse con un email ajeno)
+
 ## Más adelante (solo si hace falta)
-- Cuentas de usuario e historial de compras
 - Cupones de descuento
 - Control de stock automático

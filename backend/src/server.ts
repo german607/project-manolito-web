@@ -1,12 +1,16 @@
 import './env.js';
 import express from 'express';
 import { adminRouter, FRONTEND } from './admin.js';
+import { asegurarAdmin, authRouter, borrarSesionesVencidas, cargarUsuario } from './auth.js';
+import { iniciarDb, pool } from './db.js';
 import { manejarErrores } from './errores.js';
 import { pedidosRouter, vencerPedidos } from './pedidos.js';
 import { publicoRouter } from './publico.js';
 import { hsts, limitar, limitarConcurrencia, revisarConfig, soloPublicable, trustProxy } from './seguridad.js';
 
 revisarConfig();
+await iniciarDb();
+await asegurarAdmin();
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -30,12 +34,18 @@ app.use('/api', limitar('api', 300, MINUTO));
 app.use('/api/pedidos', limitar('pedidos', 5, 10 * MINUTO));
 app.use('/api/carrito', limitar('carrito', 60, MINUTO));
 app.use('/api/eventos', limitar('eventos', 120, MINUTO));
+// Frena probar contraseñas en serie. Solo login y registro: /api/auth/yo lo consulta cada página
+const limiteAuth = limitar('auth', 20, 15 * MINUTO);
+app.use('/api/auth/login', limiteAuth);
+app.use('/api/auth/registro', limiteAuth);
 // 4. Global: tope de requests a la API procesándose a la vez
 app.use('/api', limitarConcurrencia);
 
 app.use(hsts);
 app.use(express.json({ limit: '20kb' })); // un carrito de 30 ítems ocupa ~3 KB
+app.use('/api', cargarUsuario);
 
+app.use('/api/auth', authRouter);
 app.use('/api', publicoRouter);
 app.use('/api', pedidosRouter);
 app.use('/api/admin', adminRouter);
@@ -53,9 +63,20 @@ const server = app.listen(PORT, () => {
   console.log(`Manolito en http://localhost:${PORT}`);
 });
 
-// Pedidos sin pagar: se revisan al arrancar y cada 5 minutos
-vencerPedidos();
-setInterval(vencerPedidos, 5 * MINUTO);
+// Tareas periódicas. Un error se loguea pero no tira el server (una promesa rechazada sin catch lo cerraría)
+const cada = (ms: number, tarea: () => Promise<unknown>) => {
+  const correr = () => tarea().catch(e => console.error('Tarea periódica falló:', e));
+  correr();
+  setInterval(correr, ms).unref();
+};
+cada(5 * MINUTO, vencerPedidos); // pedidos sin pagar
+cada(60 * MINUTO, borrarSesionesVencidas);
+
+// Railway frena el server viejo en cada deploy (SIGTERM): se terminan los requests en curso y se cierra la base
+process.on('SIGTERM', () => {
+  server.close(() => pool.end().finally(() => process.exit(0)));
+  setTimeout(() => process.exit(1), 10_000).unref(); // por si algo queda colgado
+});
 
 // Conexiones lentas a propósito (slowloris) ocupan sockets sin mandar nada: se cortan
 server.headersTimeout = 10_000;   // 10 s para mandar los headers

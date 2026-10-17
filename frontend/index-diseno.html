@@ -31,6 +31,7 @@
     font-weight:500;
     -webkit-font-smoothing:antialiased;
     overflow-x:hidden;
+    overflow-x:clip;
   }
   h1,h2,.display{font-family:'Fraunces',serif;font-weight:600;line-height:1.15;color:var(--ink);}
   h1 em, h2 em, .hl{font-style:italic;font-weight:500;}
@@ -59,7 +60,7 @@
   header{
     position:sticky;top:0;z-index:50;
     background:rgba(251,237,240,0.75);
-    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
     border-bottom:1px solid rgba(63,58,52,0.06);
   }
   .header-inner{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;max-width:1180px;margin:0 auto;}
@@ -69,6 +70,12 @@
   nav{display:flex;align-items:center;gap:26px;}
   nav a.navlink{font-weight:700;font-size:.9rem;color:var(--ink);opacity:.75;}
   nav a.navlink:hover{opacity:1;color:var(--green-deep);}
+  .nav-links{display:flex;align-items:center;gap:26px;}
+  .menu-btn{display:none;flex-direction:column;justify-content:center;gap:4px;width:40px;height:40px;padding:0 10px;border:0;border-radius:50%;background:none;cursor:pointer;}
+  .menu-btn span{display:block;height:2px;border-radius:2px;background:var(--ink);transition:transform .2s ease,opacity .2s ease;}
+  header.menu-open .menu-btn span:nth-child(1){transform:translateY(6px) rotate(45deg);}
+  header.menu-open .menu-btn span:nth-child(2){opacity:0;}
+  header.menu-open .menu-btn span:nth-child(3){transform:translateY(-6px) rotate(-45deg);}
 
   .hero{position:relative;padding:56px 0 30px;overflow:hidden;background:var(--white);}
   .hero-copy-center{text-align:center;max-width:680px;margin:8px auto 44px;}
@@ -300,7 +307,11 @@
     .testimonials-grid{grid-template-columns:1fr;}
     .insta-grid{grid-template-columns:repeat(3,1fr);}
     .sil-gallery{grid-template-columns:repeat(3,1fr);}
-    nav .navlink{display:none;}
+    .nav-links{display:none;}
+    .menu-btn{display:flex;}
+    header.menu-open .nav-links{display:flex;flex-direction:column;align-items:stretch;gap:0;position:absolute;top:100%;left:0;right:0;background:var(--white);border-bottom:1px solid rgba(63,58,52,0.08);box-shadow:0 16px 30px -18px rgba(63,58,52,0.35);padding:6px 0;}
+    header.menu-open .nav-links a.navlink{padding:14px 24px;font-size:1rem;opacity:1;}
+    header.menu-open .nav-links a.navlink + a.navlink{border-top:1px solid rgba(63,58,52,0.06);}
     .hero-copy-center h1{font-size:2.2rem;}
     .final-cta h2{font-size:1.7rem;}
   }
@@ -349,9 +360,9 @@
   .box-card{cursor:pointer;transition:transform .25s ease, box-shadow .25s ease;}
   .box-card:hover{transform:translateY(-3px);box-shadow:0 14px 28px -14px rgba(63,58,52,0.22);}
   .box-hint{font-size:.7rem;font-weight:700;color:var(--green-deep);text-align:center;margin-top:-2px;}
-  .bm-overlay{position:fixed;inset:0;background:rgba(63,58,52,.45);backdrop-filter:blur(3px);z-index:100;display:none;align-items:center;justify-content:center;padding:16px;}
+  .bm-overlay{position:fixed;inset:0;background:rgba(63,58,52,.45);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);z-index:100;display:none;align-items:center;justify-content:center;padding:16px;}
   .bm-overlay.open{display:flex;}
-  .bm{background:var(--white);border-radius:26px;max-width:880px;width:100%;max-height:92vh;overflow:auto;display:grid;grid-template-columns:.9fr 1.1fr;position:relative;box-shadow:0 30px 70px -20px rgba(63,58,52,.4);}
+  .bm{background:var(--white);border-radius:26px;max-width:880px;width:100%;max-height:92vh;max-height:92dvh;overflow:auto;display:grid;grid-template-columns:.9fr 1.1fr;position:relative;box-shadow:0 30px 70px -20px rgba(63,58,52,.4);}
   .bm-photo img{width:100%;height:100%;object-fit:cover;display:block;min-height:320px;}
   .bm-body{padding:34px 30px 30px;}
   .bm-close{position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:50%;border:none;background:var(--white);color:var(--ink);font-size:1.3rem;cursor:pointer;box-shadow:0 6px 16px -6px rgba(63,58,52,.35);z-index:2;}
@@ -423,7 +434,7 @@
   .cart-count{position:absolute;top:-2px;right:-4px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--green-deep);color:var(--white);font-family:'Baloo 2';font-weight:700;font-size:.7rem;line-height:18px;text-align:center;}
   .cart-count[hidden]{display:none;}
 
-  .drawer-overlay{position:fixed;inset:0;z-index:140;background:rgba(63,58,52,.45);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .25s ease;}
+  .drawer-overlay{position:fixed;inset:0;z-index:140;background:rgba(63,58,52,.45);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .25s ease;}
   .drawer-overlay.open{opacity:1;pointer-events:auto;}
   .drawer{position:fixed;top:0;bottom:0;right:0;z-index:150;width:min(420px,100%);background:var(--cream);display:flex;flex-direction:column;box-shadow:-12px 0 40px -12px rgba(63,58,52,.35);transform:translateX(100%);visibility:hidden;transition:transform .3s ease,visibility 0s linear .3s;}
   .drawer.open{transform:none;visibility:visible;transition:transform .3s ease;}
@@ -438,6 +449,9 @@
   .btn.disabled{opacity:.45;pointer-events:none;}
   @media (prefers-reduced-motion:reduce){.drawer,.drawer.open,.drawer-overlay{transition:none;}}
 
+  .box-card.agotada .box-photo img{opacity:.55;filter:grayscale(.4);}
+  .box-card.agotada .box-price{color:var(--ink-soft);font-size:.85rem;}
+  button.btn:disabled{opacity:.5;cursor:not-allowed;}
   .bm-field{display:flex;flex-direction:column;gap:6px;font-size:.85rem;font-weight:700;margin-bottom:10px;}
   .bm-field[hidden]{display:none;}
   .bm-field input,.cart-sum input:not([type=radio]){font:inherit;font-weight:600;border:1.5px solid rgba(63,58,52,.16);border-radius:12px;padding:10px 12px;background:var(--white);color:var(--ink);}
@@ -497,6 +511,54 @@
     .cart-price{grid-column:2;flex-direction:row;justify-content:space-between;align-items:center;}
   }
 
+  /* ---------- Cuenta (login / registro) ---------- */
+  .cuenta .wrap{display:flex;justify-content:center;}
+  .cuenta-card{width:100%;max-width:440px;background:var(--white);border:1px solid rgba(63,58,52,.08);border-radius:24px;padding:28px;box-shadow:0 12px 30px -16px rgba(63,58,52,.14);display:flex;flex-direction:column;gap:14px;}
+  .cuenta-card[hidden]{display:none;}
+  .cuenta-card h2{font-size:1.6rem;}
+  .cuenta-sub{color:var(--ink-soft);font-size:.9rem;margin-top:-6px;}
+  .cuenta-aviso{background:var(--green-pale);color:var(--green-deep);font-weight:700;font-size:.88rem;border-radius:14px;padding:10px 14px;}
+  .cuenta-aviso[hidden]{display:none;}
+  .cuenta-tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--cream-2);border-radius:999px;padding:4px;}
+  .cuenta-tabs button{border:0;background:none;border-radius:999px;padding:10px;font-family:'Baloo 2';font-weight:700;font-size:.95rem;color:var(--ink-soft);cursor:pointer;}
+  .cuenta-tabs button[aria-selected=true]{background:var(--white);color:var(--ink);box-shadow:0 2px 8px -4px rgba(63,58,52,.3);}
+  .cuenta-form{display:flex;flex-direction:column;gap:12px;}
+  .cuenta-form[hidden]{display:none;}
+  .cuenta-form label{display:flex;flex-direction:column;gap:6px;font-size:.85rem;font-weight:700;}
+  .cuenta-form input{font:inherit;font-weight:600;border:1.5px solid rgba(63,58,52,.16);border-radius:12px;padding:11px 12px;background:var(--white);color:var(--ink);}
+  .cuenta-form input:focus{outline:2px solid var(--green);outline-offset:1px;border-color:transparent;}
+  .cuenta-form small{color:var(--ink-soft);font-weight:600;}
+  .cuenta-nota{text-align:center;font-size:.85rem;color:var(--ink-soft);}
+  .cuenta-nota a{color:var(--green-deep);font-weight:700;text-decoration:underline;text-underline-offset:3px;}
+
+  /* ---------- Celulares ---------- */
+  /* iPhone hace zoom al tocar un campo con letra de menos de 16px y la página queda corrida */
+  @media (max-width:860px){
+    input:not([type=radio]):not([type=checkbox]),select,textarea{font-size:16px;}
+  }
+  @media (max-width:560px){
+    .wrap{padding:0 20px;}
+    .section{padding:56px 0;}
+    .header-inner{padding:10px 16px;}
+    nav{gap:6px;}
+    .brand img{height:32px;}
+    .brand-name{font-size:1.15rem;}
+    nav .btn-sm{padding:9px 14px;font-size:.78rem;}
+
+    /* Tarjetas de box: lo esencial; el contenido completo está en "Ver qué trae" */
+    .box-items,.box-cta{display:none;}
+    .box-title-row{flex-direction:column;align-items:flex-start;gap:2px;}
+    .box-hint{font-size:.78rem;margin-top:2px;}
+
+    .chip{padding:8px 14px;}
+    .float-ig{width:46px;height:46px;right:14px;bottom:14px;}
+    .float-ig svg{width:22px;height:22px;}
+    footer{padding-bottom:64px;} /* que el botón de Instagram no tape el final */
+  }
+  @media (max-width:370px){
+    .brand-name{display:none;}
+  }
+
   /* Solo para la vista de diseño */
   .diseno-nav{position:fixed;left:12px;bottom:12px;z-index:130;display:flex;align-items:center;gap:4px;flex-wrap:wrap;max-width:calc(100% - 100px);background:var(--ink);color:var(--white);border-radius:16px;padding:6px;font-size:.78rem;font-weight:700;box-shadow:0 8px 24px -8px rgba(0,0,0,.4);}
   .diseno-nav b{padding:0 8px;opacity:.7;font-weight:800;}
@@ -514,11 +576,14 @@
       <span class="brand-name">Manolito</span>
     </a>
     <nav>
-      <a class="navlink" href="#boxes">Boxes</a>
-      <a class="navlink" href="#portachupetes">Portachupetes</a>
-      <a class="navlink" href="#faq">Preguntas</a>
+      <div class="nav-links" id="navLinks">
+        <a class="navlink" href="#boxes">Boxes</a>
+        <a class="navlink" href="#portachupetes">Portachupetes</a>
+        <a class="navlink" href="#ingresar" data-cuenta>Ingresar</a>
+      </div>
       <a class="btn btn-green btn-sm" href="#arma-tu-box">Armá tu box</a>
       <a class="cart-link" href="#checkout" aria-label="Ver carrito"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l-1 13H7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg><span class="cart-count" hidden>0</span></a>
+      <button class="menu-btn" type="button" aria-label="Abrir menú" aria-expanded="false" aria-controls="navLinks"><span></span><span></span><span></span></button>
     </nav>
   </div>
 </header>
@@ -944,6 +1009,48 @@
 </section>
 </div>
 
+<div data-page="ingresar" hidden>
+<section class="section cuenta">
+  <div class="wrap">
+    <div class="cuenta-card" id="cuentaForms">
+      <p class="cuenta-aviso" id="cuentaAviso" hidden></p>
+      <div class="cuenta-tabs" role="tablist">
+        <button type="button" role="tab" data-tab="ingresar" aria-selected="true" aria-controls="formIngresar">Ingresar</button>
+        <button type="button" role="tab" data-tab="registro" aria-selected="false" aria-controls="formRegistro">Crear cuenta</button>
+      </div>
+
+      <form class="cuenta-form" id="formIngresar" novalidate>
+        <h2>¡Hola de nuevo!</h2>
+        <label>Email<input name="email" type="email" required maxlength="120" autocomplete="email"></label>
+        <label>Contraseña<input name="password" type="password" required maxlength="200" autocomplete="current-password"></label>
+        <button class="btn btn-green" type="submit">Ingresar</button>
+        <p class="cart-error" role="alert"></p>
+      </form>
+
+      <form class="cuenta-form" id="formRegistro" novalidate hidden>
+        <h2>Creá tu cuenta</h2>
+        <p class="cuenta-sub">Para comprar más rápido: guardamos tus datos para el checkout.</p>
+        <label>Nombre<input name="nombre" required minlength="2" maxlength="80" autocomplete="name"></label>
+        <label>Email<input name="email" type="email" required maxlength="120" autocomplete="email"></label>
+        <label>Contraseña<input name="password" type="password" required minlength="8" maxlength="200" autocomplete="new-password"><small>Mínimo 8 caracteres.</small></label>
+        <button class="btn btn-green" type="submit">Crear cuenta</button>
+        <p class="cart-error" role="alert"></p>
+      </form>
+
+      <p class="cuenta-nota">¿Solo querés comprar? <a href="#boxes">No hace falta cuenta.</a></p>
+    </div>
+
+    <div class="cuenta-card" id="cuentaLogueado" hidden>
+      <h2>Hola, <span id="cuentaNombre"></span></h2>
+      <p class="cuenta-sub" id="cuentaEmail"></p>
+      <a class="btn btn-green" id="irPanel" href="admin/" hidden>Ir al panel de administración</a>
+      <a class="btn btn-green" id="seguirComprando" href="#boxes">Seguir comprando</a>
+      <button class="btn btn-outline" id="salir" type="button">Cerrar sesión</button>
+    </div>
+  </div>
+</section>
+</div>
+
 <footer>
   <div class="wrap">
     <div class="footer-inner">
@@ -979,30 +1086,15 @@
   <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>
 </a>
 
-<nav class="diseno-nav" aria-label="Vista de diseño"><b>Vista de diseño</b><a href="#inicio">Inicio</a><a href="#arma-tu-box">Armá tu box</a><a href="#checkout">Checkout</a><button type="button" onclick="Carrito.abrir()">Abrir carrito</button></nav>
+<nav class="diseno-nav" aria-label="Vista de diseño"><b>Vista de diseño</b><a href="#inicio">Inicio</a><a href="#arma-tu-box">Armá tu box</a><a href="#checkout">Checkout</a><a href="#ingresar">Ingresar</a><button type="button" onclick="Carrito.abrir()">Abrir carrito</button></nav>
 
+<script>window.__CATALOGO={"productos":[{"personalizable":false,"id":"trapito","nombre":"Trapito de apego","precio":890,"colores":["Rosa","Celeste","Beige"],"descripcion":"Trapito de apego de muselina, suave y abrazable, su compañero para dormir.","foto":"assets/img/arma-tu-box/producto-trapito.jpg"},{"personalizable":false,"id":"zapatitos","nombre":"Zapatitos tejidos","precio":490,"colores":["Rosa","Celeste","Beige"],"descripcion":"Zapatitos tejidos con carita, suaves y abrigados para los primeros días.","foto":"assets/img/arma-tu-box/producto-zapatitos.jpg"},{"personalizable":false,"id":"babero","nombre":"Babero de algodón","precio":190,"colores":null,"descripcion":"Babero de muselina de algodón, suave e hipoalergénico, con broche ajustable.","foto":"assets/img/arma-tu-box/producto-babero.jpg"},{"personalizable":false,"id":"manta","nombre":"Manta de muselina","precio":890,"colores":["Rosa","Celeste","Beige","Estampada"],"descripcion":"Manta de muselina, liviana y suave, ideal para abrigar al bebé.","foto":"assets/img/arma-tu-box/producto-manta.jpg"},{"personalizable":false,"id":"peine","nombre":"Set de peine bamboo","precio":690,"colores":null,"descripcion":"Set de cepillo de cerdas suaves y peine de madera natural para cuidar el pelito del bebé.","foto":"assets/img/arma-tu-box/producto-peine.jpg"},{"personalizable":false,"id":"sonajero","nombre":"Sonajero de tela","precio":690,"colores":null,"descripcion":"Sonajero de tela suave y seguro, ideal para estimular y calmar al bebé.","foto":"assets/img/arma-tu-box/producto-sonajero.jpg"},{"personalizable":false,"id":"guarda","nombre":"Guardachupete de silicona","precio":390,"colores":["Rosa","Celeste","Beige"],"descripcion":"Estuche de silicona suave para guardar y llevar el chupete siempre limpio.","foto":"assets/img/arma-tu-box/producto-guarda.jpg"},{"personalizable":false,"id":"mordillo","nombre":"Mordillo de silicona","precio":490,"colores":["Rosa","Celeste","Beige"],"descripcion":"Mordillo de silicona y madera natural, seguro y libre de BPA para aliviar las encías.","foto":"assets/img/arma-tu-box/producto-mordillo.jpg"},{"personalizable":true,"id":"porta","nombre":"Portachupete personalizado","precio":790,"colores":null,"descripcion":"Con el nombre de tu bebé (hasta 5 letras), en silicona libre de BPA o madera natural.","foto":"assets/img/arma-tu-box/producto-porta.jpg"}],"boxes":[{"etiqueta":null,"id":"mini-box","nombre":"Mini box","precio":890,"foto":"assets/img/boxes/mini-box.jpg","productos":["babero","porta"],"items":["Babero de algodón","Portachupete personalizado"]},{"etiqueta":null,"id":"dulce-llegada","nombre":"Box detalles especiales","precio":1490,"foto":"assets/img/boxes/box-dulce-llegada.jpg","productos":["zapatitos","babero","porta"],"items":["Zapatitos tejidos","Babero de algodón","Portachupete personalizado"]},{"etiqueta":null,"id":"esencial","nombre":"Box Esencial","precio":1490,"foto":"assets/img/boxes/box-esencial-rosa.jpg","productos":["guarda","mordillo","porta"],"items":["Estuche de silicona para chupete","Mordillo de silicona y madera","Portachupete personalizado"]},{"etiqueta":null,"id":"dulce-suenos","nombre":"Box Dulce sueños","precio":1590,"foto":"assets/img/boxes/box-dulce-suenos.jpg","productos":["trapito","porta"],"items":["Trapito de apego","Portachupete personalizado"]},{"etiqueta":null,"id":"primeros-mimos","nombre":"Box Primeros mimos","precio":1990,"foto":"assets/img/boxes/box-primeros-mimos.jpg","productos":["zapatitos","babero","sonajero","porta"],"items":["Zapatitos tejidos","Babero de algodón","Sonajero de tela suave y seguro","Portachupete personalizado"]},{"etiqueta":null,"id":"pequeno-tesoro","nombre":"Box Pequeño tesoro","precio":2190,"foto":"assets/img/boxes/box-pequeno-tesoro.jpg","productos":["trapito","zapatitos","porta"],"items":["Trapito de apego","Zapatitos tejidos","Portachupete personalizado"]},{"etiqueta":null,"id":"bienvenida","nombre":"Box Bienvenida","precio":2790,"foto":"assets/img/boxes/box-bienvenida.jpg","productos":["manta","peine","trapito","porta"],"items":["Manta de muselina","Set de peine","Trapito de apego","Portachupete personalizado"]},{"etiqueta":"COMPLETA","id":"especial-manolito","nombre":"Box especial Manolito","precio":3190,"foto":"assets/img/boxes/box-especial-manolito.jpg","productos":["manta","babero","zapatitos","peine","porta"],"items":["Manta de muselina","Babero de algodón","Zapatitos tejidos","Cepillo y peine de madera","Conejo de peluche","Portachupete personalizado"]}]};</script>
 <script>
 // ===== Vista de diseño: backend simulado en el navegador (no hace falta servidor) =====
 (function(){
-  var COL=['Rosa','Celeste','Beige'];
-  function prod(id,nombre,precio,colores,personalizable){return {id:id,nombre:nombre,precio:precio,colores:colores,personalizable:!!personalizable,foto:'assets/img/arma-tu-box/producto-'+id+'.jpg',stock:null,activo:true};}
-  var PRODUCTOS=[
-    prod('trapito','Trapito de apego',890,COL), prod('zapatitos','Zapatitos tejidos',490,COL), prod('babero','Babero de algodón',190,null),
-    prod('manta','Manta de muselina',890,COL.concat('Estampada')), prod('peine','Set de peine bamboo',690,null), prod('sonajero','Sonajero de tela',690,null),
-    prod('guarda','Guardachupete de silicona',390,COL), prod('mordillo','Mordillo de silicona',490,COL), prod('porta','Portachupete personalizado',790,null,true)
-  ];
-  function box(id,nombre,precio,foto,items){return {id:id,nombre:nombre,precio:precio,foto:'assets/img/boxes/'+foto,items:items,activo:true};}
-  var P='Portachupete personalizado';
-  var BOXES=[
-    box('mini-box','Mini box',890,'mini-box.jpg',['Babero de algodón',P]),
-    box('dulce-llegada','Box detalles especiales',1490,'box-dulce-llegada.jpg',['Zapatitos tejidos','Babero de algodón',P]),
-    box('esencial','Box Esencial',1490,'box-esencial-rosa.jpg',['Estuche de silicona para chupete','Mordillo de silicona y madera',P]),
-    box('dulce-suenos','Box Dulce sueños',1590,'box-dulce-suenos.jpg',['Trapito de apego',P]),
-    box('primeros-mimos','Box Primeros mimos',1990,'box-primeros-mimos.jpg',['Zapatitos tejidos','Babero de algodón','Sonajero de tela suave y seguro',P]),
-    box('pequeno-tesoro','Box Pequeño tesoro',2190,'box-pequeno-tesoro.jpg',['Trapito de apego','Zapatitos tejidos',P]),
-    box('bienvenida','Box Bienvenida',2790,'box-bienvenida.jpg',['Manta de muselina','Set de peine','Trapito de apego','Portachupete personalizado']),
-    box('especial-manolito','Box especial Manolito',3190,'box-especial-manolito.jpg',['Manta de muselina','Babero de algodón','Zapatitos tejidos','Cepillo y peine de madera','Conejo de peluche',P])
-  ];
+  // Catálogo tomado de backend/src/seed.ts al generar este archivo
+  var PRODUCTOS=window.__CATALOGO.productos.map(function(p){return Object.assign({},p,{stock:null,activo:true});});
+  var BOXES=window.__CATALOGO.boxes.map(function(b){return Object.assign({},b,{activo:true,agotada:false});});
   function buscar(lista,id){return lista.filter(function(x){return x.id===id;})[0];}
 
   // Mismas reglas que backend/src/pedidos.ts
@@ -1024,12 +1116,21 @@
     var sub=lineas.reduce(function(s,l){return s+l.total;},0), rec=pago==='mercadopago'?Math.round(sub*0.1):0;
     return {subtotal:sub,recargo:rec,total:sub+rec};
   }
+  function entrar(u){
+    if(!u.email) throw new Error('Completá el email');
+    u.id=1; u.rol='cliente'; sessionStorage.setItem('dz-usuario',JSON.stringify(u)); return {usuario:u};
+  }
   function nombreDe(it){var x=buscar(it.tipo==='box'?BOXES:PRODUCTOS,it.id);return x&&x.nombre;}
 
   var API={
     'GET /api/productos':function(){return PRODUCTOS;},
     'GET /api/boxes':function(){return BOXES;},
     'POST /api/eventos':function(){return null;},
+    // Cuentas simuladas: la "sesión" vive en sessionStorage
+    'GET /api/auth/yo':function(){try{return {usuario:JSON.parse(sessionStorage.getItem('dz-usuario'))};}catch(e){return {usuario:null};}},
+    'POST /api/auth/login':function(b){return entrar({nombre:'Cliente de prueba',email:b.email});},
+    'POST /api/auth/registro':function(b){return entrar({nombre:b.nombre,email:b.email});},
+    'POST /api/auth/logout':function(){sessionStorage.removeItem('dz-usuario');return {ok:true};},
     'POST /api/carrito':function(b){
       var lineas=[],avisos=[];
       (b.items||[]).forEach(function(it,i){
@@ -1068,6 +1169,28 @@ window.track=function(tipo,ref){
 };
 track('visita',location.pathname);
 document.addEventListener('click',function(e){if(e.target.closest('a[href*="instagram.com"]'))track('instagram',location.pathname);});
+
+// Menú del celular (☰)
+(function(){
+  var b=document.querySelector('.menu-btn'), h=document.querySelector('header'); if(!b) return;
+  function abrir(si){h.classList.toggle('menu-open',si);b.setAttribute('aria-expanded',si);b.setAttribute('aria-label',si?'Cerrar menú':'Abrir menú');}
+  b.addEventListener('click',function(){abrir(!h.classList.contains('menu-open'));});
+  document.querySelectorAll('.nav-links a').forEach(function(a){a.addEventListener('click',function(){abrir(false);});});
+  document.addEventListener('click',function(e){if(!h.contains(e.target))abrir(false);});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')abrir(false);});
+})();
+
+// Link de cuenta del header: "Ingresar", o el nombre si ya hay sesión
+(function(){
+  var a=document.querySelector('[data-cuenta]'); if(!a) return;
+  if(!/login\.html$/.test(location.pathname)) 
+  fetch('/api/auth/yo').then(function(r){return r.json();}).then(function(d){
+    var u=d.usuario; if(!u) return;
+    a.textContent=u.rol==='admin'?'Panel':'Hola, '+u.nombre.split(' ')[0];
+    if(u.rol==='admin') a.href='admin/';
+    else if(!/login\.html$/.test(location.pathname)) a.href='login.html';
+  }).catch(function(){});
+})();
 
 // Galerías: genera las imágenes numeradas a partir de data-img="ruta-{n}.jpg" y data-count
 document.querySelectorAll('[data-img]').forEach(function(g){
@@ -1140,8 +1263,9 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
     document.querySelectorAll('.box-card').forEach(function(card){
       var b=m[card.querySelector('h3').textContent.trim()];
       if(!b){card.style.display='none';return;}
-      card.querySelector('.box-price').textContent='$'+b.precio;
+      card.querySelector('.box-price').textContent=b.agotada?'Sin stock':'$'+b.precio;
       card.dataset.boxId=b.id;
+      card.classList.toggle('agotada',b.agotada);
     });
   }).catch(function(){});
   var actual=null;
@@ -1167,6 +1291,9 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
     document.getElementById('bmBuy').hidden=!card.dataset.boxId;
     document.getElementById('bmNameWrap').hidden=!/portachupete/i.test(card.querySelector('.box-items').textContent);
     document.getElementById('bmName').value=''; document.getElementById('bmError').textContent='';
+    var agotada=card.classList.contains('agotada'), add=document.getElementById('bmAdd');
+    add.disabled=agotada; add.textContent=agotada?'Sin stock por ahora':'Agregar al carrito';
+    document.getElementById('bmNameWrap').hidden=document.getElementById('bmNameWrap').hidden||agotada;
     ov.classList.add('open'); ov.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden';
   }
   function close(){ov.classList.remove('open');ov.setAttribute('aria-hidden','true');document.body.style.overflow='';}
@@ -1187,6 +1314,27 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
   });
   ov.addEventListener('click',function(e){if(e.target===ov)close();});
   document.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
+})();
+
+// Mini box: carrete de fotos; al tocar un color se muestra la foto de ese color
+(function(){
+  document.querySelectorAll('.box-photo.bs').forEach(function(ph){
+    var card=ph.closest('.box-card'), track=ph.querySelector('.bs-track'), imgs=[].slice.call(track.children);
+    var sw=[].slice.call(card.querySelectorAll('button.bc')), dots=ph.querySelector('.bs-dots'), cur=-1;
+    imgs.forEach(function(){dots.appendChild(document.createElement('i'));});
+    function go(i){ i=Math.max(0,Math.min(imgs.length-1,i)); track.scrollTo({left:i*track.clientWidth,behavior:'smooth'}); }
+    function mark(i){
+      if(i===cur) return; cur=i;
+      [].forEach.call(dots.children,function(d,k){d.classList.toggle('on',k===i);});
+      sw.forEach(function(b,k){b.classList.toggle('on',(b.dataset.slide!==undefined?+b.dataset.slide:k)===i);});
+      imgs.forEach(function(im,k){im.classList.toggle('cur',k===i);});
+    }
+    track.addEventListener('scroll',function(){ mark(Math.round(track.scrollLeft/(track.clientWidth||1))); },{passive:true});
+    sw.forEach(function(b,k){ b.addEventListener('click',function(e){e.stopPropagation();go(b.dataset.slide!==undefined?+b.dataset.slide:k);}); });
+    ph.querySelector('.bs-prev').addEventListener('click',function(e){e.stopPropagation();go(cur-1);});
+    ph.querySelector('.bs-next').addEventListener('click',function(e){e.stopPropagation();go(cur+1);});
+    mark(0);
+  });
 })();
 
 </script>
@@ -1522,6 +1670,13 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
   window.addEventListener('carrito',cotizar);
   $('editarCarrito').addEventListener('click',function(){Carrito.abrir();});
 
+  // Con sesión iniciada, el pedido queda en la cuenta y se completan nombre y email
+  fetch('/api/auth/yo').then(function(r){return r.json();}).then(function(d){
+    var u=d.usuario; if(!u) return;
+    if(!form.nombre.value) form.nombre.value=u.nombre;
+    if(!form.email.value) form.email.value=u.email;
+  }).catch(function(){});
+
   // ---- Formulario ----
   function actualizarDireccion(){
     var pick=entrega()==='pickup';
@@ -1577,9 +1732,75 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
 
 </script>
 <script>
+(function(){
+  var $=function(id){return document.getElementById(id);};
+  var volver=new URLSearchParams(location.search).get('volver');
+  // Solo rutas del propio sitio: "/algo", nunca "//otro-sitio.com" ni "https://..." (evita usar el login para redirigir a una página falsa)
+  if(volver&&!/^\/(?![\/\\])/.test(volver)) volver=null;
+  var pideAdmin=volver&&/^\/admin/.test(volver);
+
+  function destino(u){
+    if(volver&&(!pideAdmin||u.rol==='admin')) return volver;
+    return u.rol==='admin'?'admin/':'#inicio';
+  }
+
+  function mostrarLogueado(u){
+    $('cuentaForms').hidden=true; $('cuentaLogueado').hidden=false;
+    $('cuentaNombre').textContent=u.nombre;
+    $('cuentaEmail').textContent=u.email;
+    $('irPanel').hidden=u.rol!=='admin';
+    $('seguirComprando').hidden=u.rol==='admin';
+  }
+
+  // ---- Pestañas: Ingresar / Crear cuenta ----
+  function tab(cual){
+    document.querySelectorAll('.cuenta-tabs button').forEach(function(b){b.setAttribute('aria-selected',b.dataset.tab===cual);});
+    $('formIngresar').hidden=cual!=='ingresar';
+    $('formRegistro').hidden=cual!=='registro';
+    var f=cual==='ingresar'?$('formIngresar'):$('formRegistro');
+    f.querySelector('input').focus();
+  }
+  document.querySelectorAll('.cuenta-tabs button').forEach(function(b){b.addEventListener('click',function(){tab(b.dataset.tab);});});
+
+  // ---- Envío de los formularios ----
+  function enviar(form,url,cuerpo){
+    form.addEventListener('submit',function(e){
+      e.preventDefault();
+      var err=form.querySelector('.cart-error'); err.textContent='';
+      if(!form.reportValidity()) return;
+      var btn=form.querySelector('button[type=submit]'), texto=btn.textContent; btn.disabled=true; btn.textContent='Un momento…';
+      fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cuerpo(form))})
+        .then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error(d.detalles?d.detalles.map(function(x){return x.replace(/^[a-z]+: /,'');}).join(' · '):d.error);return d;});})
+        .then(function(d){
+          if(pideAdmin&&d.usuario.rol!=='admin'){mostrarLogueado(d.usuario);return;}
+          location.href=destino(d.usuario);
+        })
+        .catch(function(e){err.textContent=e.message||'No pudimos conectarnos. Probá de nuevo.';})
+        .then(function(){btn.disabled=false;btn.textContent=texto;});
+    });
+  }
+  enviar($('formIngresar'),'/api/auth/login',function(f){return {email:f.email.value,password:f.password.value};});
+  enviar($('formRegistro'),'/api/auth/registro',function(f){return {nombre:f.nombre.value,email:f.email.value,password:f.password.value};});
+
+  $('salir').addEventListener('click',function(){
+    fetch('/api/auth/logout',{method:'POST'}).catch(function(){}).then(function(){location.href='#inicio';});
+  });
+
+  // ---- Al abrir: ¿ya hay sesión? ----
+  if(pideAdmin){$('cuentaAviso').textContent='Ingresá con la cuenta de administrador para ver el panel.';$('cuentaAviso').hidden=false;}
+  if(location.hash==='#registro') tab('registro');
+  fetch('/api/auth/yo').then(function(r){return r.json();}).then(function(d){
+    var u=d.usuario; if(!u) return;
+    if(pideAdmin&&u.rol==='admin'){location.replace(volver);return;}
+    if(!pideAdmin) mostrarLogueado(u);
+  }).catch(function(){});
+})();
+
+</script>
+<script>
 // ===== Vista de diseño: navegación entre "páginas" dentro del mismo archivo =====
 (function(){
-  var PAGINAS=['inicio','arma-tu-box','checkout'];
+  var PAGINAS=['inicio','arma-tu-box','checkout','ingresar'];
   function ir(){
     var h=decodeURIComponent(location.hash.slice(1))||'inicio', pag=h, el=null;
     if(PAGINAS.indexOf(h)<0){el=document.getElementById(h);var w=el&&el.closest('[data-page]');pag=w?w.dataset.page:'inicio';}
@@ -1589,28 +1810,6 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
     if(el) el.scrollIntoView(); else window.scrollTo(0,0);
   }
   window.addEventListener('hashchange',ir); ir();
-})();
-</script>
-<script>
-// Mini box: carrete de fotos; al tocar un color se muestra la foto de ese color
-(function(){
-  document.querySelectorAll('.box-photo.bs').forEach(function(ph){
-    var card=ph.closest('.box-card'), track=ph.querySelector('.bs-track'), imgs=[].slice.call(track.children);
-    var sw=[].slice.call(card.querySelectorAll('button.bc')), dots=ph.querySelector('.bs-dots'), cur=-1;
-    imgs.forEach(function(){dots.appendChild(document.createElement('i'));});
-    function go(i){ i=Math.max(0,Math.min(imgs.length-1,i)); track.scrollTo({left:i*track.clientWidth,behavior:'smooth'}); }
-    function mark(i){
-      if(i===cur) return; cur=i;
-      [].forEach.call(dots.children,function(d,k){d.classList.toggle('on',k===i);});
-      sw.forEach(function(b,k){b.classList.toggle('on',(b.dataset.slide!==undefined?+b.dataset.slide:k)===i);});
-      imgs.forEach(function(im,k){im.classList.toggle('cur',k===i);});
-    }
-    track.addEventListener('scroll',function(){ mark(Math.round(track.scrollLeft/(track.clientWidth||1))); },{passive:true});
-    sw.forEach(function(b,k){ b.addEventListener('click',function(e){e.stopPropagation();go(b.dataset.slide!==undefined?+b.dataset.slide:k);}); });
-    ph.querySelector('.bs-prev').addEventListener('click',function(e){e.stopPropagation();go(cur-1);});
-    ph.querySelector('.bs-next').addEventListener('click',function(e){e.stopPropagation();go(cur+1);});
-    mark(0);
-  });
 })();
 </script>
 </body>

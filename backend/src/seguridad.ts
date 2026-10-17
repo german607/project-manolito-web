@@ -10,6 +10,10 @@ export function revisarConfig() {
     console.error('ADMIN_PASSWORD falta o tiene menos de 16 caracteres. En producción es obligatoria.');
     process.exit(1);
   }
+  if (!DEV && !process.env.ADMIN_EMAIL) {
+    console.error('Falta ADMIN_EMAIL: es el usuario con el que el admin ingresa.');
+    process.exit(1);
+  }
 }
 
 // "trust proxy" solo si el hosting lo indica: si no, cualquiera inventa su IP con X-Forwarded-For

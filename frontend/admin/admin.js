@@ -11,7 +11,7 @@ async function api(path, { method = 'GET', body } = {}) {
     body: body && !esArchivo ? JSON.stringify(body) : body,
   });
   const data = await r.json().catch(() => ({}));
-  if (r.status === 401 && path !== '/login') { mostrar('login'); throw new Error('Sesión vencida'); }
+  if (r.status === 401 || r.status === 403) { irAlLogin(); throw new Error('Sesión vencida'); }
   if (!r.ok) throw new Error(data.detalles ? data.detalles.join(', ') : data.error || 'Error');
   return data;
 }
@@ -23,27 +23,13 @@ function toast(msg) {
   clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-// ---------- Login ----------
+// ---------- Sesión: se ingresa por la página de login común (/login.html) ----------
 
-function mostrar(cual) {
-  $('#login').hidden = cual !== 'login';
-  $('#app').hidden = cual !== 'app';
-  if (cual === 'login') $('#loginPass').focus();
-}
-
-$('#loginForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  $('#loginError').textContent = '';
-  try {
-    await api('/login', { method: 'POST', body: { password: $('#loginPass').value } });
-    $('#loginPass').value = '';
-    mostrar('app'); abrirTab(tabActual());
-  } catch (err) { $('#loginError').textContent = err.message; }
-});
+const irAlLogin = () => location.replace('/login.html?volver=' + encodeURIComponent('/admin/' + location.hash));
 
 $('#logout').addEventListener('click', async () => {
-  await api('/logout', { method: 'POST' }).catch(() => {});
-  mostrar('login');
+  await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+  location.href = '/login.html';
 });
 
 // ---------- Pestañas ----------
@@ -180,9 +166,9 @@ $('#filtroEstado').addEventListener('change', () => cargarPedidos().catch(err =>
 async function cargarPedidos() {
   const estado = $('#filtroEstado').value;
   const pedidos = await api('/pedidos' + (estado ? '?estado=' + estado : ''));
-  const fecha = s => new Date(s.replace(' ', 'T') + 'Z').toLocaleString('es-UY', { timeZone: 'America/Montevideo', dateStyle: 'short', timeStyle: 'short' });
+  const fecha = s => new Date(s).toLocaleString('es-UY', { timeZone: 'America/Montevideo', dateStyle: 'short', timeStyle: 'short' });
   // Sin pagar se cancela solo a las 2 h (VENCE_HORAS en backend/src/pedidos.ts)
-  const vence = s => new Date(new Date(s.replace(' ', 'T') + 'Z').getTime() + 2 * 3600_000).toLocaleTimeString('es-UY', { timeZone: 'America/Montevideo', hour: '2-digit', minute: '2-digit' });
+  const vence = s => new Date(new Date(s).getTime() + 2 * 3600_000).toLocaleTimeString('es-UY', { timeZone: 'America/Montevideo', hour: '2-digit', minute: '2-digit' });
   $('#listaPedidos').innerHTML = pedidos.length ? pedidos.map(p => `
     <article class="card pedido" data-id="${p.id}">
       <div>
@@ -208,4 +194,8 @@ async function cargarPedidos() {
 
 // ---------- Inicio ----------
 
-api('/yo').then(() => { mostrar('app'); abrirTab(tabActual()); }).catch(() => mostrar('login'));
+fetch('/api/auth/yo').then(r => r.json()).then(({ usuario }) => {
+  if (usuario?.rol !== 'admin') return irAlLogin();
+  $('#app').hidden = false;
+  abrirTab(tabActual());
+}).catch(irAlLogin);

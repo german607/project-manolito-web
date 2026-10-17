@@ -21,11 +21,6 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--pink);outl
 .error{color:#A63D3D;min-height:1.2em;font-size:.9rem;}
 .hint{color:var(--ink-soft);font-size:.85rem;}
 
-/* Login */
-.login{min-height:100vh;display:grid;place-items:center;padding:16px;}
-.login-card{width:min(360px,100%);display:flex;flex-direction:column;gap:16px;text-align:center;}
-.login-card img{height:56px;margin:0 auto;}
-.login-card label{display:flex;flex-direction:column;gap:6px;text-align:left;font-size:.9rem;}
 
 /* Layout */
 .top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:20px;padding:12px 24px;background:rgba(251,237,240,0.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);flex-wrap:wrap;}

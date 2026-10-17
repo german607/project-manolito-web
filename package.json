@@ -1,0 +1,12 @@
+{
+  "name": "manolito",
+  "private": true,
+  "description": "Raíz para el deploy en Railway: el código está en backend/ (API) y frontend/ (web estática)",
+  "scripts": {
+    "build": "npm --prefix backend ci --include=dev && npm --prefix backend run build",
+    "start": "npm --prefix backend start"
+  },
+  "engines": {
+    "node": ">=20.12"
+  }
+}

@@ -23,6 +23,13 @@
 - [x] Lista de pedidos con filtro por estado y botón para cambiarlo
 - [x] Editar productos (precio, stock, activo) y subir fotos
 
+## Cuentas
+- [x] Página `login.html` con Ingresar / Crear cuenta; el admin ingresa por acá y va directo al panel
+- [x] Link "Ingresar" en el header (en el celular, dentro del menú ☰) que muestra el nombre cuando hay sesión
+- [x] El checkout completa nombre y email si hay sesión
+- [ ] "¿Olvidaste tu contraseña?" (cuando exista en el backend)
+- [ ] Página "Mis pedidos"
+
 ## Seguridad
 - [ ] Sacar los 4 `onclick=` inline de `index.html` (flechas de los carruseles) y pasarlos a `js/main.js`, para poder activar una Content-Security-Policy estricta
 - [ ] Regla para todo código nuevo: nunca meter datos del servidor o del usuario con `innerHTML` sin escapar (usar `textContent` o `esc()`, como en el carrito y el admin)

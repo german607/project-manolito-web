@@ -7,6 +7,28 @@ window.track=function(tipo,ref){
 track('visita',location.pathname);
 document.addEventListener('click',function(e){if(e.target.closest('a[href*="instagram.com"]'))track('instagram',location.pathname);});
 
+// Menú del celular (☰)
+(function(){
+  var b=document.querySelector('.menu-btn'), h=document.querySelector('header'); if(!b) return;
+  function abrir(si){h.classList.toggle('menu-open',si);b.setAttribute('aria-expanded',si);b.setAttribute('aria-label',si?'Cerrar menú':'Abrir menú');}
+  b.addEventListener('click',function(){abrir(!h.classList.contains('menu-open'));});
+  document.querySelectorAll('.nav-links a').forEach(function(a){a.addEventListener('click',function(){abrir(false);});});
+  document.addEventListener('click',function(e){if(!h.contains(e.target))abrir(false);});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')abrir(false);});
+})();
+
+// Link de cuenta del header: "Ingresar", o el nombre si ya hay sesión
+(function(){
+  var a=document.querySelector('[data-cuenta]'); if(!a) return;
+  if(!/login\.html$/.test(location.pathname)) a.href='login.html?volver='+encodeURIComponent(location.pathname+location.hash);
+  fetch('/api/auth/yo').then(function(r){return r.json();}).then(function(d){
+    var u=d.usuario; if(!u) return;
+    a.textContent=u.rol==='admin'?'Panel':'Hola, '+u.nombre.split(' ')[0];
+    if(u.rol==='admin') a.href='admin/';
+    else if(!/login\.html$/.test(location.pathname)) a.href='login.html';
+  }).catch(function(){});
+})();
+
 // Galerías: genera las imágenes numeradas a partir de data-img="ruta-{n}.jpg" y data-count
 document.querySelectorAll('[data-img]').forEach(function(g){
   for(var n=1;n<=+g.dataset.count;n++){

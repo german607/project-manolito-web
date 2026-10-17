@@ -91,8 +91,6 @@
   .hero-card h1 .hl{color:var(--green-deep);font-style:italic;}
   .hero-card p.sub{margin:18px auto 26px;font-size:1.08rem;color:var(--ink-soft);max-width:500px;line-height:1.65;font-weight:600;}
   .hero-card .hero-ctas{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;}
-  .hero-trust{list-style:none;padding:0;margin:22px 0 0;display:flex;gap:8px 22px;flex-wrap:wrap;justify-content:center;font-weight:700;font-size:.86rem;color:var(--ink-soft);}
-  .hero-trust li{position:relative;}
   .ha-badge{position:absolute;right:-26px;top:-30px;width:118px;height:118px;border-radius:50%;background:var(--green-deep);color:var(--white);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;transform:rotate(10deg);box-shadow:0 14px 26px -12px rgba(63,58,52,.4);line-height:1.15;}
   .ha-badge b{font-family:'Baloo 2';font-size:1.2rem;line-height:1.05;}
   .ha-badge span{font-size:.7rem;font-weight:800;letter-spacing:.02em;}
@@ -107,14 +105,13 @@
     .hero-collage img:nth-child(n+7){display:none;}
     .hero-collage img{border-radius:10px;}
     .hero-collage::after{background:linear-gradient(180deg,rgba(255,252,250,0) 55%,rgba(255,252,250,.97) 100%);}
-    .hero-wrap{min-height:0;margin-top:-40px;padding:0 16px 10px;}
-    .hero-card{padding:26px 18px 22px;border-radius:26px;background:rgba(255,255,255,.94);}
+    .hero-wrap{min-height:0;margin-top:-96px;padding:0 16px 10px;}
+    .hero-card{padding:22px 18px 20px;border-radius:26px;background:rgba(255,255,255,.94);}
     .hero-card h1{font-size:1.75rem;}
     .hero-card p.sub{font-size:.96rem;margin:12px auto 18px;}
     .hero-card .hero-ctas{gap:10px;}
     .hero-card .hero-ctas .btn{flex:1 1 100%;text-align:center;padding-top:11px;padding-bottom:11px;}
-    .hero-trust{margin-top:16px;gap:6px 14px;font-size:.78rem;}
-    .ha-badge{width:78px;height:78px;right:-4px;top:-26px;}
+      .ha-badge{width:78px;height:78px;right:-4px;top:-26px;}
     .ha-badge b{font-size:.78rem;}
     .ha-badge span{font-size:.5rem;}
     .hero .features{margin-top:20px;}

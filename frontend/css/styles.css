@@ -114,7 +114,7 @@
     .hero-card p.sub{font-size:.96rem;margin:12px auto 18px;}
     .hero-card .hero-ctas{gap:10px;}
     .hero-card .hero-ctas .btn{flex:1 1 100%;text-align:center;padding-top:11px;padding-bottom:11px;}
-    .hero-trust{display:none;}
+    .hero-trust{margin-top:16px;gap:6px 14px;font-size:.78rem;}
     .ha-badge{width:78px;height:78px;right:-4px;top:-26px;}
     .ha-badge b{font-size:.78rem;}
     .ha-badge span{font-size:.5rem;}

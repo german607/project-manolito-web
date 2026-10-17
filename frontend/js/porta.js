@@ -1,6 +1,6 @@
 (function(){
   var root=document.getElementById('portaBuy'); if(!root) return;
-  var N={Silicona:20,Madera:9}, BASE=790, INC=5, EXTRA=20;
+  var N={Silicona:19,Madera:9}, BASE=790, INC=5, EXTRA=20;
   var mat='Silicona', lam=0;
   var tabs=root.querySelector('.pb-tabs'), grid=root.querySelector('.pb-grid'), nameI=root.querySelector('#pbName'),
       detI=root.querySelector('#pbDet'), priceE=root.querySelector('#pbPrice'), hintE=root.querySelector('#pbHint'),

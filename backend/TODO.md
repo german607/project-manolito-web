@@ -28,6 +28,10 @@
 - [x] Endpoints de productos: editar precio, stock, activo/inactivo
 - [x] Subida de fotos de productos
 
+## Reglas de compra (pedido por la dueña)
+- [ ] **Nombre del bebé obligatorio**: `POST /api/pedidos` debe rechazar (400) cualquier portachupete personalizado, y cualquier box que lo traiga, sin `nombreBebe` (no vacío, sin solo espacios, máx. 20). Hoy se valida para `porta` y las boxes con portachupete; revisar que cubra todos los caminos (carrito, "Armá tu box" y la compra directa desde la sección Portachupetes) y agregar test para cada uno
+- [ ] **Mínimo de 2 productos en "Armá tu box"**: no se puede comprar un armado con menos de 2 productos distintos. El portachupete se puede comprar solo desde su sección, así que el carrito debe mandar el origen (ej. `origen: 'arma'`) y el servidor rechazar (400) si ese armado trae menos de 2 productos. Agregar test. El frontend (`arma.js`) deberá mostrar el aviso "Elegí al menos 2 productos"
+
 ## Seguridad
 
 Verificado contra el servidor el 2026-10-14. Sin vulnerabilidades conocidas en dependencias (`npm audit`: 0).

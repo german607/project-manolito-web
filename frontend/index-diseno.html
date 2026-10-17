@@ -1562,7 +1562,7 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
   });
 
   // Selector de modelos de portachupete: lista todas las láminas de fotos y se elige material + lámina + detalle
-  var LAM={Silicona:20,Madera:9}, mod=null;
+  var LAM={Silicona:19,Madera:9}, mod=null;
   function abrirModelos(p){
     var s=st[p.id]=st[p.id]||{};
     if(!mod){
@@ -1871,7 +1871,7 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
 </script>
 <script>(function(){
   var root=document.getElementById('portaBuy'); if(!root) return;
-  var N={Silicona:20,Madera:9}, BASE=790, INC=5, EXTRA=20;
+  var N={Silicona:19,Madera:9}, BASE=790, INC=5, EXTRA=20;
   var mat='Silicona', lam=0;
   var tabs=root.querySelector('.pb-tabs'), grid=root.querySelector('.pb-grid'), nameI=root.querySelector('#pbName'),
       detI=root.querySelector('#pbDet'), priceE=root.querySelector('#pbPrice'), hintE=root.querySelector('#pbHint'),

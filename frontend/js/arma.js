@@ -70,7 +70,7 @@
   });
 
   // Selector de modelos de portachupete: lista todas las láminas de fotos y se elige material + lámina + detalle
-  var LAM={Silicona:20,Madera:9}, mod=null;
+  var LAM={Silicona:19,Madera:9}, mod=null;
   function abrirModelos(p){
     var s=st[p.id]=st[p.id]||{};
     if(!mod){

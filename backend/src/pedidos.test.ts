@@ -24,7 +24,7 @@ test('suma productos, boxes y cantidades', async () => {
 
 test('Mercado Pago agrega 10%', async () => {
   const c = await cotizar([{ tipo: 'box', id: 'esencial', nombreBebe: 'Ema' }], 'mercadopago');
-  assert.deepEqual([c.subtotal, c.recargo, c.total], [1490, 149, 1639]);
+  assert.deepEqual([c.subtotal, c.recargo, c.total], [1590, 159, 1749]);
 });
 
 test('rechaza color inexistente y producto desconocido', async () => {

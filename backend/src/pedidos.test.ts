@@ -22,6 +22,13 @@ test('portachupete: guarda el modelo elegido en la línea', async () => {
   assert.equal(c.lineas[0].modelo, 'Silicona N° 2');
 });
 
+test('color Estampada pide contar qué estampado', async () => {
+  await assert.rejects(cotizar([{ tipo: 'producto', id: 'manta', color: 'Estampada' }]), /estampado/);
+  const c = await cotizar([{ tipo: 'producto', id: 'manta', color: 'Estampada', estampado: 'Ositos' }]);
+  assert.equal(c.lineas[0].estampado, 'Ositos');
+  await assert.rejects(cotizar([{ tipo: 'producto', id: 'manta', color: 'Rosa', estampado: 'Ositos' }]), /Estampada/);
+});
+
 test('suma productos, boxes y cantidades', async () => {
   const c = await cotizar([{ tipo: 'producto', id: 'babero', cantidad: 2 }, { tipo: 'box', id: 'mini-box', nombreBebe: 'Ema' }]);
   assert.equal(c.subtotal, 190 * 2 + 890);

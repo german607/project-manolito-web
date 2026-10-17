@@ -6,7 +6,7 @@ const foto = (id: string) => `assets/img/arma-tu-box/producto-${id}.jpg`;
 export const PRODUCTOS = [
   { id: 'trapito', nombre: 'Trapito de apego', precio: 890, colores: COL, descripcion: 'Trapito de apego de muselina, suave y abrazable, su compañero para dormir.' },
   { id: 'zapatitos', nombre: 'Zapatitos tejidos', precio: 490, colores: COL, descripcion: 'Zapatitos tejidos con carita, suaves y abrigados para los primeros días.' },
-  { id: 'babero', nombre: 'Babero de algodón', precio: 190, colores: null, descripcion: 'Babero de muselina de algodón, suave e hipoalergénico, con broche ajustable.' },
+  { id: 'babero', nombre: 'Babero de algodón', precio: 190, colores: [...COL, 'Estampada'], descripcion: 'Babero de muselina de algodón, suave e hipoalergénico, con broche ajustable.' },
   { id: 'manta', nombre: 'Manta de muselina', precio: 890, colores: [...COL, 'Estampada'], descripcion: 'Manta de muselina, liviana y suave, ideal para abrigar al bebé.' },
   { id: 'peine', nombre: 'Set de peine bamboo', precio: 690, colores: null, descripcion: 'Set de cepillo de cerdas suaves y peine de madera natural para cuidar el pelito del bebé.' },
   { id: 'sonajero', nombre: 'Sonajero de tela', precio: 690, colores: null, descripcion: 'Sonajero de tela suave y seguro, ideal para estimular y calmar al bebé.' },

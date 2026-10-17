@@ -18,6 +18,7 @@ export const Item = z.object({
   cantidad: z.number().int().min(1).max(20).default(1),
   color: z.string().optional(),
   nombreBebe: z.string().trim().max(20).optional(),
+  estampado: z.string().trim().max(60).optional(), // qué estampado quiere (solo con color "Estampada")
   modelo: z.string().trim().max(120).optional(), // modelo de portachupete elegido (material, lámina, detalle)
 });
 
@@ -46,7 +47,7 @@ export const CarritoInput = z.object({
 // componentes = stock que mueve la línea. Pedidos viejos no lo tienen: ver stockDe()
 export type Linea = {
   tipo: 'producto' | 'box'; id: string; nombre: string; cantidad: number;
-  color?: string; nombreBebe?: string; modelo?: string; precioUnitario: number; total: number;
+  color?: string; estampado?: string; nombreBebe?: string; modelo?: string; precioUnitario: number; total: number;
   componentes?: { id: string; cantidad: number }[];
 };
 
@@ -75,12 +76,14 @@ export async function calcular(
     const p = await buscarProducto(it.id);
     if (!p?.activo) throw new HttpError(400, `El producto "${it.id}" no existe`);
     if (it.color && !p.colores?.includes(it.color)) throw new HttpError(400, `Color "${it.color}" no disponible para ${p.nombre}`);
+    if (it.color === 'Estampada' && !it.estampado) throw new HttpError(400, `Falta contar qué estampado querés para ${p.nombre}`);
+    if (it.estampado && it.color !== 'Estampada') throw new HttpError(400, `El estampado solo va con el color Estampada`);
     if (it.nombreBebe && !p.personalizable) throw new HttpError(400, `${p.nombre} no lleva nombre`);
     if (!it.nombreBebe && p.personalizable) throw new HttpError(400, `Falta el nombre del bebé para ${p.nombre}`);
     if (p.stock !== null && p.stock < it.cantidad) throw new HttpError(409, p.stock ? `Quedan solo ${p.stock} de ${p.nombre}` : `${p.nombre} está sin stock`);
     const extra = p.personalizable ? Math.max(0, letras(it.nombreBebe) - LETRAS_INCLUIDAS) * PRECIO_LETRA_EXTRA : 0;
     const unit = p.precio + extra;
-    lineas.push({ tipo: 'producto', id: p.id, nombre: p.nombre, cantidad: it.cantidad, color: it.color, nombreBebe: it.nombreBebe, modelo: p.personalizable ? it.modelo : undefined, precioUnitario: unit, total: unit * it.cantidad,
+    lineas.push({ tipo: 'producto', id: p.id, nombre: p.nombre, cantidad: it.cantidad, color: it.color, estampado: it.estampado, nombreBebe: it.nombreBebe, modelo: p.personalizable ? it.modelo : undefined, precioUnitario: unit, total: unit * it.cantidad,
       componentes: [{ id: p.id, cantidad: it.cantidad }] });
   }
   return { lineas, ...totales(lineas, input.pago) };
@@ -103,7 +106,7 @@ export const buscarPedido = (id: number, bloquear = false) =>
   q1<Pedido>(`SELECT * FROM pedidos WHERE id = $1 ${bloquear ? 'FOR UPDATE' : ''}`, [id]);
 
 const resumen = (p: Pedido) => [
-  ...p.items.map(l => `- ${l.cantidad} x ${l.nombre}${l.color ? ` (${l.color})` : ''}${l.nombreBebe ? ` "${l.nombreBebe}"` : ''}${l.modelo ? ` [Modelo: ${l.modelo}]` : ''}: $${l.total}`),
+  ...p.items.map(l => `- ${l.cantidad} x ${l.nombre}${l.color ? ` (${l.color}${l.estampado ? `: ${l.estampado}` : ''})` : ''}${l.nombreBebe ? ` "${l.nombreBebe}"` : ''}${l.modelo ? ` [Modelo: ${l.modelo}]` : ''}: $${l.total}`),
   p.recargo ? `Recargo Mercado Pago: $${p.recargo}` : '',
   `Total: $${p.total}`,
   `Entrega: ${p.entrega}${p.direccion ? ` — ${p.direccion}` : ''} (el envío se coordina aparte)`,

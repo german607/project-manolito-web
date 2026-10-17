@@ -5,8 +5,8 @@
   var P=[
     {id:'trapito',n:'Trapito de apego',p:890,c:COL,img:IM.trapito,i:'<path d="M12 21s-7-4.35-9.5-8.5C.5 8.5 3 5 6.5 5c2 0 3.5 1 5.5 3 2-2 3.5-3 5.5-3C21 5 23.5 8.5 21.5 12.5 19 16.65 12 21 12 21z"/>'},
     {id:'zapatitos',n:'Zapatitos tejidos',p:490,c:COL,img:IM.zapatitos,i:'<path d="M4 6h7v6l7 2a2 2 0 0 1 2 2v2H4z"/><path d="M4 12h7"/>'},
-    {id:'babero',n:'Babero de algodón',p:190,img:IM.babero,i:'<path d="M5 4c1 4 3 6 7 6s6-2 7-6"/><path d="M5 4l-1 9a8 8 0 0 0 16 0l-1-9"/>'},
-    {id:'manta',n:'Manta de muselina',p:890,c:COL4,img:IM.manta,i:'<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 10h16M4 14h16"/>'},
+    {id:'babero',n:'Babero de algodón',p:190,c:COL4,est:1,img:IM.babero,i:'<path d="M5 4c1 4 3 6 7 6s6-2 7-6"/><path d="M5 4l-1 9a8 8 0 0 0 16 0l-1-9"/>'},
+    {id:'manta',n:'Manta de muselina',p:890,c:COL4,est:1,img:IM.manta,i:'<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 10h16M4 14h16"/>'},
     {id:'peine',n:'Set de peine bamboo',p:690,img:IM.peine,i:'<rect x="6" y="3" width="6" height="12" rx="3"/><path d="M9 15v6"/><path d="M16 4v17M14 5h4M14 9h4M14 13h4"/>'},
     {id:'sonajero',n:'Sonajero de tela',p:690,img:IM.sonajero,i:'<circle cx="12" cy="7" r="4"/><path d="M12 11v4"/><rect x="9" y="15" width="6" height="6" rx="3"/>'},
     {id:'guarda',n:'Guardachupete de silicona',p:390,c:COL,img:IM.guarda,i:'<circle cx="12" cy="13" r="7"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="6.5" r="2.5"/>'},
@@ -43,6 +43,12 @@
         ch.appendChild(b);
       });
       o.appendChild(ch); card.appendChild(o);
+    }
+    if(p.est){
+      var oe=el('div','ap-opt ap-est'); oe.hidden=true; oe.appendChild(el('small',null,'¿Qué estampado querés?'));
+      var ie=document.createElement('input'); ie.type='text'; ie.maxLength=60; ie.placeholder='Ej: ositos, florcitas, arcoíris';
+      ie.addEventListener('input',function(){st[p.id]=st[p.id]||{}; st[p.id].estampado=ie.value.trim(); render();});
+      oe.appendChild(ie); card.appendChild(oe);
     }
     if(p.modelo){
       var o3=el('div','ap-opt'); o3.appendChild(el('small',null,'Modelo'));
@@ -111,7 +117,7 @@
 
   function lineText(p){
     var s=st[p.id]||{}, t=p.n;
-    if(p.c) t+=' ('+(s.color?s.color.toLowerCase():'color a elegir')+')';
+    if(p.c) t+=' ('+(s.color?s.color.toLowerCase():'color a elegir')+(s.color==='Estampada'?': '+(s.estampado||'a definir'):'')+')';
     if(p.name) t+=' '+(s.name?'"'+s.name+'"':'(nombre a definir)');
     if(p.modelo) t+=' — modelo: '+(s.modelo||'a definir');
     return t;
@@ -124,6 +130,7 @@
       card.classList.toggle('on',!!s.on);
       if(p.agotado) s.on=false;
       var bt=card.querySelector('.ap-btn'); bt.disabled=!!p.agotado; bt.textContent=p.agotado?'Sin stock':(s.on?'Quitar':'Agregar');
+      var eo=card.querySelector('.ap-est'); if(eo) eo.hidden=s.color!=='Estampada';
       card.querySelectorAll('.chip').forEach(function(b){b.classList.toggle('sel',!!(s.color&&b.textContent===s.color));});
       if(p.modelo){var mbb=document.getElementById('apm-'+p.id); if(mbb) mbb.textContent=s.modelo?'Modelo: '+s.modelo+' (cambiar)':'Ver y elegir modelo';}
       document.getElementById('apr-'+p.id).textContent='$'+price(p);
@@ -159,12 +166,13 @@
     for(var k=0;k<elegidos.length;k++){
       var p=elegidos[k], s=st[p.id];
       if(p.c&&!s.color){toast('Elegí el color de '+p.n+'.');return;}
+      if(p.est&&s.color==='Estampada'&&!s.estampado){toast('Escribí qué estampado querés para '+p.n+'.');return;}
       if(p.name&&!s.name){toast('Escribí el nombre del bebé para el portachupete.');return;}
       if(p.modelo&&!s.modelo){toast('Elegí el modelo del portachupete.');abrirModelos(p);return;}
     }
     elegidos.forEach(function(p){
       var s=st[p.id];
-      Carrito.agregar({tipo:'producto',id:p.id,color:s.color||undefined,nombreBebe:p.name?s.name:undefined,modelo:p.modelo?s.modelo:undefined});
+      Carrito.agregar({tipo:'producto',id:p.id,color:s.color||undefined,estampado:(p.est&&s.color==='Estampada')?s.estampado:undefined,nombreBebe:p.name?s.name:undefined,modelo:p.modelo?s.modelo:undefined});
       s.on=false;
     });
     render();

@@ -433,6 +433,7 @@
   .pb-total b{color:var(--green-deep);}
   .pb-hint{font-size:.82rem;font-weight:700;color:var(--ink-soft);margin-bottom:14px;}
   .pb-note{font-size:.78rem;font-weight:600;color:var(--ink-soft);text-align:center;margin-top:10px;line-height:1.5;}
+  .ap-opt[hidden]{display:none;}
   .arma-guide{margin-top:10px;font-weight:600;}
   .arma-guide a{color:var(--green-deep);font-weight:800;}
   .arma-down{display:inline-block;margin-left:6px;}

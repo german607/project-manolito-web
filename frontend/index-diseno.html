@@ -115,9 +115,11 @@
     .hero-collage{position:relative;height:300px;grid-template-columns:repeat(3,1fr);grid-template-rows:1fr 1fr;gap:4px;padding:4px;}
     .hero-collage img:nth-child(n+7){display:none;}
     .hero-collage img{border-radius:10px;}
-    .hero-collage::after{background:linear-gradient(180deg,rgba(255,252,250,0) 55%,rgba(255,252,250,.97) 100%);}
+    .hero-collage::after{background:linear-gradient(180deg,rgba(255,252,250,0) 45%,rgba(255,252,250,.55) 100%);}
     .hero-wrap{min-height:0;margin-top:-223px;padding:0 16px 10px;}
-    .hero-card{padding:22px 18px 20px;border-radius:26px;background:rgba(255,255,255,.94);}
+    .hero-card{padding:22px 18px 20px;border-radius:26px;background:rgba(255,255,255,.42);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);border-color:rgba(255,255,255,.6);}
+    .hero-card h1,.hero-card p.sub{text-shadow:0 1px 10px rgba(255,255,255,.9);}
+    .hero-card .btn-outline{background:rgba(255,255,255,.85);}
     .hero-card h1{font-size:1.75rem;}
     .hero-card p.sub{font-size:.96rem;margin:12px auto 18px;}
     .hero-card .hero-ctas{gap:10px;}

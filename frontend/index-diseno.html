@@ -415,6 +415,35 @@
   .arma-total{display:flex;justify-content:space-between;align-items:center;margin:14px 0 16px;font-family:'Baloo 2';font-weight:800;font-size:1.3rem;}
   .arma-total b{color:var(--green-deep);}
   .arma-note{font-size:.78rem;color:var(--ink-soft);font-weight:600;text-align:center;margin-top:10px;line-height:1.5;}
+  .ap-model{width:100%;font-size:.8rem;white-space:normal;line-height:1.3;}
+  .pm{position:fixed;inset:0;z-index:130;background:rgba(63,58,52,.55);display:none;align-items:center;justify-content:center;padding:14px;}
+  .pm.show{display:flex;}
+  .pm-box{position:relative;background:var(--white);border-radius:24px;max-width:760px;width:100%;max-height:92vh;overflow:auto;padding:26px 22px 20px;}
+  .pm-box h3{font-family:'Fraunces',serif;font-size:1.3rem;margin-bottom:4px;padding-right:30px;}
+  .pm-sub{color:var(--ink-soft);font-weight:600;font-size:.88rem;margin-bottom:12px;}
+  .pm-x{position:absolute;top:10px;right:14px;border:0;background:none;font-size:1.8rem;line-height:1;cursor:pointer;color:var(--ink-soft);}
+  .pm-tabs{display:flex;gap:8px;margin-bottom:12px;}
+  .pm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:14px;}
+  .pm-img{position:relative;border:2px solid transparent;border-radius:16px;padding:0;background:#fff;cursor:pointer;overflow:hidden;box-shadow:0 6px 18px -12px rgba(63,58,52,.3);}
+  .pm-img img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;}
+  .pm-img.sel{border-color:var(--green-deep);}
+  .pm-tag{position:absolute;left:8px;bottom:8px;background:rgba(255,255,255,.92);border-radius:999px;padding:4px 10px;font-weight:800;font-size:.76rem;}
+  .pm-img.sel .pm-tag{background:var(--green-deep);color:#fff;}
+  .pm-l{display:block;font-weight:700;font-size:.82rem;margin-bottom:12px;}
+  .pm-l input{display:block;width:100%;margin-top:6px;padding:10px 12px;border:1.5px solid rgba(63,58,52,.16);border-radius:12px;font:inherit;}
+  .pb{max-width:860px;margin:0 auto;}
+  .pb-step{display:flex;align-items:center;gap:10px;font-family:'Baloo 2';font-weight:700;font-size:1.1rem;margin:26px 0 12px;}
+  .pb-n{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--green-deep);color:#fff;font-size:.9rem;}
+  .pb-tabs{display:flex;gap:8px;flex-wrap:wrap;}
+  .pb-tabs .chip{padding:9px 18px;font-size:.88rem;}
+  .pb .pm-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;}
+  .pb-panel{margin:0 auto;background:var(--white);border-radius:24px;padding:24px 26px;box-shadow:0 12px 30px -16px rgba(63,58,52,.14);max-width:560px;}
+  .pb-sel{font-weight:800;color:var(--ink-soft);margin-bottom:14px;}
+  .pb-sel.ok{color:var(--green-deep);}
+  .pb-total{display:flex;justify-content:space-between;align-items:center;font-family:'Baloo 2';font-weight:800;font-size:1.5rem;margin:6px 0 2px;}
+  .pb-total b{color:var(--green-deep);}
+  .pb-hint{font-size:.82rem;font-weight:700;color:var(--ink-soft);margin-bottom:14px;}
+  .pb-note{font-size:.78rem;font-weight:600;color:var(--ink-soft);text-align:center;margin-top:10px;line-height:1.5;}
   .arma-bar{position:fixed;left:16px;right:92px;bottom:16px;z-index:60;max-width:480px;margin:0 auto;display:none;align-items:center;justify-content:space-between;gap:12px;background:var(--white);border:1.5px solid var(--green-deep);border-radius:999px;padding:10px 12px 10px 20px;box-shadow:0 14px 30px -12px rgba(63,58,52,0.35);font-family:'Baloo 2';font-weight:700;}
   .arma-bar.show{display:flex;}
   .arma-bar b{color:var(--green-deep);}
@@ -559,12 +588,6 @@
     .brand-name{display:none;}
   }
 
-  /* Solo para la vista de diseño */
-  .diseno-nav{position:fixed;left:12px;bottom:12px;z-index:130;display:flex;align-items:center;gap:4px;flex-wrap:wrap;max-width:calc(100% - 100px);background:var(--ink);color:var(--white);border-radius:16px;padding:6px;font-size:.78rem;font-weight:700;box-shadow:0 8px 24px -8px rgba(0,0,0,.4);}
-  .diseno-nav b{padding:0 8px;opacity:.7;font-weight:800;}
-  .diseno-nav a,.diseno-nav button{color:var(--white);background:none;border:0;font:inherit;padding:6px 10px;border-radius:10px;cursor:pointer;}
-  .diseno-nav a.on{background:var(--green-deep);}
-  .diseno-nav a:hover,.diseno-nav button:hover{background:rgba(255,255,255,.15);}
 </style>
 </head>
 <body>
@@ -636,19 +659,13 @@
       <p>No son un simple regalo: pensadas y personalizadas con mucho amor en cada detalle.</p>
     </div>
 
-    <div class="ideas-carousel-wrap">
-    <button class="carousel-arrow arrow-left" onclick="document.getElementById('boxesCarousel').scrollBy({left:-250,behavior:'smooth'})" aria-label="Anterior">&#8249;</button>
-    <div class="ideas-carousel" id="boxesCarousel" data-img="assets/img/boxes/carrusel-{n}.jpg" data-count="15" data-alt="Box Manolito {n}" data-item="idea-slide">
-    </div>
-    <button class="carousel-arrow arrow-right" onclick="document.getElementById('boxesCarousel').scrollBy({left:250,behavior:'smooth'})" aria-label="Siguiente">&#8250;</button>
-    </div>
     <div class="boxes-grid">
 
       <div class="box-card">
         <div class="box-photo bs"><div class="bs-track"><img src="assets/img/boxes/mini-box.jpg" alt="Mini box, color rosa"><img src="assets/img/boxes/mini-box-celeste.jpg" alt="Mini box, color celeste" loading="lazy"><img src="assets/img/boxes/mini-box-verde.jpg" alt="Mini box, color verde" loading="lazy"><img src="assets/img/boxes/mini-box-beige.jpg" alt="Mini box, color beige" loading="lazy"></div><button type="button" class="bs-arrow bs-prev" aria-label="Foto anterior">&#8249;</button><button type="button" class="bs-arrow bs-next" aria-label="Foto siguiente">&#8250;</button><div class="bs-dots"></div></div>
         <div class="box-colors" aria-label="Colores disponibles: rosa, celeste, verde, beige"><span class="bc-l">Colores</span><button type="button" class="bc" data-slide="0" style="background:#EDB6C1" title="Rosa" aria-label="Ver foto en color rosa"></button><button type="button" class="bc" data-slide="1" style="background:#B7D2EA" title="Celeste" aria-label="Ver foto en color celeste"></button><button type="button" class="bc" data-slide="2" style="background:#B8CDAC" title="Verde" aria-label="Ver foto en color verde"></button><button type="button" class="bc" data-slide="3" style="background:#E4D3BA" title="Beige" aria-label="Ver foto en color beige"></button></div>
         <div class="box-body">
-          <div class="box-title-row"><h3>Mini box</h3><span class="box-price">$890</span></div>
+          <div class="box-title-row"><h3>Mini box</h3><span class="box-price">$990</span></div>
           <ul class="box-items">
             <li>Babero de algodón</li>
             <li>Portachupete personalizado</li>
@@ -661,7 +678,7 @@
         <div class="box-photo bs"><div class="bs-track"><img src="assets/img/boxes/box-dulce-llegada.jpg" alt="Box detalles especiales, portada"><img src="assets/img/boxes/box-dulce-llegada-rosa.jpg" alt="Box detalles especiales, color rosa" loading="lazy"><img src="assets/img/boxes/box-dulce-llegada-celeste.jpg" alt="Box detalles especiales, color celeste" loading="lazy"><img src="assets/img/boxes/box-dulce-llegada-verde.jpg" alt="Box detalles especiales, colores verde y beige" loading="lazy"></div><button type="button" class="bs-arrow bs-prev" aria-label="Foto anterior">&#8249;</button><button type="button" class="bs-arrow bs-next" aria-label="Foto siguiente">&#8250;</button><div class="bs-dots"></div></div>
         <div class="box-colors" aria-label="Colores disponibles: rosa, celeste, verde, beige"><span class="bc-l">Colores</span><button type="button" class="bc" data-slide="1" style="background:#EDB6C1" title="Rosa" aria-label="Ver foto en color rosa"></button><button type="button" class="bc" data-slide="2" style="background:#B7D2EA" title="Celeste" aria-label="Ver foto en color celeste"></button><button type="button" class="bc" data-slide="3" style="background:#B8CDAC" title="Verde" aria-label="Ver foto en color verde"></button><button type="button" class="bc" data-slide="3" style="background:#E4D3BA" title="Beige" aria-label="Ver foto en color beige"></button></div>
         <div class="box-body">
-          <div class="box-title-row"><h3>Box detalles especiales</h3><span class="box-price">$1490</span></div>
+          <div class="box-title-row"><h3>Box detalles especiales</h3><span class="box-price">$1390</span></div>
           <ul class="box-items">
             <li>Zapatitos tejidos</li>
             <li>Babero de algodón</li>
@@ -675,7 +692,7 @@
         <div class="box-photo bs"><div class="bs-track"><img src="assets/img/boxes/box-esencial-rosa.jpg" alt="Box Esencial, color rosa"><img src="assets/img/boxes/box-esencial-celeste.jpg" alt="Box Esencial, color celeste" loading="lazy"><img src="assets/img/boxes/box-esencial.jpg" alt="Box Esencial, color beige" loading="lazy"></div><button type="button" class="bs-arrow bs-prev" aria-label="Foto anterior">&#8249;</button><button type="button" class="bs-arrow bs-next" aria-label="Foto siguiente">&#8250;</button><div class="bs-dots"></div></div>
         <div class="box-colors" aria-label="Colores disponibles: rosa, celeste, beige"><span class="bc-l">Colores</span><button type="button" class="bc" data-slide="0" style="background:#EDB6C1" title="Rosa" aria-label="Ver foto en color rosa"></button><button type="button" class="bc" data-slide="1" style="background:#B7D2EA" title="Celeste" aria-label="Ver foto en color celeste"></button><button type="button" class="bc" data-slide="2" style="background:#E4D3BA" title="Beige" aria-label="Ver foto en color beige"></button></div>
         <div class="box-body">
-          <div class="box-title-row"><h3>Box Esencial</h3><span class="box-price">$1490</span></div>
+          <div class="box-title-row"><h3>Box Esencial</h3><span class="box-price">$1590</span></div>
           <ul class="box-items">
             <li>Estuche de silicona para chupete</li>
             <li>Mordillo de silicona y madera</li>
@@ -686,10 +703,10 @@
       </div>
 
       <div class="box-card">
-        <div class="box-photo"><img src="assets/img/boxes/box-dulce-suenos.jpg" alt="Box Dulce sueños" loading="lazy"></div>
-        <div class="box-colors" aria-label="Colores disponibles: rosa, celeste, beige"><span class="bc-l">Colores</span><span class="bc" style="background:#EDB6C1" title="Rosa"></span><span class="bc" style="background:#B7D2EA" title="Celeste"></span><span class="bc" style="background:#E4D3BA" title="Beige"></span></div>
+        <div class="box-photo bs"><div class="bs-track"><img src="assets/img/boxes/box-dulce-suenos.jpg" alt="Box Dulce sueños, color beige"><img src="assets/img/boxes/box-dulce-suenos-rosa.jpg" alt="Box Dulce sueños, color rosa" loading="lazy"><img src="assets/img/boxes/box-dulce-suenos-celeste.jpg" alt="Box Dulce sueños, color celeste" loading="lazy"></div><button type="button" class="bs-arrow bs-prev" aria-label="Foto anterior">&#8249;</button><button type="button" class="bs-arrow bs-next" aria-label="Foto siguiente">&#8250;</button><div class="bs-dots"></div></div>
+        <div class="box-colors" aria-label="Colores disponibles: rosa, celeste, beige"><span class="bc-l">Colores</span><button type="button" class="bc" data-slide="1" style="background:#EDB6C1" title="Rosa" aria-label="Ver foto en color rosa"></button><button type="button" class="bc" data-slide="2" style="background:#B7D2EA" title="Celeste" aria-label="Ver foto en color celeste"></button><button type="button" class="bc" data-slide="0" style="background:#E4D3BA" title="Beige" aria-label="Ver foto en color beige"></button></div>
         <div class="box-body">
-          <div class="box-title-row"><h3>Box Dulce sueños</h3><span class="box-price">$1590</span></div>
+          <div class="box-title-row"><h3>Box Dulce sueños</h3><span class="box-price">$1690</span></div>
           <ul class="box-items">
             <li>Trapito de apego</li>
             <li>Portachupete personalizado</li>
@@ -699,10 +716,10 @@
       </div>
 
       <div class="box-card">
-        <div class="box-photo"><img src="assets/img/boxes/box-primeros-mimos.jpg" alt="Box Primeros mimos" loading="lazy"></div>
-        <div class="box-colors" aria-label="Colores disponibles: rosa, celeste, beige"><span class="bc-l">Colores</span><span class="bc" style="background:#EDB6C1" title="Rosa"></span><span class="bc" style="background:#B7D2EA" title="Celeste"></span><span class="bc" style="background:#E4D3BA" title="Beige"></span></div>
+        <div class="box-photo bs"><div class="bs-track"><img src="assets/img/boxes/box-primeros-mimos.jpg" alt="Box Primeros mimos, color rosa"><img src="assets/img/boxes/box-primeros-mimos-celeste.jpg" alt="Box Primeros mimos, color celeste" loading="lazy"><img src="assets/img/boxes/box-primeros-mimos-beige.jpg" alt="Box Primeros mimos, color beige" loading="lazy"></div><button type="button" class="bs-arrow bs-prev" aria-label="Foto anterior">&#8249;</button><button type="button" class="bs-arrow bs-next" aria-label="Foto siguiente">&#8250;</button><div class="bs-dots"></div></div>
+        <div class="box-colors" aria-label="Colores disponibles: rosa, celeste, beige"><span class="bc-l">Colores</span><button type="button" class="bc" data-slide="0" style="background:#EDB6C1" title="Rosa" aria-label="Ver foto en color rosa"></button><button type="button" class="bc" data-slide="1" style="background:#B7D2EA" title="Celeste" aria-label="Ver foto en color celeste"></button><button type="button" class="bc" data-slide="2" style="background:#E4D3BA" title="Beige" aria-label="Ver foto en color beige"></button></div>
         <div class="box-body">
-          <div class="box-title-row"><h3>Box Primeros mimos</h3><span class="box-price">$1990</span></div>
+          <div class="box-title-row"><h3>Box Primeros mimos</h3><span class="box-price">$1790</span></div>
           <ul class="box-items">
             <li>Zapatitos tejidos</li>
             <li>Babero de algodón</li>
@@ -714,10 +731,10 @@
       </div>
 
       <div class="box-card">
-        <div class="box-photo"><img src="assets/img/boxes/box-pequeno-tesoro.jpg" alt="Box Pequeño tesoro" loading="lazy"></div>
-        <div class="box-colors" aria-label="Colores disponibles: rosa, celeste, beige"><span class="bc-l">Colores</span><span class="bc" style="background:#EDB6C1" title="Rosa"></span><span class="bc" style="background:#B7D2EA" title="Celeste"></span><span class="bc" style="background:#E4D3BA" title="Beige"></span></div>
+        <div class="box-photo bs"><div class="bs-track"><img src="assets/img/boxes/box-pequeno-tesoro.jpg" alt="Box Pequeño tesoro, color beige"><img src="assets/img/boxes/box-pequeno-tesoro-celeste.jpg" alt="Box Pequeño tesoro, color celeste" loading="lazy"><img src="assets/img/boxes/box-pequeno-tesoro-rosa.jpg" alt="Box Pequeño tesoro, color rosa" loading="lazy"></div><button type="button" class="bs-arrow bs-prev" aria-label="Foto anterior">&#8249;</button><button type="button" class="bs-arrow bs-next" aria-label="Foto siguiente">&#8250;</button><div class="bs-dots"></div></div>
+        <div class="box-colors" aria-label="Colores disponibles: rosa, celeste, beige"><span class="bc-l">Colores</span><button type="button" class="bc" data-slide="2" style="background:#EDB6C1" title="Rosa" aria-label="Ver foto en color rosa"></button><button type="button" class="bc" data-slide="1" style="background:#B7D2EA" title="Celeste" aria-label="Ver foto en color celeste"></button><button type="button" class="bc" data-slide="0" style="background:#E4D3BA" title="Beige" aria-label="Ver foto en color beige"></button></div>
         <div class="box-body">
-          <div class="box-title-row"><h3>Box Pequeño tesoro</h3><span class="box-price">$2190</span></div>
+          <div class="box-title-row"><h3>Box Pequeño tesoro</h3><span class="box-price">$2090</span></div>
           <ul class="box-items">
             <li>Trapito de apego</li>
             <li>Zapatitos tejidos</li>
@@ -728,8 +745,8 @@
       </div>
 
       <div class="box-card">
-        <div class="box-photo"><img src="assets/img/boxes/box-bienvenida.jpg" alt="Box Bienvenida" loading="lazy"></div>
-        <div class="box-colors" aria-label="Colores disponibles: rosa, celeste, beige"><span class="bc-l">Colores</span><span class="bc" style="background:#EDB6C1" title="Rosa"></span><span class="bc" style="background:#B7D2EA" title="Celeste"></span><span class="bc" style="background:#E4D3BA" title="Beige"></span></div>
+        <div class="box-photo bs"><div class="bs-track"><img src="assets/img/boxes/box-bienvenida.jpg" alt="Box Bienvenida, color rosa"><img src="assets/img/boxes/box-bienvenida-celeste.jpg" alt="Box Bienvenida, color celeste" loading="lazy"><img src="assets/img/boxes/box-bienvenida-beige.jpg" alt="Box Bienvenida, color beige" loading="lazy"></div><button type="button" class="bs-arrow bs-prev" aria-label="Foto anterior">&#8249;</button><button type="button" class="bs-arrow bs-next" aria-label="Foto siguiente">&#8250;</button><div class="bs-dots"></div></div>
+        <div class="box-colors" aria-label="Colores disponibles: rosa, celeste, beige"><span class="bc-l">Colores</span><button type="button" class="bc" data-slide="0" style="background:#EDB6C1" title="Rosa" aria-label="Ver foto en color rosa"></button><button type="button" class="bc" data-slide="1" style="background:#B7D2EA" title="Celeste" aria-label="Ver foto en color celeste"></button><button type="button" class="bc" data-slide="2" style="background:#E4D3BA" title="Beige" aria-label="Ver foto en color beige"></button></div>
         <div class="box-body">
           <div class="box-title-row"><h3>Box Bienvenida</h3><span class="box-price">$2790</span></div>
           <ul class="box-items">
@@ -743,11 +760,11 @@
       </div>
 
       <div class="box-card">
-        <div class="box-photo"><img src="assets/img/boxes/box-especial-manolito.jpg" alt="Box especial Manolito"></div>
-        <div class="box-colors" aria-label="Colores disponibles: rosa, celeste, beige"><span class="bc-l">Colores</span><span class="bc" style="background:#EDB6C1" title="Rosa"></span><span class="bc" style="background:#B7D2EA" title="Celeste"></span><span class="bc" style="background:#E4D3BA" title="Beige"></span></div>
+        <div class="box-photo bs"><div class="bs-track"><img src="assets/img/boxes/box-especial-manolito.jpg" alt="Box especial Manolito, color celeste"><img src="assets/img/boxes/box-especial-manolito-beige.jpg" alt="Box especial Manolito, color beige" loading="lazy"><img src="assets/img/boxes/box-especial-manolito-rosa.jpg" alt="Box especial Manolito, color rosa" loading="lazy"></div><button type="button" class="bs-arrow bs-prev" aria-label="Foto anterior">&#8249;</button><button type="button" class="bs-arrow bs-next" aria-label="Foto siguiente">&#8250;</button><div class="bs-dots"></div></div>
+        <div class="box-colors" aria-label="Colores disponibles: rosa, celeste, beige"><span class="bc-l">Colores</span><button type="button" class="bc" data-slide="2" style="background:#EDB6C1" title="Rosa" aria-label="Ver foto en color rosa"></button><button type="button" class="bc" data-slide="0" style="background:#B7D2EA" title="Celeste" aria-label="Ver foto en color celeste"></button><button type="button" class="bc" data-slide="1" style="background:#E4D3BA" title="Beige" aria-label="Ver foto en color beige"></button></div>
         <div class="box-body">
-          <span class="box-badge">COMPLETA</span>
-          <div class="box-title-row"><h3>Box especial Manolito</h3><span class="box-price">$3190</span></div>
+          <span class="box-badge">PREMIUM</span>
+          <div class="box-title-row"><h3>Box especial Manolito</h3><span class="box-price">$3290</span></div>
           <ul class="box-items">
             <li>Manta de muselina</li>
             <li>Babero de algodón</li>
@@ -778,34 +795,23 @@
 
     
 
-    <div class="porta-price-table" style="margin-bottom:44px;">
-      <div class="price-row"><span>Personalizado de madera</span><span>$790</span></div>
-      <div class="price-row"><span>Personalizado de silicona</span><span>$790</span></div>
-      <div class="price-row"><span>Sin personalizar</span><span>$690</span></div>
+    <div class="pb" id="portaBuy">
+      <div class="pb-step"><span class="pb-n">1</span> Elegí el material</div>
+      <div class="pb-tabs"></div>
+      <div class="pb-step"><span class="pb-n">2</span> Elegí tu modelo favorito</div>
+      <div class="pm-grid pb-grid"></div>
+      <div class="pb-step"><span class="pb-n">3</span> Personalizalo y comprá</div>
+      <div class="pb-panel">
+        <p class="pb-sel" id="pbSel">Todavía no elegiste modelo</p>
+        <label class="pm-l">Nombre del bebé<input type="text" id="pbName" maxlength="20" placeholder="Ej: Lucas" autocomplete="off"></label>
+        <label class="pm-l">Colores o detalles (opcional)<input type="text" id="pbDet" maxlength="60" placeholder="Ej: arcoíris pastel, clip de madera"></label>
+        <div class="pb-total"><span>Precio</span><b id="pbPrice">$790</b></div>
+        <p class="pb-hint" id="pbHint"></p>
+        <button class="btn btn-green" id="pbAdd" type="button" style="width:100%">Agregar al carrito</button>
+        <p class="pb-note">Silicona de grado alimenticio, libre de BPA · Colores a elección, sujeto a stock.</p>
+      </div>
+      <div class="arma-toast" id="pbToast" role="status"></div>
     </div>
-
-    <div class="porta-catalog">
-      <figure class="porta-card">
-        <div class="porta-slider">
-          <div class="porta-track" data-img="assets/img/portachupetes/silicona-{n}.jpg" data-count="3" data-alt="Modelos de portachupetes de silicona {n}" data-item="porta-slide"></div>
-          <button class="carousel-arrow arrow-left" type="button" aria-label="Anterior">&#8249;</button>
-          <button class="carousel-arrow arrow-right" type="button" aria-label="Siguiente">&#8250;</button>
-          <div class="porta-dots"></div>
-        </div>
-        <figcaption><h3>Silicona</h3><span>Libre de BPA · colores a elección</span></figcaption>
-      </figure>
-      <figure class="porta-card">
-        <div class="porta-slider">
-          <div class="porta-track" data-img="assets/img/portachupetes/madera-{n}.jpg" data-count="1" data-alt="Modelos de portachupetes de madera {n}" data-item="porta-slide"></div>
-          <button class="carousel-arrow arrow-left" type="button" aria-label="Anterior">&#8249;</button>
-          <button class="carousel-arrow arrow-right" type="button" aria-label="Siguiente">&#8250;</button>
-          <div class="porta-dots"></div>
-        </div>
-        <figcaption><h3>Madera</h3><span>Madera natural de haya</span></figcaption>
-      </figure>
-    </div>
-
-    <p class="porta-footnote">*Precio hasta 5 letras, por cada letra adicional se suman $20.<br>Silicona de grado alimenticio, libre de BPA · Colores a elección, sujeto a stock.</p>
   </div>
 </section>
 
@@ -1088,7 +1094,7 @@
 
 <nav class="diseno-nav" aria-label="Vista de diseño"><b>Vista de diseño</b><a href="#inicio">Inicio</a><a href="#arma-tu-box">Armá tu box</a><a href="#checkout">Checkout</a><a href="#ingresar">Ingresar</a><button type="button" onclick="Carrito.abrir()">Abrir carrito</button></nav>
 
-<script>window.__CATALOGO={"productos":[{"personalizable":false,"id":"trapito","nombre":"Trapito de apego","precio":890,"colores":["Rosa","Celeste","Beige"],"descripcion":"Trapito de apego de muselina, suave y abrazable, su compañero para dormir.","foto":"assets/img/arma-tu-box/producto-trapito.jpg"},{"personalizable":false,"id":"zapatitos","nombre":"Zapatitos tejidos","precio":490,"colores":["Rosa","Celeste","Beige"],"descripcion":"Zapatitos tejidos con carita, suaves y abrigados para los primeros días.","foto":"assets/img/arma-tu-box/producto-zapatitos.jpg"},{"personalizable":false,"id":"babero","nombre":"Babero de algodón","precio":190,"colores":null,"descripcion":"Babero de muselina de algodón, suave e hipoalergénico, con broche ajustable.","foto":"assets/img/arma-tu-box/producto-babero.jpg"},{"personalizable":false,"id":"manta","nombre":"Manta de muselina","precio":890,"colores":["Rosa","Celeste","Beige","Estampada"],"descripcion":"Manta de muselina, liviana y suave, ideal para abrigar al bebé.","foto":"assets/img/arma-tu-box/producto-manta.jpg"},{"personalizable":false,"id":"peine","nombre":"Set de peine bamboo","precio":690,"colores":null,"descripcion":"Set de cepillo de cerdas suaves y peine de madera natural para cuidar el pelito del bebé.","foto":"assets/img/arma-tu-box/producto-peine.jpg"},{"personalizable":false,"id":"sonajero","nombre":"Sonajero de tela","precio":690,"colores":null,"descripcion":"Sonajero de tela suave y seguro, ideal para estimular y calmar al bebé.","foto":"assets/img/arma-tu-box/producto-sonajero.jpg"},{"personalizable":false,"id":"guarda","nombre":"Guardachupete de silicona","precio":390,"colores":["Rosa","Celeste","Beige"],"descripcion":"Estuche de silicona suave para guardar y llevar el chupete siempre limpio.","foto":"assets/img/arma-tu-box/producto-guarda.jpg"},{"personalizable":false,"id":"mordillo","nombre":"Mordillo de silicona","precio":490,"colores":["Rosa","Celeste","Beige"],"descripcion":"Mordillo de silicona y madera natural, seguro y libre de BPA para aliviar las encías.","foto":"assets/img/arma-tu-box/producto-mordillo.jpg"},{"personalizable":true,"id":"porta","nombre":"Portachupete personalizado","precio":790,"colores":null,"descripcion":"Con el nombre de tu bebé (hasta 5 letras), en silicona libre de BPA o madera natural.","foto":"assets/img/arma-tu-box/producto-porta.jpg"}],"boxes":[{"etiqueta":null,"id":"mini-box","nombre":"Mini box","precio":890,"foto":"assets/img/boxes/mini-box.jpg","productos":["babero","porta"],"items":["Babero de algodón","Portachupete personalizado"]},{"etiqueta":null,"id":"dulce-llegada","nombre":"Box detalles especiales","precio":1490,"foto":"assets/img/boxes/box-dulce-llegada.jpg","productos":["zapatitos","babero","porta"],"items":["Zapatitos tejidos","Babero de algodón","Portachupete personalizado"]},{"etiqueta":null,"id":"esencial","nombre":"Box Esencial","precio":1490,"foto":"assets/img/boxes/box-esencial-rosa.jpg","productos":["guarda","mordillo","porta"],"items":["Estuche de silicona para chupete","Mordillo de silicona y madera","Portachupete personalizado"]},{"etiqueta":null,"id":"dulce-suenos","nombre":"Box Dulce sueños","precio":1590,"foto":"assets/img/boxes/box-dulce-suenos.jpg","productos":["trapito","porta"],"items":["Trapito de apego","Portachupete personalizado"]},{"etiqueta":null,"id":"primeros-mimos","nombre":"Box Primeros mimos","precio":1990,"foto":"assets/img/boxes/box-primeros-mimos.jpg","productos":["zapatitos","babero","sonajero","porta"],"items":["Zapatitos tejidos","Babero de algodón","Sonajero de tela suave y seguro","Portachupete personalizado"]},{"etiqueta":null,"id":"pequeno-tesoro","nombre":"Box Pequeño tesoro","precio":2190,"foto":"assets/img/boxes/box-pequeno-tesoro.jpg","productos":["trapito","zapatitos","porta"],"items":["Trapito de apego","Zapatitos tejidos","Portachupete personalizado"]},{"etiqueta":null,"id":"bienvenida","nombre":"Box Bienvenida","precio":2790,"foto":"assets/img/boxes/box-bienvenida.jpg","productos":["manta","peine","trapito","porta"],"items":["Manta de muselina","Set de peine","Trapito de apego","Portachupete personalizado"]},{"etiqueta":"COMPLETA","id":"especial-manolito","nombre":"Box especial Manolito","precio":3190,"foto":"assets/img/boxes/box-especial-manolito.jpg","productos":["manta","babero","zapatitos","peine","porta"],"items":["Manta de muselina","Babero de algodón","Zapatitos tejidos","Cepillo y peine de madera","Conejo de peluche","Portachupete personalizado"]}]};</script>
+<script>window.__CATALOGO={"productos":[{"personalizable":false,"id":"trapito","nombre":"Trapito de apego","precio":890,"colores":["Rosa","Celeste","Beige"],"descripcion":"Trapito de apego de muselina, suave y abrazable, su compañero para dormir.","foto":"assets/img/arma-tu-box/producto-trapito.jpg"},{"personalizable":false,"id":"zapatitos","nombre":"Zapatitos tejidos","precio":490,"colores":["Rosa","Celeste","Beige"],"descripcion":"Zapatitos tejidos con carita, suaves y abrigados para los primeros días.","foto":"assets/img/arma-tu-box/producto-zapatitos.jpg"},{"personalizable":false,"id":"babero","nombre":"Babero de algodón","precio":190,"colores":null,"descripcion":"Babero de muselina de algodón, suave e hipoalergénico, con broche ajustable.","foto":"assets/img/arma-tu-box/producto-babero.jpg"},{"personalizable":false,"id":"manta","nombre":"Manta de muselina","precio":890,"colores":["Rosa","Celeste","Beige","Estampada"],"descripcion":"Manta de muselina, liviana y suave, ideal para abrigar al bebé.","foto":"assets/img/arma-tu-box/producto-manta.jpg"},{"personalizable":false,"id":"peine","nombre":"Set de peine bamboo","precio":690,"colores":null,"descripcion":"Set de cepillo de cerdas suaves y peine de madera natural para cuidar el pelito del bebé.","foto":"assets/img/arma-tu-box/producto-peine.jpg"},{"personalizable":false,"id":"sonajero","nombre":"Sonajero de tela","precio":690,"colores":null,"descripcion":"Sonajero de tela suave y seguro, ideal para estimular y calmar al bebé.","foto":"assets/img/arma-tu-box/producto-sonajero.jpg"},{"personalizable":false,"id":"guarda","nombre":"Guardachupete de silicona","precio":390,"colores":["Rosa","Celeste","Beige"],"descripcion":"Estuche de silicona suave para guardar y llevar el chupete siempre limpio.","foto":"assets/img/arma-tu-box/producto-guarda.jpg"},{"personalizable":false,"id":"mordillo","nombre":"Mordillo de silicona","precio":490,"colores":["Rosa","Celeste","Beige"],"descripcion":"Mordillo de silicona y madera natural, seguro y libre de BPA para aliviar las encías.","foto":"assets/img/arma-tu-box/producto-mordillo.jpg"},{"personalizable":true,"id":"porta","nombre":"Portachupete personalizado","precio":790,"colores":null,"descripcion":"Con el nombre de tu bebé (hasta 5 letras), en silicona libre de BPA o madera natural.","foto":"assets/img/arma-tu-box/producto-porta.jpg"}],"boxes":[{"etiqueta":null,"id":"mini-box","nombre":"Mini box","precio":990,"foto":"assets/img/boxes/mini-box.jpg","productos":["babero","porta"],"items":["Babero de algodón","Portachupete personalizado"]},{"etiqueta":null,"id":"dulce-llegada","nombre":"Box detalles especiales","precio":1390,"foto":"assets/img/boxes/box-dulce-llegada.jpg","productos":["zapatitos","babero","porta"],"items":["Zapatitos tejidos","Babero de algodón","Portachupete personalizado"]},{"etiqueta":null,"id":"esencial","nombre":"Box Esencial","precio":1590,"foto":"assets/img/boxes/box-esencial-rosa.jpg","productos":["guarda","mordillo","porta"],"items":["Estuche de silicona para chupete","Mordillo de silicona y madera","Portachupete personalizado"]},{"etiqueta":null,"id":"dulce-suenos","nombre":"Box Dulce sueños","precio":1690,"foto":"assets/img/boxes/box-dulce-suenos.jpg","productos":["trapito","porta"],"items":["Trapito de apego","Portachupete personalizado"]},{"etiqueta":null,"id":"primeros-mimos","nombre":"Box Primeros mimos","precio":1790,"foto":"assets/img/boxes/box-primeros-mimos.jpg","productos":["zapatitos","babero","sonajero","porta"],"items":["Zapatitos tejidos","Babero de algodón","Sonajero de tela suave y seguro","Portachupete personalizado"]},{"etiqueta":null,"id":"pequeno-tesoro","nombre":"Box Pequeño tesoro","precio":2090,"foto":"assets/img/boxes/box-pequeno-tesoro.jpg","productos":["trapito","zapatitos","porta"],"items":["Trapito de apego","Zapatitos tejidos","Portachupete personalizado"]},{"etiqueta":null,"id":"bienvenida","nombre":"Box Bienvenida","precio":2790,"foto":"assets/img/boxes/box-bienvenida.jpg","productos":["manta","peine","trapito","porta"],"items":["Manta de muselina","Set de peine","Trapito de apego","Portachupete personalizado"]},{"etiqueta":"PREMIUM","id":"especial-manolito","nombre":"Box especial Manolito","precio":3290,"foto":"assets/img/boxes/box-especial-manolito.jpg","productos":["manta","babero","zapatitos","peine","porta"],"items":["Manta de muselina","Babero de algodón","Zapatitos tejidos","Cepillo y peine de madera","Conejo de peluche","Portachupete personalizado"]}]};</script>
 <script>
 // ===== Vista de diseño: backend simulado en el navegador (no hace falta servidor) =====
 (function(){
@@ -1110,7 +1116,7 @@
     if(!it.nombreBebe&&p.personalizable) throw new Error('Falta el nombre del bebé para '+p.nombre);
     var letras=(it.nombreBebe||'').replace(/\s+/g,'').length;
     var unit=p.precio+(p.personalizable?Math.max(0,letras-5)*20:0);
-    return {tipo:'producto',id:p.id,nombre:p.nombre,cantidad:cant,color:it.color,nombreBebe:it.nombreBebe,precioUnitario:unit,total:unit*cant,foto:p.foto};
+    return {tipo:'producto',id:p.id,nombre:p.nombre,cantidad:cant,color:it.color,nombreBebe:it.nombreBebe,modelo:p.personalizable?it.modelo:undefined,precioUnitario:unit,total:unit*cant,foto:p.foto};
   }
   function totales(lineas,pago){
     var sub=lineas.reduce(function(s,l){return s+l.total;},0), rec=pago==='mercadopago'?Math.round(sub*0.1):0;
@@ -1348,7 +1354,7 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
     try{localStorage.setItem(KEY,JSON.stringify(items));}catch(e){}
     contador(); window.dispatchEvent(new Event('carrito'));
   }
-  function igual(a,b){return a.tipo===b.tipo&&a.id===b.id&&(a.color||'')===(b.color||'')&&(a.nombreBebe||'')===(b.nombreBebe||'');}
+  function igual(a,b){return a.tipo===b.tipo&&a.id===b.id&&(a.color||'')===(b.color||'')&&(a.nombreBebe||'')===(b.nombreBebe||'')&&(a.modelo||'')===(b.modelo||'');}
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function plata(n){return '$'+Number(n||0).toLocaleString('es-UY');}
 
@@ -1369,7 +1375,7 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
     c.avisos.forEach(function(a){avI[a.i]=a;});
     return items.map(function(it,i){
       var l=porI[i], av=avI[i];
-      var detalle=[it.color,it.nombreBebe?'“'+it.nombreBebe+'”':''].filter(Boolean).join(' · ');
+      var detalle=[it.color,it.nombreBebe?'“'+it.nombreBebe+'”':'',it.modelo].filter(Boolean).join(' · ');
       return '<article class="cart-line'+(av?' bad':'')+(editable?'':' ro')+'" data-i="'+i+'">'+
         (l&&l.foto?'<img src="'+esc(l.foto)+'" alt="">':'<div class="cart-ph"></div>')+
         '<div class="cart-info"><h4>'+esc(l?l.nombre:(av&&av.nombre)||'Producto no disponible')+'</h4>'+
@@ -1472,6 +1478,7 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
       var items=leer(), nuevo={tipo:item.tipo,id:item.id,cantidad:item.cantidad||1};
       if(item.color) nuevo.color=item.color;
       if(item.nombreBebe) nuevo.nombreBebe=item.nombreBebe;
+      if(item.modelo) nuevo.modelo=item.modelo;
       var ya=items.filter(function(x){return igual(x,nuevo);})[0];
       if(ya) ya.cantidad=Math.min(20,ya.cantidad+nuevo.cantidad); else items.push(nuevo);
       guardar(items);
@@ -1496,7 +1503,7 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
     {id:'sonajero',n:'Sonajero de tela',p:690,img:IM.sonajero,i:'<circle cx="12" cy="7" r="4"/><path d="M12 11v4"/><rect x="9" y="15" width="6" height="6" rx="3"/>'},
     {id:'guarda',n:'Guardachupete de silicona',p:390,c:COL,img:IM.guarda,i:'<circle cx="12" cy="13" r="7"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="6.5" r="2.5"/>'},
     {id:'mordillo',n:'Mordillo de silicona',p:490,c:COL,img:IM.mordillo,i:'<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="3"/>'},
-    {id:'porta',n:'Portachupete personalizado',p:790,name:1,img:IM.porta,i:'<circle cx="12" cy="5" r="2.5"/><path d="M12 7.5V10"/><circle cx="7" cy="14" r="2"/><circle cx="12" cy="16" r="2"/><circle cx="17" cy="14" r="2"/>'}
+    {id:'porta',n:'Portachupete personalizado',p:790,name:1,modelo:1,img:IM.porta,i:'<circle cx="12" cy="5" r="2.5"/><path d="M12 7.5V10"/><circle cx="7" cy="14" r="2"/><circle cx="12" cy="16" r="2"/><circle cx="17" cy="14" r="2"/>'}
   ];
   var st={}; // id -> {color,name}
   var grid=document.getElementById('armaGrid');
@@ -1529,6 +1536,13 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
       });
       o.appendChild(ch); card.appendChild(o);
     }
+    if(p.modelo){
+      var o3=el('div','ap-opt'); o3.appendChild(el('small',null,'Modelo'));
+      var mb=el('button','btn btn-outline btn-sm ap-model','Ver y elegir modelo'); mb.type='button'; mb.id='apm-'+p.id;
+      mb.addEventListener('click',function(){abrirModelos(p);});
+      o3.appendChild(mb); card.appendChild(o3);
+      var im0=card.querySelector('.ap-img'); if(im0){im0.style.cursor='pointer';im0.addEventListener('click',function(){abrirModelos(p);});}
+    }
     if(p.name){
       var o2=el('div','ap-opt'); o2.appendChild(el('small',null,'Nombre del bebé (hasta 5 letras, $20 por letra extra)'));
       var inp=document.createElement('input'); inp.type='text'; inp.maxLength=20; inp.placeholder='Ej: Lucas';
@@ -1547,10 +1561,51 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
     grid.appendChild(card);
   });
 
+  // Selector de modelos de portachupete: lista todas las láminas de fotos y se elige material + lámina + detalle
+  var LAM={Silicona:19,Madera:9}, mod=null;
+  function abrirModelos(p){
+    var s=st[p.id]=st[p.id]||{};
+    if(!mod){
+      mod=el('div','pm'); mod.setAttribute('role','dialog'); mod.setAttribute('aria-modal','true');
+      mod.innerHTML='<div class="pm-box"><button type="button" class="pm-x" aria-label="Cerrar">&times;</button>'+
+        '<h3>Elegí el modelo de tu portachupete</h3><p class="pm-sub">Tocá el que más te guste. Podés contarnos qué cambiarías (colores, figura) abajo.</p>'+
+        '<div class="pm-tabs"></div><div class="pm-grid"></div>'+
+        '<label class="pm-l">Colores o detalles (opcional)<input type="text" maxlength="60" placeholder="Ej: arcoíris pastel, clip de madera"></label>'+
+        '<button type="button" class="btn btn-green pm-ok" style="width:100%">Listo</button></div>';
+      document.body.appendChild(mod);
+      mod.addEventListener('click',function(e){if(e.target===mod||e.target.className==='pm-x')cerrar();});
+      document.addEventListener('keydown',function(e){if(e.key==='Escape'&&mod.classList.contains('show'))cerrar();});
+    }
+    var mat=s.mat||'Silicona', lam=s.lam||0, tabs=mod.querySelector('.pm-tabs'), g=mod.querySelector('.pm-grid'), inp=mod.querySelector('input');
+    inp.value=s.det||'';
+    function pintar(){
+      tabs.innerHTML=''; g.innerHTML='';
+      Object.keys(LAM).forEach(function(m){
+        var b=el('button','chip'+(m===mat?' sel':''),m); b.type='button';
+        b.onclick=function(){mat=m;lam=0;pintar();}; tabs.appendChild(b);
+      });
+      for(var n=1;n<=LAM[mat];n++){(function(n){
+        var f=el('button','pm-img'+(n===lam?' sel':'')); f.type='button'; f.setAttribute('aria-label','Elegir modelo '+n+' de '+mat);
+        var im=document.createElement('img'); im.alt='Portachupete de '+mat.toLowerCase()+', modelo '+n; im.loading='lazy'; im.src='assets/img/portachupetes/modelos/'+mat.toLowerCase()+'-'+n+'.jpg'; f.appendChild(im);
+        f.appendChild(el('span','pm-tag',n===lam?'✓ N° '+n:'N° '+n));
+        f.onclick=function(){lam=n;pintar();}; g.appendChild(f);
+      })(n);}
+    }
+    function cerrar(){mod.classList.remove('show');document.body.style.overflow='';}
+    mod.querySelector('.pm-ok').onclick=function(){
+      if(!lam){toast('Tocá un modelo para elegirlo.');return;}
+      s.mat=mat; s.lam=lam; s.det=inp.value.trim();
+      s.modelo=mat+' N° '+lam+(s.det?' — '+s.det:''); s.on=true;
+      cerrar(); track('arma_modelo',p.id); render();
+    };
+    mod._cerrar=cerrar; pintar(); mod.classList.add('show'); document.body.style.overflow='hidden';
+  }
+
   function lineText(p){
     var s=st[p.id]||{}, t=p.n;
     if(p.c) t+=' ('+(s.color?s.color.toLowerCase():'color a elegir')+')';
     if(p.name) t+=' '+(s.name?'"'+s.name+'"':'(nombre a definir)');
+    if(p.modelo) t+=' — modelo: '+(s.modelo||'a definir');
     return t;
   }
 
@@ -1562,6 +1617,7 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
       if(p.agotado) s.on=false;
       var bt=card.querySelector('.ap-btn'); bt.disabled=!!p.agotado; bt.textContent=p.agotado?'Sin stock':(s.on?'Quitar':'Agregar');
       card.querySelectorAll('.chip').forEach(function(b){b.classList.toggle('sel',!!(s.color&&b.textContent===s.color));});
+      if(p.modelo){var mbb=document.getElementById('apm-'+p.id); if(mbb) mbb.textContent=s.modelo?'Modelo: '+s.modelo+' (cambiar)':'Ver y elegir modelo';}
       document.getElementById('apr-'+p.id).textContent='$'+price(p);
       if(s.on){
         count++; total+=price(p);
@@ -1596,10 +1652,11 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
       var p=elegidos[k], s=st[p.id];
       if(p.c&&!s.color){toast('Elegí el color de '+p.n+'.');return;}
       if(p.name&&!s.name){toast('Escribí el nombre del bebé para el portachupete.');return;}
+      if(p.modelo&&!s.modelo){toast('Elegí el modelo del portachupete.');abrirModelos(p);return;}
     }
     elegidos.forEach(function(p){
       var s=st[p.id];
-      Carrito.agregar({tipo:'producto',id:p.id,color:s.color||undefined,nombreBebe:p.name?s.name:undefined});
+      Carrito.agregar({tipo:'producto',id:p.id,color:s.color||undefined,nombreBebe:p.name?s.name:undefined,modelo:p.modelo?s.modelo:undefined});
       s.on=false;
     });
     render();
@@ -1810,6 +1867,58 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
     if(el) el.scrollIntoView(); else window.scrollTo(0,0);
   }
   window.addEventListener('hashchange',ir); ir();
+})();
+</script>
+<script>(function(){
+  var root=document.getElementById('portaBuy'); if(!root) return;
+  var N={Silicona:19,Madera:9}, BASE=790, INC=5, EXTRA=20;
+  var mat='Silicona', lam=0;
+  var tabs=root.querySelector('.pb-tabs'), grid=root.querySelector('.pb-grid'), nameI=root.querySelector('#pbName'),
+      detI=root.querySelector('#pbDet'), priceE=root.querySelector('#pbPrice'), hintE=root.querySelector('#pbHint'),
+      selE=root.querySelector('#pbSel'), add=root.querySelector('#pbAdd'), toastE=root.querySelector('#pbToast');
+  function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e;}
+  function letras(s){return (s||'').replace(/\s+/g,'').length;}
+  function precio(){var l=letras(nameI.value);return BASE+(l>INC?(l-INC)*EXTRA:0);}
+  function toast(m){toastE.textContent=m;toastE.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(function(){toastE.classList.remove('show');},4000);}
+  function pintar(){
+    tabs.innerHTML=''; grid.innerHTML='';
+    Object.keys(N).forEach(function(m){
+      var b=el('button','chip'+(m===mat?' sel':''),m+' ('+N[m]+' modelos)'); b.type='button';
+      b.onclick=function(){mat=m;lam=0;pintar();}; tabs.appendChild(b);
+    });
+    for(var n=1;n<=N[mat];n++){(function(n){
+      var f=el('button','pm-img'+(n===lam?' sel':'')); f.type='button'; f.setAttribute('aria-label','Elegir modelo '+n+' de '+mat);
+      var im=document.createElement('img'); im.loading='lazy'; im.alt='Portachupete de '+mat.toLowerCase()+', modelo '+n;
+      im.src='assets/img/portachupetes/modelos/'+mat.toLowerCase()+'-'+n+'.jpg'; f.appendChild(im);
+      f.appendChild(el('span','pm-tag',(n===lam?'✓ ':'')+'N° '+n));
+      f.onclick=function(){lam=n;pintar();}; grid.appendChild(f);
+    })(n);}
+    selE.textContent=lam?'Elegiste: '+mat+' N° '+lam:'Todavía no elegiste modelo';
+    selE.classList.toggle('ok',!!lam);
+  }
+  function upd(){
+    var l=letras(nameI.value), p=precio();
+    priceE.textContent='$'+p;
+    hintE.textContent=!l?'Hasta '+INC+' letras incluidas · $'+EXTRA+' por letra extra':
+      l+(l===1?' letra':' letras')+(l>INC?' · '+(l-INC)+' extra × $'+EXTRA:' · incluidas en el precio base');
+  }
+  nameI.addEventListener('input',upd);
+  add.addEventListener('click',function(){
+    var nombre=nameI.value.trim();
+    if(!lam){toast('Elegí un modelo tocando una foto.');grid.scrollIntoView({behavior:'smooth',block:'center'});return;}
+    if(!nombre){toast('Escribí el nombre del bebé.');nameI.focus();return;}
+    var modelo=mat+' N° '+lam+(detI.value.trim()?' — '+detI.value.trim():'');
+    if(window.Carrito){
+      Carrito.agregar({tipo:'producto',id:'porta',nombreBebe:nombre,modelo:modelo});
+      Carrito.abrir();
+    }else{toast('Listo: '+modelo+' · "'+nombre+'" · $'+precio()+' (en el sitio real se suma al carrito).');}
+  });
+  pintar(); upd();
+  // Precio base desde el admin; si la API no responde queda el de arriba
+  try{fetch('/api/productos').then(function(r){return r.ok?r.json():[];}).then(function(l){
+    l.forEach(function(d){if(d.id==='porta'){BASE=d.precio;
+      if(d.agotado||d.stock===0){add.disabled=true;add.textContent='Sin stock';}upd();}});
+  }).catch(function(){});}catch(e){}
 })();
 </script>
 </body>

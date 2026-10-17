@@ -3,6 +3,7 @@ import express from 'express';
 import { adminRouter, FRONTEND } from './admin.js';
 import { asegurarAdmin, authRouter, borrarSesionesVencidas, cargarUsuario } from './auth.js';
 import { iniciarDb, pool } from './db.js';
+import { imagenesRouter, revisarBucket } from './imagenes.js';
 import { manejarErrores } from './errores.js';
 import { pedidosRouter, vencerPedidos } from './pedidos.js';
 import { publicoRouter } from './publico.js';
@@ -52,15 +53,24 @@ app.use('/api/admin', adminRouter);
 app.use('/api', (_req, res) => { res.status(404).json({ error: 'No existe' }); });
 app.use(manejarErrores);
 
+// Con el frontend en Vercel (FRONTEND_URL), quien entre al dominio de Railway va a la web de Vercel.
+// /assets/img sigue acá: Vercel lo reenvía para servir las imágenes del bucket.
+const FRONTEND_URL = process.env.FRONTEND_URL?.replace(/\/$/, '');
+if (FRONTEND_URL) {
+  app.use((req, res, next) => (req.path.startsWith('/assets/img/') ? next() : res.redirect(301, FRONTEND_URL + req.originalUrl)));
+}
+
 // Monolito: el mismo proceso sirve la API y el sitio estático.
 // Las fotos se guardan 1 día en el navegador: las visitas repetidas no las vuelven a pedir.
 // (Las fotos subidas desde el admin llevan ?v=... así que un cambio se ve igual al instante.)
 app.use(soloPublicable);
+app.use('/assets/img', imagenesRouter); // del bucket en producción (ver imagenes.ts)
 app.use('/assets', express.static(`${FRONTEND}/assets`, { maxAge: '1d' }));
 app.use(express.static(FRONTEND));
 
 const server = app.listen(PORT, () => {
   console.log(`Manolito en http://localhost:${PORT}`);
+  revisarBucket();
 });
 
 // Tareas periódicas. Un error se loguea pero no tira el server (una promesa rechazada sin catch lo cerraría)

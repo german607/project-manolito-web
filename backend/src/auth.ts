@@ -113,11 +113,28 @@ authRouter.post('/registro', async (req, res) => {
   res.status(201).json({ usuario: u });
 });
 
+// Límite por cuenta: el de IP no alcanza si alguien llega directo a Railway inventando su IP.
+// ponytail: en memoria y por proceso; quien conozca el email puede bloquear esa cuenta 15 min (es el costo de frenar ataques)
+const fallos = new Map<string, { n: number; hasta: number }>();
+const MAX_FALLOS = 10, VENTANA = 15 * 60_000;
+
 authRouter.post('/login', async (req, res) => {
   const { email, password } = z.object({ email: Email, password: z.string().max(200) }).parse(req.body);
-  const u = await autenticar(email, password);
-  await iniciarSesion(res, u);
-  res.json({ usuario: u });
+  const ahora = Date.now();
+  const f = fallos.get(email);
+  if (f && f.hasta > ahora && f.n >= MAX_FALLOS) throw new HttpError(429, 'Demasiados intentos con esta cuenta. Probá de nuevo en 15 minutos.');
+  try {
+    const u = await autenticar(email, password);
+    fallos.delete(email);
+    await iniciarSesion(res, u);
+    res.json({ usuario: u });
+  } catch (e) {
+    if (e instanceof HttpError && e.status === 401) {
+      if (fallos.size > 10_000) for (const [k, v] of fallos) if (v.hasta < ahora) fallos.delete(k);
+      fallos.set(email, { n: (f && f.hasta > ahora ? f.n : 0) + 1, hasta: ahora + VENTANA });
+    }
+    throw e;
+  }
 });
 
 authRouter.post('/logout', async (req, res) => {

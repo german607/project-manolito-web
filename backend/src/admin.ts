@@ -6,6 +6,7 @@ import { HttpError } from './errores.js';
 import { ESTADOS, cambiarEstado } from './pedidos.js';
 import { HOY_UY, ZONA_UY } from './publico.js';
 import { soloAdmin } from './auth.js';
+import { guardarImagen } from './imagenes.js';
 
 export const FRONTEND = fileURLToPath(new URL('../../frontend', import.meta.url));
 
@@ -13,6 +14,11 @@ export const adminRouter = Router();
 
 // El login es el de todos (/api/auth): acá solo entra una sesión con rol admin
 adminRouter.use(soloAdmin);
+
+// Para configurar TRUST_PROXY: "ip" tiene que ser la IP real de quien navega (comparala con https://ifconfig.me)
+adminRouter.get('/diagnostico', (req, res) => {
+  res.json({ ip: req.ip, xForwardedFor: req.headers['x-forwarded-for'] ?? null, trustProxy: req.app.get('trust proxy') });
+});
 
 // ---------- Métricas ----------
 
@@ -95,17 +101,19 @@ function tipoDeImagen(b: Buffer): string | undefined {
   if (b.toString('latin1', 0, 4) === 'RIFF' && b.toString('latin1', 8, 12) === 'WEBP') return 'image/webp';
 }
 
-// Body = la imagen tal cual. Se guarda en la base (tabla fotos) y se sirve en /api/fotos/:id
+const EXT: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+
+// Body = la imagen tal cual. Va al bucket (o al disco en desarrollo) con el mismo nombre que las demás fotos
 adminRouter.put('/productos/:id/foto', express.raw({ type: 'image/*', limit: '5mb' }), async (req, res) => {
   const p = await productos.uno(req.params.id);
   if (!p) throw new HttpError(404, 'Producto no encontrado');
   const tipo = Buffer.isBuffer(req.body) ? tipoDeImagen(req.body) : undefined;
   if (!tipo) throw new HttpError(400, 'Mandá una imagen JPG, PNG o WebP');
 
-  await q(`INSERT INTO fotos (producto_id, tipo, datos) VALUES ($1, $2, $3)
-    ON CONFLICT (producto_id) DO UPDATE SET tipo = $2, datos = $3`, [p.id, tipo, req.body]);
-  // Ruta relativa (sin "/" inicial) como las demás fotos; ?v= hace que el navegador no use la vieja
-  await actualizar('productos', p.id, { foto: `api/fotos/${p.id}?v=${Date.now()}` });
+  const ruta = `arma-tu-box/producto-${p.id}.${EXT[tipo]}`; // el id ya existe en la base: no hay rutas raras
+  await guardarImagen(ruta, req.body, tipo);
+  // ?v= hace que el navegador no muestre la foto vieja que tenía guardada
+  await actualizar('productos', p.id, { foto: `assets/img/${ruta}?v=${Date.now()}` });
   res.json(await productos.uno(p.id));
 });
 

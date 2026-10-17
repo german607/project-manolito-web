@@ -17,6 +17,11 @@ test('portachupete: 5 letras incluidas, $20 por letra extra', async () => {
   assert.equal((await cotizar([{ tipo: 'producto', id: 'porta', nombreBebe: 'Valentina' }])).total, 790 + 4 * 20);
 });
 
+test('portachupete: guarda el modelo elegido en la línea', async () => {
+  const c = await cotizar([{ tipo: 'producto', id: 'porta', nombreBebe: 'Ema', modelo: 'Silicona N° 2' }]);
+  assert.equal(c.lineas[0].modelo, 'Silicona N° 2');
+});
+
 test('suma productos, boxes y cantidades', async () => {
   const c = await cotizar([{ tipo: 'producto', id: 'babero', cantidad: 2 }, { tipo: 'box', id: 'mini-box', nombreBebe: 'Ema' }]);
   assert.equal(c.subtotal, 190 * 2 + 890);
@@ -24,7 +29,7 @@ test('suma productos, boxes y cantidades', async () => {
 
 test('Mercado Pago agrega 10%', async () => {
   const c = await cotizar([{ tipo: 'box', id: 'esencial', nombreBebe: 'Ema' }], 'mercadopago');
-  assert.deepEqual([c.subtotal, c.recargo, c.total], [1490, 149, 1639]);
+  assert.deepEqual([c.subtotal, c.recargo, c.total], [1590, 159, 1749]);
 });
 
 test('rechaza color inexistente y producto desconocido', async () => {

@@ -124,6 +124,19 @@ const ESQUEMA = `
     PRIMARY KEY (dia, tipo, ref)
   );
 
+  -- Historial: quién cambió qué y cuándo (precios, stock, fotos, estados de pedidos)
+  CREATE TABLE IF NOT EXISTS historial (
+    id         bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    cuando     timestamptz NOT NULL DEFAULT now(),
+    autor      text NOT NULL,             -- email del admin, "cliente", "sistema" o "mercadopago"
+    entidad    text NOT NULL,             -- producto | box | pedido
+    entidad_id text NOT NULL,
+    accion     text NOT NULL,             -- crear | editar | foto | estado
+    cambios    jsonb NOT NULL DEFAULT '{}' -- { campo: [antes, después] }
+  );
+  CREATE INDEX IF NOT EXISTS historial_entidad ON historial (entidad, entidad_id, cuando DESC);
+  CREATE INDEX IF NOT EXISTS historial_cuando ON historial (cuando DESC);
+
   CREATE TABLE IF NOT EXISTS migraciones (
     n        integer PRIMARY KEY,
     aplicada timestamptz NOT NULL DEFAULT now()
@@ -133,7 +146,21 @@ const ESQUEMA = `
 // ---------- Migraciones: cambios a bases que ya tienen datos ----------
 // Para cambiar la estructura o el catálogo de una base existente, agregar una función AL FINAL.
 // Cada una corre una sola vez (se anota en la tabla migraciones). No borrar ni reordenar.
-const MIGRACIONES: (() => Promise<void>)[] = [];
+const MIGRACIONES: (() => Promise<void>)[] = [
+  // 1: precios nuevos de las boxes (commit "Nuevos precios de las boxes") y etiqueta PREMIUM.
+  // Solo si siguen con el valor viejo exacto: no pisa lo que se haya editado desde el admin.
+  async () => {
+    const precios: [string, number, number][] = [
+      ['mini-box', 890, 990], ['dulce-llegada', 1490, 1390], ['esencial', 1490, 1590], ['dulce-suenos', 1590, 1690],
+      ['primeros-mimos', 1990, 1790], ['pequeno-tesoro', 2190, 2090], ['especial-manolito', 3190, 3290],
+    ];
+    for (const [id, viejo, nuevo] of precios) {
+      const r = await q('UPDATE boxes SET precio = $1 WHERE id = $2 AND precio = $3 RETURNING id', [nuevo, id, viejo]);
+      if (r.length) await registrar('migración', 'box', id, 'editar', { precio: [viejo, nuevo] });
+    }
+    await q("UPDATE boxes SET etiqueta = 'PREMIUM' WHERE id = 'especial-manolito' AND etiqueta = 'COMPLETA'");
+  },
+];
 
 // Crea las tablas, aplica migraciones y carga el catálogo inicial si la base está vacía.
 // El lock evita que dos instancias del server lo hagan a la vez (ej. durante un deploy).
@@ -159,6 +186,20 @@ export async function iniciarDb() {
       }
     }
   });
+}
+
+// ---------- Historial ----------
+// Llamar dentro de la misma transacción que el cambio: así nunca queda un cambio sin registrar (ni al revés)
+export type Autor = string; // email del admin, 'cliente', 'sistema', 'mercadopago'
+export const registrar = (autor: Autor, entidad: 'producto' | 'box' | 'pedido', id: string | number, accion: string, cambios: Record<string, unknown> = {}) =>
+  q('INSERT INTO historial (autor, entidad, entidad_id, accion, cambios) VALUES ($1, $2, $3, $4, $5)',
+    [autor, entidad, String(id), accion, JSON.stringify(cambios)]);
+
+// { campo: [antes, después] } solo con lo que cambió
+export function diferencias<T extends Record<string, unknown>>(antes: T, despues: T, campos: (keyof T)[]) {
+  const d: Record<string, [unknown, unknown]> = {};
+  for (const c of campos) if (antes[c] !== despues[c]) d[c as string] = [antes[c], despues[c]];
+  return d;
 }
 
 // ---------- Catálogo ----------

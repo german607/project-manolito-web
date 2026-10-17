@@ -33,6 +33,13 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--pink);outl
 .panel{max-width:1100px;margin:0 auto;padding:28px 16px 60px;display:flex;flex-direction:column;gap:20px;}
 .row-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;}
+h2.sub{font-size:1.15rem;margin-top:8px;}
+.embudo-paso .track{height:10px;}
+.embudo-paso small{color:var(--ink-soft);font-weight:600;}
+.cambio{font-size:.85rem;}
+.cambio s{color:var(--ink-soft);}
+td.quien{color:var(--ink-soft);font-size:.82rem;}
 
 .seg{display:inline-flex;background:var(--white);border:1px solid var(--line);border-radius:999px;padding:3px;}
 .seg button{background:none;border:0;border-radius:999px;padding:6px 14px;cursor:pointer;color:var(--ink-soft);font-weight:700;}
@@ -94,7 +101,7 @@ td input[type=number]{width:96px;}
 
 @media (max-width:900px){
   .kpis{grid-template-columns:repeat(3,1fr);}
-  .grid3{grid-template-columns:1fr;}
+  .grid3,.grid2{grid-template-columns:1fr;}
 }
 @media (max-width:560px){
   .kpis{grid-template-columns:repeat(2,1fr);}

@@ -13,9 +13,11 @@
   function entrega(){return form.querySelector('input[name=entrega]:checked').value;}
 
   // ---- Resumen del pedido (se edita desde el panel del carrito) ----
+  var contado=false;
   function cotizar(){
     var items=Carrito.items();
     if(!items.length){mostrar('vacio');return;}
+    if(!contado){contado=true;track('checkout');} // embudo: llegó al checkout con algo en el carrito
     mostrar('lleno');
     Carrito.cotizar(pago()).then(function(c){
       cot=c;

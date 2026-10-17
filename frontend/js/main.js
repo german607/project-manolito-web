@@ -147,7 +147,7 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
       document.getElementById('bmName').focus(); return;
     }
     Carrito.agregar({tipo:'box',id:actual.dataset.boxId,nombreBebe:nombre||undefined});
-    close(); Carrito.abrir();
+    close(); Carrito.abrir(); track('carrito_agregar',actual.dataset.boxId);
   });
   ov.addEventListener('click',function(e){if(e.target===ov)close();});
   document.addEventListener('keydown',function(e){if(e.key==='Escape')close();});

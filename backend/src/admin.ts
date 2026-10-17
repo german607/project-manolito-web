@@ -1,7 +1,7 @@
 import express, { Router } from 'express';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
-import { q, q1, productos, boxes } from './db.js';
+import { q, q1, tx, productos, boxes, registrar, diferencias } from './db.js';
 import { HttpError } from './errores.js';
 import { ESTADOS, cambiarEstado } from './pedidos.js';
 import { HOY_UY, ZONA_UY } from './publico.js';
@@ -42,8 +42,30 @@ adminRouter.get('/resumen', async (req, res) => {
   const pedidos = await q(`SELECT estado, COUNT(*)::int AS cantidad, SUM(total)::int AS total FROM pedidos
     WHERE (creado AT TIME ZONE '${ZONA_UY}')::date >= $1 GROUP BY estado`, [desde]);
 
+  // ---- Ventas: pedidos pagados (o ya enviados/entregados) del período ----
+  const VENDIDO = `estado IN ('pagado', 'enviado', 'entregado') AND (creado AT TIME ZONE '${ZONA_UY}')::date >= $1`;
+  const ventas = {
+    resumen: await q1(`SELECT COUNT(*)::int AS pedidos, COALESCE(SUM(total), 0)::int AS total,
+      COALESCE(ROUND(AVG(total)), 0)::int AS ticket FROM pedidos WHERE ${VENDIDO}`, [desde]),
+    // Cada línea del pedido (producto o box) con sus unidades y lo facturado
+    masVendidos: await q(`SELECT l->>'nombre' AS ref, SUM((l->>'cantidad')::int)::int AS unidades, SUM((l->>'total')::int)::int AS n
+      FROM pedidos, jsonb_array_elements(items) l WHERE ${VENDIDO} GROUP BY 1 ORDER BY n DESC LIMIT 10`, [desde]),
+    porPago: await q(`SELECT pago AS ref, COUNT(*)::int AS pedidos, SUM(total)::int AS n FROM pedidos WHERE ${VENDIDO} GROUP BY 1 ORDER BY n DESC`, [desde]),
+    porEntrega: await q(`SELECT entrega AS ref, COUNT(*)::int AS n FROM pedidos WHERE ${VENDIDO} GROUP BY 1 ORDER BY n DESC`, [desde]),
+  };
+
+  // ---- Embudo: de la visita al pago (los primeros pasos son eventos anónimos) ----
+  const creados = await q1<{ n: number }>(`SELECT COUNT(*)::int AS n FROM pedidos WHERE (creado AT TIME ZONE '${ZONA_UY}')::date >= $1`, [desde]);
+  const embudo = [
+    { paso: 'Visitas', n: totales.visita ?? 0 },
+    { paso: 'Agregaron al carrito', n: totales.carrito_agregar ?? 0 },
+    { paso: 'Llegaron al checkout', n: totales.checkout ?? 0 },
+    { paso: 'Hicieron el pedido', n: creados!.n },
+    { paso: 'Pagaron', n: ventas.resumen!.pedidos },
+  ];
+
   res.json({
-    dias, desde, visitasPorDia, totales, pedidos,
+    dias, desde, visitasPorDia, totales, pedidos, ventas, embudo,
     paginas: await suma('visita'),
     boxesVistas: await suma('box_ver'),
     productosAgregados: await suma('arma_agregar'),
@@ -84,14 +106,28 @@ adminRouter.patch('/productos/:id', async (req, res) => {
   if ((controlaStock ?? actual.controlaStock) && (cambios.stock === undefined ? actual.stockCargado : cambios.stock) === null) {
     throw new HttpError(400, 'Cargá la cantidad de stock, o activá "Ignorar stock"');
   }
-  await actualizar('productos', req.params.id, { ...cambios, controla_stock: controlaStock });
-  res.json(await productos.uno(req.params.id));
+  const nuevo = await tx(async () => {
+    await actualizar('productos', req.params.id, { ...cambios, controla_stock: controlaStock });
+    const nuevo = (await productos.uno(req.params.id))!;
+    const d = diferencias(actual, nuevo, ['precio', 'stockCargado', 'controlaStock', 'activo']);
+    if (Object.keys(d).length) await registrar(res.locals.usuario.email, 'producto', actual.id, 'editar', d);
+    return nuevo;
+  });
+  res.json(nuevo);
 });
 
 adminRouter.patch('/boxes/:id', async (req, res) => {
   const cambios = z.object({ precio: Precio.optional(), activo: z.boolean().optional() }).strict().parse(req.body);
-  await actualizar('boxes', req.params.id, cambios);
-  res.json(await boxes.una(req.params.id));
+  const antes = await boxes.una(req.params.id);
+  if (!antes) throw new HttpError(404, 'No encontrado');
+  const nueva = await tx(async () => {
+    await actualizar('boxes', req.params.id, cambios);
+    const nueva = (await boxes.una(req.params.id))!;
+    const d = diferencias(antes, nueva, ['precio', 'activo']);
+    if (Object.keys(d).length) await registrar(res.locals.usuario.email, 'box', antes.id, 'editar', d);
+    return nueva;
+  });
+  res.json(nueva);
 });
 
 // Se reconoce el formato por los primeros bytes del archivo, no por lo que dice el navegador
@@ -113,8 +149,25 @@ adminRouter.put('/productos/:id/foto', express.raw({ type: 'image/*', limit: '5m
   const ruta = `arma-tu-box/producto-${p.id}.${EXT[tipo]}`; // el id ya existe en la base: no hay rutas raras
   await guardarImagen(ruta, req.body, tipo);
   // ?v= hace que el navegador no muestre la foto vieja que tenía guardada
-  await actualizar('productos', p.id, { foto: `assets/img/${ruta}?v=${Date.now()}` });
+  const foto = `assets/img/${ruta}?v=${Date.now()}`;
+  await tx(async () => {
+    await actualizar('productos', p.id, { foto });
+    await registrar(res.locals.usuario.email, 'producto', p.id, 'foto', { foto: [p.foto, foto] });
+  });
   res.json(await productos.uno(p.id));
+});
+
+// ---------- Historial ----------
+
+adminRouter.get('/historial', async (req, res) => {
+  const { entidad, id } = z.object({
+    entidad: z.enum(['producto', 'box', 'pedido']).optional().catch(undefined),
+    id: z.string().max(60).optional().catch(undefined),
+  }).parse(req.query);
+  const filtros: string[] = [], params: unknown[] = [];
+  if (entidad) { params.push(entidad); filtros.push(`entidad = $${params.length}`); }
+  if (id) { params.push(id); filtros.push(`entidad_id = $${params.length}`); }
+  res.json(await q(`SELECT * FROM historial ${filtros.length ? 'WHERE ' + filtros.join(' AND ') : ''} ORDER BY cuando DESC, id DESC LIMIT 300`, params));
 });
 
 // ---------- Pedidos ----------
@@ -126,5 +179,5 @@ adminRouter.get('/pedidos', async (req, res) => {
 
 adminRouter.patch('/pedidos/:id', async (req, res) => {
   const { estado } = z.object({ estado: z.enum(ESTADOS) }).parse(req.body);
-  res.json(await cambiarEstado(Number(req.params.id), estado));
+  res.json(await cambiarEstado(Number(req.params.id), estado, undefined, res.locals.usuario.email));
 });

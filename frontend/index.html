@@ -214,34 +214,23 @@
 
     
 
-    <div class="porta-price-table" style="margin-bottom:44px;">
-      <div class="price-row"><span>Personalizado de madera</span><span>$790</span></div>
-      <div class="price-row"><span>Personalizado de silicona</span><span>$790</span></div>
-      <div class="price-row"><span>Sin personalizar</span><span>$690</span></div>
+    <div class="pb" id="portaBuy">
+      <div class="pb-step"><span class="pb-n">1</span> Elegí el material</div>
+      <div class="pb-tabs"></div>
+      <div class="pb-step"><span class="pb-n">2</span> Elegí tu modelo favorito</div>
+      <div class="pm-grid pb-grid"></div>
+      <div class="pb-step"><span class="pb-n">3</span> Personalizalo y comprá</div>
+      <div class="pb-panel">
+        <p class="pb-sel" id="pbSel">Todavía no elegiste modelo</p>
+        <label class="pm-l">Nombre del bebé<input type="text" id="pbName" maxlength="20" placeholder="Ej: Lucas" autocomplete="off"></label>
+        <label class="pm-l">Colores o detalles (opcional)<input type="text" id="pbDet" maxlength="60" placeholder="Ej: arcoíris pastel, clip de madera"></label>
+        <div class="pb-total"><span>Precio</span><b id="pbPrice">$790</b></div>
+        <p class="pb-hint" id="pbHint"></p>
+        <button class="btn btn-green" id="pbAdd" type="button" style="width:100%">Agregar al carrito</button>
+        <p class="pb-note">Silicona de grado alimenticio, libre de BPA · Colores a elección, sujeto a stock.</p>
+      </div>
+      <div class="arma-toast" id="pbToast" role="status"></div>
     </div>
-
-    <div class="porta-catalog">
-      <figure class="porta-card">
-        <div class="porta-slider">
-          <div class="porta-track" data-img="assets/img/portachupetes/silicona-{n}.jpg" data-count="3" data-alt="Modelos de portachupetes de silicona {n}" data-item="porta-slide"></div>
-          <button class="carousel-arrow arrow-left" type="button" aria-label="Anterior">&#8249;</button>
-          <button class="carousel-arrow arrow-right" type="button" aria-label="Siguiente">&#8250;</button>
-          <div class="porta-dots"></div>
-        </div>
-        <figcaption><h3>Silicona</h3><span>Libre de BPA · colores a elección</span></figcaption>
-      </figure>
-      <figure class="porta-card">
-        <div class="porta-slider">
-          <div class="porta-track" data-img="assets/img/portachupetes/madera-{n}.jpg" data-count="1" data-alt="Modelos de portachupetes de madera {n}" data-item="porta-slide"></div>
-          <button class="carousel-arrow arrow-left" type="button" aria-label="Anterior">&#8249;</button>
-          <button class="carousel-arrow arrow-right" type="button" aria-label="Siguiente">&#8250;</button>
-          <div class="porta-dots"></div>
-        </div>
-        <figcaption><h3>Madera</h3><span>Madera natural de haya</span></figcaption>
-      </figure>
-    </div>
-
-    <p class="porta-footnote">*Precio hasta 5 letras, por cada letra adicional se suman $20.<br>Silicona de grado alimenticio, libre de BPA · Colores a elección, sujeto a stock.</p>
   </div>
 </section>
 
@@ -397,5 +386,6 @@
 
 <script src="js/main.js"></script>
 <script src="js/carrito.js"></script>
+<script src="js/porta.js"></script>
 </body>
 </html>

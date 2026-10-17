@@ -10,14 +10,19 @@ import type { Readable } from 'node:stream';
 // Sin bucket (desarrollo): se sirven del disco; las que se suben desde el admin van a backend/data/img
 // para no pisar las del repo (que usa la vista de diseño).
 
-const BUCKET = process.env.S3_BUCKET;
+// Acepta los nombres propios (S3_*) o los del preset "AWS SDK" de Railway (AWS_*)
+const env = process.env;
+const BUCKET = env.S3_BUCKET ?? env.AWS_S3_BUCKET_NAME;
 const PREFIJO = process.env.S3_PREFIJO ?? 'assets/img/'; // carpeta del bucket donde están boxes/, marca/, etc.
 const LOCAL = fileURLToPath(new URL('../data/img', import.meta.url));
 
 const s3 = BUCKET ? new S3Client({
-  endpoint: process.env.S3_ENDPOINT,
-  region: process.env.S3_REGION ?? 'auto',
-  credentials: { accessKeyId: process.env.S3_ACCESS_KEY_ID ?? '', secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ?? '' },
+  endpoint: env.S3_ENDPOINT ?? env.AWS_ENDPOINT_URL,
+  region: env.S3_REGION ?? env.AWS_DEFAULT_REGION ?? 'auto',
+  credentials: {
+    accessKeyId: env.S3_ACCESS_KEY_ID ?? env.AWS_ACCESS_KEY_ID ?? '',
+    secretAccessKey: env.S3_SECRET_ACCESS_KEY ?? env.AWS_SECRET_ACCESS_KEY ?? '',
+  },
   forcePathStyle: process.env.S3_PATH_STYLE === 'true', // buckets viejos de Railway (lo indica la pestaña Credentials)
 }) : null;
 
@@ -60,7 +65,7 @@ if (s3) {
 
 // Al arrancar: avisa en el log si el bucket no responde o si las imágenes no están en S3_PREFIJO
 export async function revisarBucket() {
-  if (!s3) return console.log('Imágenes: desde el disco (sin S3_BUCKET).');
+  if (!s3) return console.log('Imágenes: desde el disco (sin S3_BUCKET ni AWS_S3_BUCKET_NAME).');
   const clave = `${PREFIJO}marca/manolito.png`;
   try {
     await s3.send(new HeadObjectCommand({ Bucket: BUCKET, Key: clave }));

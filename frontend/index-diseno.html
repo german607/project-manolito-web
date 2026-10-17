@@ -96,7 +96,6 @@
   .hero-collage{position:absolute;left:0;right:0;top:0;height:640px;display:grid;grid-template-columns:repeat(6,1fr);grid-template-rows:1fr 1fr;gap:6px;padding:6px;background:var(--green-pale);}
   .hero-collage img{width:100%;height:100%;object-fit:cover;border-radius:14px;filter:saturate(.9) brightness(1.04);}
   .hero-collage::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 48%,rgba(255,252,250,.94) 0%,rgba(255,252,250,.82) 38%,rgba(255,250,248,.35) 78%,rgba(255,250,248,.15) 100%);}
-  .hero-cover{display:none;}
   .hero-wrap{position:relative;z-index:2;min-height:640px;display:flex;align-items:center;justify-content:center;padding-top:40px;padding-bottom:40px;}
   .hero-card{position:relative;text-align:center;max-width:700px;padding:44px 40px 36px;border-radius:34px;background:rgba(255,255,255,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.9);box-shadow:0 30px 70px -30px rgba(63,58,52,.35);}
   .hero-card h1{font-size:3.1rem;letter-spacing:-.4px;line-height:1.08;}
@@ -116,9 +115,11 @@
     .hero-card h1{font-size:2.4rem;}
   }
   @media (max-width:600px){
-    .hero-collage{display:none;}
-    .hero-cover{display:block;width:100%;height:360px;object-fit:cover;object-position:center 35%;}
-    .hero-wrap{min-height:0;margin-top:-56px;padding:0 16px 10px;}
+    .hero-collage{position:relative;height:300px;grid-template-columns:repeat(3,1fr);grid-template-rows:1fr 1fr;gap:4px;padding:4px;}
+    .hero-collage img:nth-child(n+7){display:none;}
+    .hero-collage img{border-radius:10px;}
+    .hero-collage::after{background:linear-gradient(180deg,rgba(255,252,250,0) 55%,rgba(255,252,250,.97) 100%);}
+    .hero-wrap{min-height:0;margin-top:-40px;padding:0 16px 10px;}
     .hero-card{padding:26px 18px 22px;border-radius:26px;background:rgba(255,255,255,.94);}
     .hero-card h1{font-size:1.75rem;}
     .hero-card p.sub{font-size:.96rem;margin:12px auto 18px;}
@@ -661,18 +662,17 @@
   <div class="hero-collage" aria-hidden="true">
       <img src="assets/img/boxes/box-especial-manolito.jpg" alt="" loading="eager">
       <img src="assets/img/boxes/hero-bienvenida.jpg" alt="" loading="eager">
-      <img src="assets/img/boxes/mini-box-beige.jpg" alt="" loading="eager">
+      <img src="assets/img/boxes/box-pequeno-tesoro.jpg" alt="" loading="eager">
       <img src="assets/img/boxes/box-dulce-suenos-rosa.jpg" alt="" loading="eager">
-      <img src="assets/img/boxes/box-primeros-mimos.jpg" alt="" loading="eager">
-      <img src="assets/img/boxes/box-pequeno-tesoro-celeste.jpg" alt="" loading="eager">
+      <img src="assets/img/boxes/box-primeros-mimos-celeste.jpg" alt="" loading="eager">
+      <img src="assets/img/boxes/mini-box-beige.jpg" alt="" loading="eager">
       <img src="assets/img/boxes/box-esencial-rosa.jpg" alt="" loading="lazy">
       <img src="assets/img/boxes/box-especial-manolito-rosa.jpg" alt="" loading="lazy">
       <img src="assets/img/boxes/box-dulce-llegada-celeste.jpg" alt="" loading="lazy">
       <img src="assets/img/boxes/mini-box.jpg" alt="" loading="lazy">
-      <img src="assets/img/boxes/box-primeros-mimos-celeste.jpg" alt="" loading="lazy">
+      <img src="assets/img/boxes/box-primeros-mimos.jpg" alt="" loading="lazy">
       <img src="assets/img/boxes/box-dulce-suenos-celeste.jpg" alt="" loading="lazy">
   </div>
-  <img class="hero-cover" src="assets/img/boxes/box-pequeno-tesoro.jpg" alt="Box Pequeño tesoro en beige">
   <div class="wrap hero-wrap">
     <div class="hero-card">
       <span class="eyebrow-minimal">Regalos con amor</span>

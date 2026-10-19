@@ -1,0 +1,49 @@
+# Entornos y deploy
+
+| | Staging | Producción |
+|---|---|---|
+| Rama de git | `develop` | `main` |
+| Web (Vercel) | `project-manolito-web-frontend.vercel.app` / `manolitouy.com` | (dominio de producción) |
+| API (Railway) | entorno **staging**: `project-manolito-web-staging.up.railway.app` | entorno **production** |
+| Base de datos | Postgres propio de staging | Postgres propio de producción |
+| Imágenes | bucket `manolito-img-storage-76u0au` | bucket `manolito-img-storage-dzycai` |
+
+Cada entorno tiene **su propia base y su propio bucket**: nunca apuntar staging a la base de producción (ni copiar
+la base de staging a producción: tiene pedidos y usuarios de prueba). Al arrancar, el log dice a qué base está
+conectado: `Entorno: production · Base: <host>/railway`.
+
+## Crear producción desde cero (Railway)
+
+1. **New Environment → production** (vacío, o duplicando staging y después cambiando lo que se indica abajo).
+2. En ese entorno: **+ New → Database → PostgreSQL** y **+ New → Bucket**.
+3. Servicio web → **Settings → Source**: rama `main`. Root Directory igual que en staging.
+4. Servicio web → **Variables**:
+   - `DATABASE_URL` = referencia al Postgres **de producción** (`${{Postgres.DATABASE_URL}}`)
+   - Bucket: preset "AWS SDK" del bucket **de producción** (`AWS_S3_BUCKET_NAME`, `AWS_ENDPOINT_URL`, …)
+   - `ADMIN_EMAIL`, `ADMIN_PASSWORD` (16+ caracteres; distinta de la de staging)
+   - `TRUST_PROXY=2`, `BASE_URL` y `FRONTEND_URL` = dominio de producción
+   - `RESEND_API_KEY`, `MAIL_FROM`, `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`, `PAGO_INSTRUCCIONES`
+5. Subir las imágenes al bucket: `./scripts/subir-imagenes.sh produccion`.
+6. Deploy. En el primer arranque se crean solas las tablas, el catálogo (desde `backend/src/seed.ts`) y la cuenta de admin.
+7. Activar los **backups** del Postgres de producción en Railway.
+
+**Verificar:** el log dice `Entorno: production` y `Imágenes: desde el bucket manolito-img-storage-dzycai`;
+`/api/health` responde; se puede ingresar al admin; una compra de prueba aparece en Pedidos y en Historial.
+
+## Cambios de catálogo: `seed.ts` NO alcanza
+
+`seed.ts` solo se usa cuando la base está **vacía**. Cambiar ahí un precio, un nombre o el contenido de una box
+no actualiza staging ni producción. Según el caso:
+
+- **Precio, stock, activo, foto:** desde el panel de admin (queda en el Historial).
+- **Nombre, contenido de una box, box o producto nuevo:** cambiar `seed.ts` (para las bases nuevas) **y** agregar una
+  migración al final de `MIGRACIONES` en `backend/src/db.ts` (para las que ya existen). Ver la migración 1 como ejemplo:
+  solo cambia lo que sigue con el valor viejo, así no pisa lo editado en el admin.
+
+## Desarrollo local
+
+```bash
+docker compose up -d          # Postgres en el puerto 5434
+cd backend && npm run dev     # http://localhost:3000 (sin bucket: imágenes del disco)
+npm test                      # usa el esquema "test", no toca los datos de desarrollo
+```

@@ -70,6 +70,9 @@ app.use(express.static(FRONTEND));
 
 const server = app.listen(PORT, () => {
   console.log(`Manolito en http://localhost:${PORT}`);
+  // A qué base está conectado (sin la contraseña): evita confundir staging con producción
+  const db = new URL(process.env.DATABASE_URL!);
+  console.log(`Entorno: ${process.env.RAILWAY_ENVIRONMENT_NAME ?? 'local'} · Base: ${db.hostname}${db.pathname}${process.env.DB_SCHEMA ? ` (esquema ${process.env.DB_SCHEMA})` : ''}`);
   revisarBucket();
 });
 

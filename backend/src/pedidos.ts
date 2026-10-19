@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { q, q1, tx, productos, boxes, STOCK_SQL, type Producto, type Box } from './db.js';
+import { q, q1, tx, productos, boxes, registrar, STOCK_SQL, type Autor, type Producto, type Box } from './db.js';
 import { HttpError } from './errores.js';
 import { enviarMail } from './mail.js';
 import { crearPreferencia, firmaValida, obtenerPago } from './mercadopago.js';
@@ -18,7 +18,9 @@ export const Item = z.object({
   cantidad: z.number().int().min(1).max(20).default(1),
   color: z.string().optional(),
   nombreBebe: z.string().trim().max(20).optional(),
+  estampado: z.string().trim().max(60).optional(), // qué estampado quiere (solo con color "Estampada")
   modelo: z.string().trim().max(120).optional(), // modelo de portachupete elegido (material, lámina, detalle)
+  armado: z.string().trim().min(1).max(40).optional(), // id del armado de "Armá tu box" al que pertenece (lo genera el navegador)
 });
 
 const Pago = z.enum(['transferencia', 'abitab_redpagos', 'prex_midinero', 'mercadopago']);
@@ -46,11 +48,23 @@ export const CarritoInput = z.object({
 // componentes = stock que mueve la línea. Pedidos viejos no lo tienen: ver stockDe()
 export type Linea = {
   tipo: 'producto' | 'box'; id: string; nombre: string; cantidad: number;
-  color?: string; nombreBebe?: string; modelo?: string; precioUnitario: number; total: number;
+  color?: string; estampado?: string; nombreBebe?: string; modelo?: string; armado?: string; precioUnitario: number; total: number;
   componentes?: { id: string; cantidad: number }[];
 };
 
 export const letras = (s = '') => s.replace(/\s+/g, '').length;
+
+// "Armá tu box": cada armado necesita al menos MIN_ARMADO productos distintos (pedido por la dueña).
+// Devuelve los armados que no llegan, para rechazar el pedido o marcar esas líneas en el carrito.
+export const MIN_ARMADO = 2;
+const AVISO_ARMADO = `Cada armado de "Armá tu box" necesita al menos ${MIN_ARMADO} productos distintos`;
+export function armadosIncompletos(items: z.infer<typeof Item>[]) {
+  const porArmado = new Map<string, Set<string>>();
+  for (const it of items) {
+    if (it.tipo === 'producto' && it.armado) porArmado.set(it.armado, (porArmado.get(it.armado) ?? new Set()).add(it.id));
+  }
+  return new Set([...porArmado].filter(([, ids]) => ids.size < MIN_ARMADO).map(([a]) => a));
+}
 
 // Precio siempre calculado acá con los datos de la base: nunca se confía en el precio que manda el navegador
 export async function calcular(
@@ -63,6 +77,7 @@ export async function calcular(
     if (it.tipo === 'box') {
       const b = await buscarBox(it.id);
       if (!b?.activo) throw new HttpError(400, `La box "${it.id}" no existe`);
+      if (it.armado) throw new HttpError(400, 'Las boxes no van dentro de un armado');
       if (!it.nombreBebe && b.items.some(i => /portachupete/i.test(i))) throw new HttpError(400, `Falta el nombre del bebé para el portachupete de ${b.nombre}`);
       // La box no cobra letras extra en el portachupete (confirmado con Manolito): solo el portachupete suelto
       for (const c of b.componentes) {
@@ -74,13 +89,17 @@ export async function calcular(
     }
     const p = await buscarProducto(it.id);
     if (!p?.activo) throw new HttpError(400, `El producto "${it.id}" no existe`);
+    // Los productos se compran armando una box; solo el portachupete se vende suelto (desde su sección)
+    if (!it.armado && !p.personalizable) throw new HttpError(400, `${p.nombre} se compra desde "Armá tu box" (mínimo ${MIN_ARMADO} productos)`);
     if (it.color && !p.colores?.includes(it.color)) throw new HttpError(400, `Color "${it.color}" no disponible para ${p.nombre}`);
+    if (it.color === 'Estampada' && !it.estampado) throw new HttpError(400, `Falta contar qué estampado querés para ${p.nombre}`);
+    if (it.estampado && it.color !== 'Estampada') throw new HttpError(400, `El estampado solo va con el color Estampada`);
     if (it.nombreBebe && !p.personalizable) throw new HttpError(400, `${p.nombre} no lleva nombre`);
     if (!it.nombreBebe && p.personalizable) throw new HttpError(400, `Falta el nombre del bebé para ${p.nombre}`);
     if (p.stock !== null && p.stock < it.cantidad) throw new HttpError(409, p.stock ? `Quedan solo ${p.stock} de ${p.nombre}` : `${p.nombre} está sin stock`);
     const extra = p.personalizable ? Math.max(0, letras(it.nombreBebe) - LETRAS_INCLUIDAS) * PRECIO_LETRA_EXTRA : 0;
     const unit = p.precio + extra;
-    lineas.push({ tipo: 'producto', id: p.id, nombre: p.nombre, cantidad: it.cantidad, color: it.color, nombreBebe: it.nombreBebe, modelo: p.personalizable ? it.modelo : undefined, precioUnitario: unit, total: unit * it.cantidad,
+    lineas.push({ tipo: 'producto', id: p.id, nombre: p.nombre, cantidad: it.cantidad, color: it.color, estampado: it.estampado, nombreBebe: it.nombreBebe, modelo: p.personalizable ? it.modelo : undefined, armado: it.armado, precioUnitario: unit, total: unit * it.cantidad,
       componentes: [{ id: p.id, cantidad: it.cantidad }] });
   }
   return { lineas, ...totales(lineas, input.pago) };
@@ -102,8 +121,11 @@ export type Pedido = {
 export const buscarPedido = (id: number, bloquear = false) =>
   q1<Pedido>(`SELECT * FROM pedidos WHERE id = $1 ${bloquear ? 'FOR UPDATE' : ''}`, [id]);
 
+// Los armados se numeran en el orden en que aparecen ("Armado 1", "Armado 2"): cada uno se empaca como una box
+export const numerarArmados = (items: Linea[]) => [...new Set(items.map(l => l.armado).filter(Boolean))] as string[];
+
 const resumen = (p: Pedido) => [
-  ...p.items.map(l => `- ${l.cantidad} x ${l.nombre}${l.color ? ` (${l.color})` : ''}${l.nombreBebe ? ` "${l.nombreBebe}"` : ''}${l.modelo ? ` [Modelo: ${l.modelo}]` : ''}: $${l.total}`),
+  ...p.items.map(l => `- ${l.cantidad} x ${l.nombre}${l.color ? ` (${l.color}${l.estampado ? `: ${l.estampado}` : ''})` : ''}${l.nombreBebe ? ` "${l.nombreBebe}"` : ''}${l.modelo ? ` [Modelo: ${l.modelo}]` : ''}${l.armado ? ` (Armado ${numerarArmados(p.items).indexOf(l.armado) + 1})` : ''}: $${l.total}`),
   p.recargo ? `Recargo Mercado Pago: $${p.recargo}` : '',
   `Total: $${p.total}`,
   `Entrega: ${p.entrega}${p.direccion ? ` — ${p.direccion}` : ''} (el envío se coordina aparte)`,
@@ -129,12 +151,14 @@ async function devolverStock(lineas: Linea[]) {
 }
 
 // Cancelar devuelve el stock; reactivar un cancelado lo vuelve a descontar (409 si ya no hay)
-export async function cambiarEstado(id: number, estado: Pedido['estado'], mpPaymentId?: string) {
+// autor: quién lo cambia (queda en el historial): email del admin, 'mercadopago' o 'sistema' (vencimiento)
+export async function cambiarEstado(id: number, estado: Pedido['estado'], mpPaymentId?: string, autor: Autor = 'sistema') {
   const p = await tx(async () => {
     const antes = await buscarPedido(id, true);
     if (!antes) throw new HttpError(404, 'Pedido no encontrado');
     if (estado === 'cancelado' && antes.estado !== 'cancelado') await devolverStock(antes.items);
     if (antes.estado === 'cancelado' && estado !== 'cancelado') await descontarStock(antes.items);
+    if (antes.estado !== estado) await registrar(autor, 'pedido', id, 'estado', { estado: [antes.estado, estado] });
     return (await q1<Pedido>('UPDATE pedidos SET estado = $1, mp_payment_id = COALESCE($2, mp_payment_id) WHERE id = $3 RETURNING *',
       [estado, mpPaymentId ?? null, id]))!;
   });
@@ -142,13 +166,14 @@ export async function cambiarEstado(id: number, estado: Pedido['estado'], mpPaym
   return p;
 }
 
-export const insertar = (input: PedidoInput, c: Awaited<ReturnType<typeof calcular>>, usuarioId: number | null = null) => tx(async () => {
+export const insertar = (input: PedidoInput, c: Awaited<ReturnType<typeof calcular>>, usuarioId: number | null = null, autor: Autor = 'cliente') => tx(async () => {
   await descontarStock(c.lineas);
   const { cliente } = input;
   const r = await q1<{ id: number }>(`INSERT INTO pedidos (nombre, telefono, email, direccion, entrega, pago, items, subtotal, recargo, total, usuario_id)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`, [
     cliente.nombre, cliente.telefono, cliente.email, cliente.direccion ?? null, input.entrega, input.pago,
     JSON.stringify(c.lineas), c.subtotal, c.recargo, c.total, usuarioId]);
+  await registrar(autor, 'pedido', r!.id, 'crear', { total: [null, c.total], pago: [null, input.pago] });
   return r!.id;
 });
 
@@ -156,7 +181,7 @@ export const insertar = (input: PedidoInput, c: Awaited<ReturnType<typeof calcul
 export async function vencerPedidos() {
   const vencidos = await q<{ id: number }>("SELECT id FROM pedidos WHERE estado = 'pendiente' AND creado <= now() - make_interval(hours => $1)", [VENCE_HORAS]);
   for (const { id } of vencidos) {
-    const p = await cambiarEstado(id, 'cancelado');
+    const p = await cambiarEstado(id, 'cancelado', undefined, 'sistema (venció sin pago)');
     enviarMail(p.email, `Tu pedido Manolito #${id} se canceló`,
       `¡Hola ${p.nombre}! Pasaron ${VENCE_HORAS} horas sin que recibiéramos el pago, así que el pedido se canceló.\n\n${resumen(p)}\n\nSi todavía lo querés, podés hacerlo de nuevo en la web o escribirnos por Instagram.`);
   }
@@ -171,9 +196,11 @@ pedidosRouter.post('/carrito', async (req, res) => {
   const { items, pago } = CarritoInput.parse(req.body);
   const lineas: (Linea & { i: number; foto: string | null })[] = [];
   const avisos: { i: number; nombre?: string; error: string }[] = [];
+  const incompletos = armadosIncompletos(items);
   for (const [i, it] of items.entries()) {
     const item = it.tipo === 'box' ? await boxes.una(it.id) : await productos.uno(it.id);
     try {
+      if (it.armado && incompletos.has(it.armado)) throw new HttpError(400, `${AVISO_ARMADO}: agregá otro o quitá este`);
       lineas.push({ i, foto: item?.foto ?? null, ...(await calcular({ items: [it], pago }, productos.uno, boxes.una)).lineas[0] });
     } catch (e) {
       if (!(e instanceof HttpError)) throw e;
@@ -185,8 +212,10 @@ pedidosRouter.post('/carrito', async (req, res) => {
 
 pedidosRouter.post('/pedidos', async (req, res) => {
   const input = PedidoInput.parse(req.body);
+  if (armadosIncompletos(input.items).size) throw new HttpError(400, AVISO_ARMADO);
   if (input.pago === 'mercadopago' && !process.env.MP_ACCESS_TOKEN) throw new HttpError(400, 'Mercado Pago no está disponible, elegí otro medio de pago');
-  const id = await insertar(input, await calcular(input, productos.uno, boxes.una), res.locals.usuario?.id ?? null);
+  const usuario = res.locals.usuario as { id: number; email: string } | null;
+  const id = await insertar(input, await calcular(input, productos.uno, boxes.una), usuario?.id ?? null, usuario?.email ?? 'cliente');
   const p = (await buscarPedido(id))!;
 
   let pagoUrl: string | undefined;
@@ -217,11 +246,11 @@ pedidosRouter.post('/mercadopago/webhook', async (req, res) => {
     const p = await buscarPedido(Number(pago.external_reference));
     const mpId = String(req.query['data.id']);
     if (pago.status === 'approved' && p && pago.transaction_amount >= p.total) {
-      if (p.estado === 'pendiente') await cambiarEstado(p.id, 'pagado', mpId);
+      if (p.estado === 'pendiente') await cambiarEstado(p.id, 'pagado', mpId, 'mercadopago');
       // Pago que entró después de vencer: se reactiva si queda stock; si no, hay que devolver la plata
       else if (p.estado === 'cancelado') {
         try {
-          await cambiarEstado(p.id, 'pagado', mpId);
+          await cambiarEstado(p.id, 'pagado', mpId, 'mercadopago');
         } catch (e) {
           if (!(e instanceof HttpError) || e.status !== 409) throw e;
           await q('UPDATE pedidos SET mp_payment_id = $1 WHERE id = $2', [mpId, p.id]);

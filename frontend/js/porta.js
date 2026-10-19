@@ -39,7 +39,7 @@
     var modelo=mat+' N° '+lam+(detI.value.trim()?' — '+detI.value.trim():'');
     if(window.Carrito){
       Carrito.agregar({tipo:'producto',id:'porta',nombreBebe:nombre,modelo:modelo});
-      Carrito.abrir();
+      Carrito.abrir(); if(window.track) track('carrito_agregar','porta');
     }else{toast('Listo: '+modelo+' · "'+nombre+'" · $'+precio()+' (en el sitio real se suma al carrito).');}
   });
   pintar(); upd();

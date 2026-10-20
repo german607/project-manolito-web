@@ -6,6 +6,7 @@ import { iniciarDb, pool } from './db.js';
 import { imagenesRouter, revisarBucket } from './imagenes.js';
 import { manejarErrores } from './errores.js';
 import { pedidosRouter, vencerPedidos } from './pedidos.js';
+import { pagosManualesRouter } from './pagosManuales.js';
 import { publicoRouter } from './publico.js';
 import { hsts, limitar, limitarConcurrencia, revisarConfig, soloPublicable, trustProxy } from './seguridad.js';
 
@@ -32,7 +33,10 @@ app.use(limitar('todo', 1500, MINUTO));
 // 2. Por IP, solo la API (lo que usa CPU y base de datos)
 app.use('/api', limitar('api', 300, MINUTO));
 // 3. Por IP, lo público que escribe: pedidos en loop (stock, mails) y llenar la base
-app.use('/api/pedidos', limitar('pedidos', 5, 10 * MINUTO));
+// Solo crear pedidos (POST /api/pedidos): ver los datos de pago o subir el comprobante no cuenta
+const limitePedidos = limitar('pedidos', 5, 10 * MINUTO);
+app.use('/api/pedidos', (req, res, next) => (req.method === 'POST' && req.path === '/' ? limitePedidos(req, res, next) : next()));
+app.use('/api/pedidos/:id/comprobante', limitar('comprobantes', 10, 10 * MINUTO));
 app.use('/api/carrito', limitar('carrito', 60, MINUTO));
 app.use('/api/eventos', limitar('eventos', 120, MINUTO));
 // Frena probar contraseñas en serie. Solo login y registro: /api/auth/yo lo consulta cada página
@@ -49,6 +53,7 @@ app.use('/api', cargarUsuario);
 app.use('/api/auth', authRouter);
 app.use('/api', publicoRouter);
 app.use('/api', pedidosRouter);
+app.use('/api', pagosManualesRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api', (_req, res) => { res.status(404).json({ error: 'No existe' }); });
 app.use(manejarErrores);

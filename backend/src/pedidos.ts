@@ -3,7 +3,8 @@ import { z } from 'zod';
 import { q, q1, tx, productos, boxes, registrar, STOCK_SQL, type Autor, type Producto, type Box } from './db.js';
 import { HttpError } from './errores.js';
 import { enviarMail } from './mail.js';
-import { crearPreferencia, firmaValida, obtenerPago } from './mercadopago.js';
+import { crearPreferencia, firmaValida, obtenerPago, type PagoMP } from './mercadopago.js';
+import { crearToken, datosDePago, datosEnTexto, linkComprobante, MANUALES } from './pagosManuales.js';
 
 export const ESTADOS = ['pendiente', 'pagado', 'enviado', 'entregado', 'cancelado'] as const;
 const LETRAS_INCLUIDAS = 5;
@@ -115,6 +116,7 @@ export type Pedido = {
   id: number; creado: Date; estado: (typeof ESTADOS)[number]; nombre: string; telefono: string;
   email: string; direccion: string | null; entrega: string; pago: string; items: Linea[];
   subtotal: number; recargo: number; total: number; mp_payment_id: string | null; usuario_id: number | null;
+  token_pago: string | null; comprobante: string | null; comprobante_tipo: string | null; comprobante_subido: Date | null;
 };
 
 // bloquear = trabar la fila hasta el fin de la transacción (para cambios de estado simultáneos)
@@ -163,6 +165,8 @@ export async function cambiarEstado(id: number, estado: Pedido['estado'], mpPaym
       [estado, mpPaymentId ?? null, id]))!;
   });
   if (estado === 'enviado') enviarMail(p.email, `Tu pedido Manolito #${p.id} está en camino`, `¡Hola ${p.nombre}! Tu pedido ya salió.\n\n${resumen(p)}`);
+  // Pago confirmado: por Mercado Pago o marcado a mano por el admin (transferencia, Abitab, Prex)
+  if (estado === 'pagado') enviarMail(p.email, `Recibimos el pago de tu pedido Manolito #${p.id}`, `¡Hola ${p.nombre}! Ya está confirmado el pago. Te avisamos cuando lo enviemos.\n\n${resumen(p)}`);
   return p;
 }
 
@@ -179,7 +183,8 @@ export const insertar = (input: PedidoInput, c: Awaited<ReturnType<typeof calcul
 
 // Cancela los pedidos pendientes de pago con más de VENCE_HORAS y avisa al cliente. Corre cada 5 min (server.ts)
 export async function vencerPedidos() {
-  const vencidos = await q<{ id: number }>("SELECT id FROM pedidos WHERE estado = 'pendiente' AND creado <= now() - make_interval(hours => $1)", [VENCE_HORAS]);
+  // Con comprobante subido no vence: queda en revisión hasta que el admin confirme (o cancele) el pago
+  const vencidos = await q<{ id: number }>("SELECT id FROM pedidos WHERE estado = 'pendiente' AND comprobante IS NULL AND creado <= now() - make_interval(hours => $1)", [VENCE_HORAS]);
   for (const { id } of vencidos) {
     const p = await cambiarEstado(id, 'cancelado', undefined, 'sistema (venció sin pago)');
     enviarMail(p.email, `Tu pedido Manolito #${id} se canceló`,
@@ -223,42 +228,77 @@ pedidosRouter.post('/pedidos', async (req, res) => {
     // El pedido ya está guardado: si Mercado Pago falla no se pierde, queda pendiente para coordinar a mano.
     // Mercado Pago deja de aceptar el pago al mismo tiempo que vence el pedido
     const vence = new Date(Date.now() + VENCE_HORAS * 3600_000);
-    pagoUrl = await crearPreferencia({ id, total: p.total, email: p.email, vence }).catch(e => { console.error(e); return undefined; });
+    pagoUrl = await crearPreferencia({ id, total: p.total, email: p.email, nombre: p.nombre, vence }).catch(e => { console.error(e); return undefined; });
   }
-  const instrucciones = pagoUrl ? undefined : `${process.env.PAGO_INSTRUCCIONES ?? 'Te vamos a escribir para coordinar el pago y la entrega.'}\n\n${AVISO_VENCE}`;
+  // Pago manual (transferencia, Abitab, Prex): datos para pagar y token para subir el comprobante
+  const manual = (MANUALES as readonly string[]).includes(p.pago);
+  const token = manual ? await crearToken(id) : undefined;
+  const datos = manual ? await datosDePago(p) : null;
+  const instrucciones = pagoUrl ? undefined : `${datosEnTexto(datos)}\n\n${AVISO_VENCE}`;
 
   enviarMail(p.email, `Recibimos tu pedido Manolito #${id}`,
     `¡Gracias ${p.nombre}! Recibimos tu pedido.\n\n${resumen(p)}\n\n` +
-    (pagoUrl ? `Si no completaste el pago, podés hacerlo desde el link que te mostramos en la web. ${AVISO_VENCE}` : instrucciones));
+    (pagoUrl ? `Si no completaste el pago, podés hacerlo desde el link que te mostramos en la web. ${AVISO_VENCE}` : instrucciones) +
+    (token ? `\n\nCuando pagues, subí el comprobante acá (así el pedido no vence mientras lo revisamos):\n${linkComprobante(id, token)}` : ''));
   if (process.env.ADMIN_EMAIL) {
     enviarMail(process.env.ADMIN_EMAIL, `Nuevo pedido #${id} — $${p.total}`,
       `${p.nombre} · ${p.telefono} · ${p.email}\nPago: ${p.pago}\n\n${resumen(p)}`);
   }
 
-  res.status(201).json({ id, subtotal: p.subtotal, recargo: p.recargo, total: p.total, pagoUrl, instrucciones });
+  res.status(201).json({ id, subtotal: p.subtotal, recargo: p.recargo, total: p.total, pagoUrl, instrucciones, token, datos });
 });
 
+// ---------- Mercado Pago ----------
+// Todo lo que llega (webhook o vuelta del cliente) se verifica consultando el pago a la API de Mercado Pago:
+// nunca se confía en lo que dice la notificación o la URL.
+
+const avisarAdmin = (asunto: string, texto: string) => { if (process.env.ADMIN_EMAIL) enviarMail(process.env.ADMIN_EMAIL, asunto, texto); };
+
+export async function procesarPago(paymentId: string): Promise<{ pago: PagoMP; pedido?: Pedido }> {
+  const pago = await obtenerPago(paymentId);
+  const p = await buscarPedido(Number(pago.external_reference));
+  if (!p) return { pago };
+  const coincide = pago.currency_id === 'UYU' && pago.transaction_amount >= p.total;
+
+  if (pago.status === 'approved' && !coincide) {
+    avisarAdmin(`⚠ Pago con monto o moneda distinta en el pedido #${p.id}`,
+      `Mercado Pago aprobó el pago ${paymentId} por ${pago.currency_id} ${pago.transaction_amount}, pero el pedido #${p.id} es de UYU ${p.total}. No se marcó como pagado: revisalo en Mercado Pago.`);
+  } else if (pago.status === 'approved' && p.estado === 'pendiente') {
+    await cambiarEstado(p.id, 'pagado', paymentId, 'mercadopago');
+  } else if (pago.status === 'approved' && p.estado === 'cancelado') {
+    // Pago que entró después de vencer: se reactiva si queda stock; si no, hay que devolver la plata
+    try {
+      await cambiarEstado(p.id, 'pagado', paymentId, 'mercadopago');
+    } catch (e) {
+      if (!(e instanceof HttpError) || e.status !== 409) throw e;
+      if (p.mp_payment_id !== paymentId) { // avisar una sola vez (Mercado Pago puede notificar varias veces)
+        await q('UPDATE pedidos SET mp_payment_id = $1 WHERE id = $2', [paymentId, p.id]);
+        avisarAdmin(`⚠ Pago de pedido vencido #${p.id}: devolver $${p.total}`,
+          `Mercado Pago aprobó el pago ${paymentId} del pedido #${p.id} (${p.nombre}, ${p.telefono}), pero el pedido ya estaba cancelado y no hay stock para reactivarlo: ${e.message}.\nHay que devolver el dinero desde Mercado Pago o coordinar con el cliente.`);
+      }
+    }
+  } else if ((pago.status === 'refunded' || pago.status === 'charged_back') && p.mp_payment_id === paymentId && p.estado !== 'cancelado') {
+    // Devolución o contracargo: si no se envió, se cancela (y vuelve el stock); si ya se envió, solo se avisa
+    const motivo = pago.status === 'refunded' ? 'devolución' : 'contracargo';
+    if (p.estado === 'pagado' || p.estado === 'pendiente') await cambiarEstado(p.id, 'cancelado', undefined, `mercadopago (${motivo})`);
+    avisarAdmin(`⚠ ${motivo === 'devolución' ? 'Devolución' : 'Contracargo'} en el pedido #${p.id}`,
+      `Mercado Pago informa ${motivo} del pago ${paymentId} del pedido #${p.id} (${p.nombre}, ${p.telefono}, $${p.total}). ` +
+      (p.estado === 'enviado' || p.estado === 'entregado' ? 'El pedido ya estaba enviado: revisalo.' : 'El pedido se canceló y el stock volvió.'));
+  }
+  return { pago, pedido: await buscarPedido(p.id) };
+}
+
+// Webhook configurado en el panel de Mercado Pago (Tus integraciones → Webhooks → evento "Pagos")
 pedidosRouter.post('/mercadopago/webhook', async (req, res) => {
   if (!firmaValida(req)) throw new HttpError(401, 'Firma inválida');
   const tipo = req.query.type ?? req.body?.type;
-  if (tipo === 'payment') {
-    const pago = await obtenerPago(req.query['data.id'] as string);
-    const p = await buscarPedido(Number(pago.external_reference));
-    const mpId = String(req.query['data.id']);
-    if (pago.status === 'approved' && p && pago.transaction_amount >= p.total) {
-      if (p.estado === 'pendiente') await cambiarEstado(p.id, 'pagado', mpId, 'mercadopago');
-      // Pago que entró después de vencer: se reactiva si queda stock; si no, hay que devolver la plata
-      else if (p.estado === 'cancelado') {
-        try {
-          await cambiarEstado(p.id, 'pagado', mpId, 'mercadopago');
-        } catch (e) {
-          if (!(e instanceof HttpError) || e.status !== 409) throw e;
-          await q('UPDATE pedidos SET mp_payment_id = $1 WHERE id = $2', [mpId, p.id]);
-          if (process.env.ADMIN_EMAIL) enviarMail(process.env.ADMIN_EMAIL, `⚠ Pago de pedido vencido #${p.id}: devolver $${p.total}`,
-            `Mercado Pago aprobó el pago ${mpId} del pedido #${p.id} (${p.nombre}, ${p.telefono}), pero el pedido ya estaba cancelado y no hay stock para reactivarlo: ${e.message}.\nHay que devolver el dinero desde Mercado Pago o coordinar con el cliente.`);
-        }
-      }
-    }
-  }
+  if (tipo === 'payment') await procesarPago(String(req.query['data.id']));
   res.sendStatus(200);
+});
+
+// Vuelta del cliente desde Mercado Pago: confirma al instante (sin esperar el webhook) y dice el estado real
+pedidosRouter.post('/mercadopago/confirmar', async (req, res) => {
+  const { paymentId } = z.object({ paymentId: z.string().regex(/^\d{1,20}$/) }).parse(req.body);
+  const { pago, pedido } = await procesarPago(paymentId);
+  res.json({ pedido: pedido?.id ?? null, estado: pedido?.estado ?? null, pago: pago.status });
 });

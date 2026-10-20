@@ -34,7 +34,7 @@ $('#logout').addEventListener('click', async () => {
 
 // ---------- Pestañas ----------
 
-const CARGAR = { resumen: cargarResumen, productos: cargarProductos, boxes: cargarBoxes, pedidos: cargarPedidos, historial: cargarHistorial };
+const CARGAR = { resumen: cargarResumen, productos: cargarProductos, boxes: cargarBoxes, pedidos: cargarPedidos, historial: cargarHistorial, ajustes: cargarAjustes };
 const tabActual = () => (CARGAR[location.hash.slice(1)] ? location.hash.slice(1) : 'resumen');
 
 function abrirTab(tab) {
@@ -191,16 +191,29 @@ async function cargarPedidos() {
     <article class="card pedido" data-id="${p.id}">
       <div>
         <h3>#${p.id} · ${esc(p.nombre)}</h3>
-        <p class="meta">${fecha(p.creado)}${p.estado === 'pendiente' ? ` · <b>vence ${vence(p.creado)}</b>` : ''} · ${esc(p.telefono)} · ${esc(p.email)}</p>
-        <p class="meta">${ENTREGA[p.entrega] || esc(p.entrega)}${p.direccion ? ' — ' + esc(p.direccion) : ''} · Pago: ${esc(p.pago)}</p>
+        <p class="meta">${fecha(p.creado)}${p.estado === 'pendiente' ? (p.comprobante ? ' · <b>en revisión (no vence)</b>' : ` · <b>vence ${vence(p.creado)}</b>`) : ''} · ${esc(p.telefono)} · ${esc(p.email)}</p>
+        <p class="meta">${ENTREGA[p.entrega] || esc(p.entrega)}${p.direccion ? ' — ' + esc(p.direccion) : ''} · Pago: ${esc(PAGOS[p.pago] || p.pago)} · Ref. MANOLITO-${p.id}</p>
+        ${p.comprobante ? `<p class="comprobante">📎 Comprobante recibido ${fecha(p.comprobante_subido)} · <a href="/api/admin/pedidos/${p.id}/comprobante" target="_blank" rel="noopener">Ver comprobante</a></p>` : ''}
       </div>
       <div>
         <p class="tot">${plata(p.total)}</p>
         <select class="estado" aria-label="Estado del pedido ${p.id}">${ESTADOS.map(e => `<option ${e === p.estado ? 'selected' : ''}>${e}</option>`).join('')}</select>
+        ${p.estado === 'pendiente' && p.pago !== 'mercadopago' ? '<button class="btn sm confirmar" type="button">Confirmar pago</button>' : ''}
       </div>
       <ul>${(armados => p.items.map(l => `<li>${l.armado ? `<b>Armado ${armados.indexOf(l.armado) + 1}:</b> ` : ''}${l.cantidad} × ${esc(l.nombre)}${l.color ? ` (${esc(l.color)})` : ''}${l.nombreBebe ? ` “${esc(l.nombreBebe)}”` : ''}${l.modelo ? ` · Modelo: ${esc(l.modelo)}` : ''} — ${plata(l.total)}</li>`).join(''))([...new Set(p.items.map(l => l.armado).filter(Boolean))])}</ul>
     </article>`).join('')
     : '<p class="empty card">No hay pedidos todavía. Van a aparecer acá cuando la web tenga checkout.</p>';
+
+  // Pago manual: después de ver el comprobante (o la transferencia en el banco), un click
+  document.querySelectorAll('.pedido .confirmar').forEach(b => b.addEventListener('click', async () => {
+    const id = b.closest('.pedido').dataset.id;
+    if (!confirm(`¿Confirmás que entró el pago del pedido #${id}? Se le avisa al cliente por mail.`)) return;
+    try {
+      await api(`/pedidos/${id}`, { method: 'PATCH', body: { estado: 'pagado' } });
+      toast('Pago confirmado, se avisó al cliente ✓');
+      cargarPedidos();
+    } catch (err) { toast(err.message); }
+  }));
 
   document.querySelectorAll('.pedido select').forEach(sel => sel.addEventListener('change', async () => {
     try {
@@ -220,8 +233,8 @@ fetch('/api/auth/yo').then(r => r.json()).then(({ usuario }) => {
 
 // ---------- Historial ----------
 
-const CAMPOS = { precio: 'Precio', stockCargado: 'Stock', controlaStock: 'Controla stock', activo: 'Activo', estado: 'Estado', foto: 'Foto', total: 'Total', pago: 'Pago' };
-const ACCIONES = { crear: 'Creó', editar: 'Editó', foto: 'Cambió la foto de', estado: 'Cambió el estado de' };
+const CAMPOS = { comprobante: 'Comprobante', datosDePago: 'Datos para pagar', precio: 'Precio', stockCargado: 'Stock', controlaStock: 'Controla stock', activo: 'Activo', estado: 'Estado', foto: 'Foto', total: 'Total', pago: 'Pago' };
+const ACCIONES = { comprobante: 'Subió el comprobante de', crear: 'Creó', editar: 'Editó', foto: 'Cambió la foto de', estado: 'Cambió el estado de' };
 const valor = (campo, x) => x === null || x === undefined ? '—' : typeof x === 'boolean' ? (x ? 'sí' : 'no')
   : campo === 'precio' || campo === 'total' ? plata(x) : campo === 'pago' ? PAGOS[x] || x : campo === 'foto' ? 'imagen' : String(x);
 $('#filtroHistorial').addEventListener('change', () => cargarHistorial().catch(err => toast(err.message)));
@@ -237,3 +250,24 @@ async function cargarHistorial() {
       <td class="cambio">${Object.entries(h.cambios).map(([c, [a, b]]) => `${esc(CAMPOS[c] || c)}: ${a === null ? '' : `<s>${esc(valor(c, a))}</s> → `}<b>${esc(valor(c, b))}</b>`).join('<br>')}</td></tr>`).join('')}</tbody>`
     : '<tbody><tr><td class="empty">Todavía no hay cambios registrados.</td></tr></tbody>';
 }
+
+// ---------- Ajustes: datos para pagar ----------
+
+async function cargarAjustes() {
+  const a = await api('/ajustes/pagos');
+  const f = $('#formPagos');
+  for (const [k, v] of Object.entries(a.transferencia)) f.elements['t_' + k].value = v;
+  f.elements.abitab.value = a.abitab_redpagos.texto;
+  f.elements.prex.value = a.prex_midinero.texto;
+}
+$('#formPagos').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target, t = k => f.elements['t_' + k].value;
+  try {
+    await api('/ajustes/pagos', { method: 'PUT', body: {
+      transferencia: { banco: t('banco'), tipoCuenta: t('tipoCuenta'), cuenta: t('cuenta'), titular: t('titular'), documento: t('documento') },
+      abitab_redpagos: { texto: f.elements.abitab.value }, prex_midinero: { texto: f.elements.prex.value },
+    } });
+    toast('Datos guardados ✓');
+  } catch (err) { toast(err.message); }
+});

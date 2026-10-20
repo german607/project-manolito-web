@@ -3,29 +3,39 @@ import type { Request } from 'express';
 
 const API = 'https://api.mercadopago.com';
 
-async function mp(path: string, init: RequestInit = {}) {
+async function mp(path: string, init: RequestInit & { idempotencia?: string } = {}) {
   const token = process.env.MP_ACCESS_TOKEN;
   if (!token) throw new Error('Falta MP_ACCESS_TOKEN');
   const r = await fetch(API + path, {
     ...init,
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    headers: {
+      Authorization: `Bearer ${token}`, 'Content-Type': 'application/json',
+      // Si un reintento repite el mismo pedido, Mercado Pago devuelve el link ya creado en vez de duplicarlo
+      ...(init.idempotencia ? { 'X-Idempotency-Key': init.idempotencia } : {}),
+    },
   });
   if (!r.ok) throw new Error(`Mercado Pago ${r.status}: ${await r.text()}`);
   return r.json();
 }
 
 // Checkout Pro: el cliente paga en la página de Mercado Pago. Devuelve la URL a la que redirigir.
-export async function crearPreferencia(p: { id: number; total: number; email: string; vence: Date }): Promise<string> {
+// Los avisos de pago llegan al webhook configurado en el panel de Mercado Pago ("Tus integraciones"), que van
+// firmados. No se manda notification_url en la preferencia: esa tiene prioridad y no se garantiza que esté firmada.
+export async function crearPreferencia(p: { id: number; total: number; email: string; nombre: string; vence: Date }): Promise<string> {
   const base = process.env.BASE_URL ?? 'http://localhost:3000';
   const pref = await mp('/checkout/preferences', {
     method: 'POST',
+    idempotencia: `pedido-${p.id}`,
     body: JSON.stringify({
       items: [{ title: `Pedido Manolito #${p.id}`, quantity: 1, unit_price: p.total, currency_id: 'UYU' }],
-      payer: { email: p.email },
+      payer: { email: p.email, name: p.nombre },
       external_reference: String(p.id),
+      statement_descriptor: 'MANOLITO', // lo que ve el cliente en el resumen de la tarjeta
+      // Sin pagos en efectivo (cupón Abitab / Red Pagos): no se pagan dentro de las 2 h que dura el pedido.
+      // Igual se ofrecen aparte en el checkout, coordinados a mano
+      payment_methods: { excluded_payment_types: [{ id: 'ticket' }, { id: 'atm' }] },
       expires: true, // después de esta fecha Mercado Pago no acepta el pago
       expiration_date_to: p.vence.toISOString(),
-      notification_url: `${base}/api/mercadopago/webhook`,
       back_urls: {
         success: `${base}/checkout.html?pedido=${p.id}&pago=ok`,
         pending: `${base}/checkout.html?pedido=${p.id}&pago=pendiente`,
@@ -37,7 +47,8 @@ export async function crearPreferencia(p: { id: number; total: number; email: st
   return pref.init_point;
 }
 
-export async function obtenerPago(id: string): Promise<{ status: string; external_reference: string; transaction_amount: number }> {
+export type PagoMP = { id: number; status: string; status_detail?: string; external_reference: string; transaction_amount: number; currency_id: string };
+export async function obtenerPago(id: string): Promise<PagoMP> {
   return mp(`/v1/payments/${encodeURIComponent(id)}`);
 }
 

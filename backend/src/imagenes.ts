@@ -1,6 +1,6 @@
 import express, { Router } from 'express';
 import { GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Readable } from 'node:stream';
@@ -36,6 +36,27 @@ export async function guardarImagen(ruta: string, datos: Buffer, tipo: string) {
     mkdirSync(dirname(`${LOCAL}/${ruta}`), { recursive: true });
     writeFileSync(`${LOCAL}/${ruta}`, datos);
   }
+}
+
+// ---------- Archivos privados (comprobantes de pago) ----------
+// Fuera de S3_PREFIJO: la ruta pública /assets/img nunca los sirve. Solo el admin los lee (ver admin.ts)
+const PRIVADO = 'privado/';
+const LOCAL_PRIVADO = fileURLToPath(new URL('../data/privado', import.meta.url));
+
+export async function guardarPrivado(clave: string, datos: Buffer, tipo: string) {
+  if (s3) {
+    await s3.send(new PutObjectCommand({ Bucket: BUCKET, Key: PRIVADO + clave, Body: datos, ContentType: tipo }));
+  } else {
+    mkdirSync(dirname(`${LOCAL_PRIVADO}/${clave}`), { recursive: true });
+    writeFileSync(`${LOCAL_PRIVADO}/${clave}`, datos);
+  }
+}
+export async function leerPrivado(clave: string): Promise<Buffer> {
+  if (s3) {
+    const o = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: PRIVADO + clave }));
+    return Buffer.from(await o.Body!.transformToByteArray());
+  }
+  return readFileSync(`${LOCAL_PRIVADO}/${clave}`);
 }
 
 export const imagenesRouter = Router();

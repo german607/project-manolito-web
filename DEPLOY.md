@@ -30,6 +30,26 @@ conectado: `Entorno: production · Base: <host>/railway`.
 **Verificar:** el log dice `Entorno: production` y `Imágenes: desde el bucket manolito-img-storage-dzycai`;
 `/api/health` responde; se puede ingresar al admin; una compra de prueba aparece en Pedidos y en Historial.
 
+## Mercado Pago
+
+1. En [Mercado Pago Developers](https://www.mercadopago.com.uy/developers) → **Tus integraciones → Crear aplicación**
+   (producto: **Checkout Pro**). La cuenta tiene que ser de Uruguay (cobra en pesos, UYU).
+2. **Credenciales:** en staging usar las **de prueba**; en producción, las **de producción**.
+   Railway → servicio web → Variables: `MP_ACCESS_TOKEN` = Access Token.
+3. **Webhook** (sin esto los pagos no se confirman solos): en la aplicación → **Webhooks → Configurar notificaciones**:
+   - URL: `https://<dominio>/api/mercadopago/webhook` (modo prueba con el dominio de staging, modo producción con el de producción)
+   - Evento: **Pagos**. Guardar → copiar la **clave secreta** → Railway: `MP_WEBHOOK_SECRET`.
+4. `BASE_URL` tiene que ser el dominio público (Mercado Pago devuelve al cliente a `BASE_URL/checkout.html`).
+
+**Probar en staging:** con credenciales de prueba, crear un **usuario de prueba comprador** (Tus integraciones →
+Cuentas de prueba) y pagar con sus tarjetas de prueba. En el nombre del titular: `APRO` = pago aprobado,
+`OTHE` = rechazado, `CONT` = pendiente. Revisar que el pedido pase a **pagado** en el admin (pestaña Pedidos e
+Historial, autor `mercadopago`) y que llegue el mail de pago confirmado.
+
+Cómo funciona: el servidor **nunca cree** lo que dice el webhook ni la URL de vuelta; siempre consulta el pago a la API
+de Mercado Pago y verifica moneda (UYU) y monto. Los pagos en efectivo dentro de Mercado Pago están desactivados
+(no se pagan dentro de las 2 h que dura el pedido); Abitab y Red Pagos se ofrecen aparte en el checkout.
+
 ## Cambios de catálogo: `seed.ts` NO alcanza
 
 `seed.ts` solo se usa cuando la base está **vacía**. Cambiar ahí un precio, un nombre o el contenido de una box

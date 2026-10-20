@@ -80,6 +80,7 @@
 
   function gracias(id,titulo,texto,extra){
     window.removeEventListener('carrito',cotizar);
+    $('gInicio').hidden=false;
     mostrar('gracias');
     $('gTitulo').textContent=titulo;
     $('gNumero').textContent='Pedido #'+id;
@@ -113,12 +114,16 @@
     }
     var estado=el('p','pm-estado');
     if(info.comprobante) estado.textContent='✓ Recibimos tu comprobante. Lo revisamos y te avisamos por mail. Mientras tanto el pedido no vence.';
-    else estado.textContent='Tenés hasta las '+hora(info.vence)+' para pagar. Cuando pagues, subí el comprobante: así el pedido no vence mientras lo revisamos.';
+    else estado.textContent='Tenés hasta las '+hora(info.vence)+' para pagar. Cuando transfieras, tocá "Confirmar pago" y subí el comprobante (foto o PDF): así el pedido no vence mientras lo revisamos.';
     box.appendChild(estado);
-    var subir=el('label','btn btn-outline pm-subir',info.comprobante?'Reemplazar comprobante':'Subir comprobante (foto o PDF)');
+    // Sin comprobante, el botón principal es "Confirmar pago" (sube el comprobante); "Volver al inicio" aparece después
+    var textoBoton=info.comprobante?'Reemplazar comprobante':'Confirmar pago';
+    $('gInicio').hidden=!info.comprobante;
+    var subir=el('label',(info.comprobante?'btn btn-outline':'btn btn-green')+' pm-subir',textoBoton);
     var input=el('input'); input.type='file'; input.accept='image/jpeg,image/png,image/webp,application/pdf'; input.hidden=true;
     subir.appendChild(input); box.appendChild(subir);
     var msj=el('p','cart-error'); box.appendChild(msj);
+    if(!info.comprobante){var luego=el('a','pt-alt','Pago más tarde (te mandamos el link por mail)');luego.href='index.html';box.appendChild(luego);}
     input.addEventListener('change',function(){
       var f=input.files[0]; if(!f) return; msj.textContent='';
       if(f.size>5*1024*1024){msj.textContent='El archivo pesa más de 5 MB. Probá con una captura de pantalla.';return;}
@@ -126,7 +131,7 @@
       fetch('/api/pedidos/'+id+'/comprobante?t='+token,{method:'PUT',headers:{'Content-Type':f.type||'application/octet-stream'},body:f})
         .then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error(d.error);});})
         .then(function(){info.comprobante=true;pagoManual(id,token,info);})
-        .catch(function(e){subir.firstChild.textContent=info.comprobante?'Reemplazar comprobante':'Subir comprobante (foto o PDF)';msj.textContent=e.message||'No se pudo subir. Probá de nuevo.';});
+        .catch(function(e){subir.firstChild.textContent=textoBoton;msj.textContent=e.message||'No se pudo subir. Probá de nuevo.';});
       input.value='';
     });
   }

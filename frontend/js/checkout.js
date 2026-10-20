@@ -66,7 +66,11 @@
       .then(function(d){
         window.removeEventListener('carrito',cotizar);
         Carrito.vaciar();
-        if(d.pagoUrl){location.href=d.pagoUrl;return;}
+        // Mercado Pago: tarjeta en nuestra web (Card Payment Brick). Sin clave pública configurada, se va a la página de Mercado Pago
+        if(body.pago==='mercadopago'){
+          if(!cot||!cot.mpPublicKey){if(d.pagoUrl){location.href=d.pagoUrl;return;}}
+          else{gracias(d.id,'Último paso: el pago','Total: '+plata(d.total)+'.');pagoTarjeta(d.id,d.token,d.total,cot.mpPublicKey,d.pagoUrl);return;}
+        }
         gracias(d.id,'¡Gracias! Recibimos tu pedido.','Total: '+plata(d.total)+'. Te mandamos el detalle a '+body.cliente.email+'.',d.datos?'':d.instrucciones);
         if(d.token) pagoManual(d.id,d.token,{total:d.total,estado:'pendiente',comprobante:false,datos:d.datos,vence:new Date(Date.now()+2*3600e3)});
       })
@@ -127,6 +131,47 @@
     });
   }
 
+  // ---- Tarjeta dentro de la web: Card Payment Brick de Mercado Pago ----
+  // Los campos de la tarjeta son de Mercado Pago (iframes): acá solo llega un token. El monto lo pone el servidor.
+  function cargarSDK(){
+    return window.MercadoPago?Promise.resolve():new Promise(function(ok,mal){
+      var s=document.createElement('script'); s.src='https://sdk.mercadopago.com/js/v2'; s.onload=ok; s.onerror=mal; document.head.appendChild(s);
+    });
+  }
+  function pagoTarjeta(id,token,total,publicKey,pagoUrl){
+    var box=$('gTarjeta'), err=$('mpError'); box.hidden=false; $('gPago').hidden=true;
+    if(pagoUrl){$('mpCuenta').href=pagoUrl;$('mpCuenta').hidden=false;}
+    cargarSDK().then(function(){
+      var mp=new MercadoPago(publicKey,{locale:'es-UY'});
+      return mp.bricks().create('cardPayment','mpBrick',{
+        initialization:{amount:total},
+        customization:{
+          paymentMethods:{maxInstallments:12},
+          visual:{style:{theme:'default',customVariables:{ // colores de Manolito
+            baseColor:'#C97D8D',baseColorFirstVariant:'#B0606F',baseColorSecondVariant:'#EAB3BE',
+            borderRadiusSmall:'8px',borderRadiusMedium:'12px',borderRadiusLarge:'16px',borderRadiusFull:'999px'}}}
+        },
+        callbacks:{
+          onReady:function(){},
+          onError:function(e){console.error(e);},
+          onSubmit:function(formData){
+            err.textContent='';
+            return fetch('/api/mercadopago/pagar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pedido:id,t:token,formData:formData})})
+              .then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error(d.error);return d;});})
+              .then(function(d){
+                if(d.estado==='pagado'){box.hidden=true;gracias(id,'¡Pago recibido!','Gracias por tu compra. Te mandamos el detalle por mail.');}
+                else if(d.pago==='in_process'||d.pago==='pending'){box.hidden=true;gracias(id,'Tu pago está en revisión','Mercado Pago lo está revisando. Te avisamos por mail cuando se confirme.');}
+                else err.textContent=d.mensaje||'El pago fue rechazado. Probá con otra tarjeta.';
+              })
+              .catch(function(e){err.textContent=e.message||'No pudimos procesar el pago. Probá de nuevo.';});
+          }
+        }
+      });
+    }).catch(function(){
+      err.textContent='No se pudo cargar el formulario de pago.'+(pagoUrl?' Podés pagar desde la página de Mercado Pago:':' Recargá la página o escribinos por Instagram.');
+    });
+  }
+
   // ---- Vuelta desde Mercado Pago: checkout.html?pedido=ID&payment_id=...&status=... ----
   // Lo que dice la URL no se cree: el servidor consulta el pago a Mercado Pago y devuelve el estado real
   var q=new URLSearchParams(location.search);
@@ -136,7 +181,11 @@
     var pidM=q.get('pedido'), tok=q.get('t');
     gracias(pidM,'Tu pedido','Cargando…');
     fetch('/api/pedidos/'+encodeURIComponent(pidM)+'/pago?t='+encodeURIComponent(tok)).then(function(r){if(!r.ok)throw new Error();return r.json();})
-      .then(function(d){$('gTexto').textContent='Total: '+plata(d.total)+'.';pagoManual(d.id,tok,d);})
+      .then(function(d){
+        $('gTexto').textContent='Total: '+plata(d.total)+'.';
+        if(d.pago==='mercadopago'&&d.estado==='pendiente'&&d.mpPublicKey){$('gTitulo').textContent='Último paso: el pago';pagoTarjeta(d.id,tok,d.total,d.mpPublicKey,null);}
+        else pagoManual(d.id,tok,d);
+      })
       .catch(function(){gracias(pidM,'No encontramos el pedido','Revisá el link del mail o escribinos por Instagram.');});
     return;
   }

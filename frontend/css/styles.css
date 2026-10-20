@@ -608,6 +608,14 @@
   .pm-subir{align-self:flex-start;cursor:pointer;}
   @media (max-width:560px){.pm-campo{flex-direction:column;align-items:flex-start;}.pm-campo dd{text-align:left;}}
 
+  /* ---------- Pago con tarjeta (Card Payment Brick de Mercado Pago) ---------- */
+  .pago-tarjeta{width:100%;text-align:left;display:flex;flex-direction:column;gap:10px;}
+  .pago-tarjeta[hidden]{display:none;}
+  .pago-tarjeta h4{font-family:'Baloo 2';font-weight:700;font-size:1.05rem;}
+  #mpBrick{min-height:120px;}
+  .pt-alt{align-self:center;font-size:.85rem;font-weight:700;color:var(--green-deep);text-decoration:underline;text-underline-offset:3px;}
+  .pt-alt[hidden]{display:none;}
+
   /* ---------- Celulares ---------- */
   /* iPhone hace zoom al tocar un campo con letra de menos de 16px y la página queda corrida */
   @media (max-width:860px){

@@ -37,6 +37,7 @@ app.use('/api', limitar('api', 300, MINUTO));
 const limitePedidos = limitar('pedidos', 5, 10 * MINUTO);
 app.use('/api/pedidos', (req, res, next) => (req.method === 'POST' && req.path === '/' ? limitePedidos(req, res, next) : next()));
 app.use('/api/pedidos/:id/comprobante', limitar('comprobantes', 10, 10 * MINUTO));
+app.use('/api/mercadopago/pagar', limitar('tarjeta', 10, 10 * MINUTO)); // frena probar tarjetas robadas en serie
 app.use('/api/carrito', limitar('carrito', 60, MINUTO));
 app.use('/api/eventos', limitar('eventos', 120, MINUTO));
 // Frena probar contraseñas en serie. Solo login y registro: /api/auth/yo lo consulta cada página

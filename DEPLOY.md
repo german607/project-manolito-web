@@ -39,17 +39,28 @@ conectado: `Entorno: production · Base: <host>/railway`.
 
 1. En [Mercado Pago Developers](https://www.mercadopago.com.uy/developers) → **Tus integraciones → Crear aplicación**
    (producto: **Checkout Pro**). La cuenta tiene que ser de Uruguay (cobra en pesos, UYU).
-2. **Credenciales:** en staging usar las **de prueba**; en producción, las **de producción**.
-   Railway → servicio web → Variables: `MP_ACCESS_TOKEN` = Access Token.
+2. **Credenciales** (Railway → servicio web → Variables): `MP_ACCESS_TOKEN` (Access Token) y `MP_PUBLIC_KEY` (Public Key).
+   - **Staging:** las **"Credenciales de prueba" de tu cuenta real** (Tus integraciones → tu aplicación → Credenciales de prueba).
+     No las de un vendedor de prueba: con esas, el pago con tarjeta en la web da "Unauthorized use of live credentials".
+   - **Producción:** las **credenciales de producción**. Pegarlas directo en Railway, nunca en un chat ni en el repo.
+   - Sin `MP_PUBLIC_KEY`, el checkout manda al cliente a la página de Mercado Pago (Checkout Pro) en vez de mostrar la tarjeta en la web.
 3. **Webhook** (sin esto los pagos no se confirman solos): en la aplicación → **Webhooks → Configurar notificaciones**:
    - URL: `https://<dominio>/api/mercadopago/webhook` (modo prueba con el dominio de staging, modo producción con el de producción)
    - Evento: **Pagos**. Guardar → copiar la **clave secreta** → Railway: `MP_WEBHOOK_SECRET`.
 4. `BASE_URL` tiene que ser el dominio público (Mercado Pago devuelve al cliente a `BASE_URL/checkout.html`).
 
-**Probar en staging:** con credenciales de prueba, crear un **usuario de prueba comprador** (Tus integraciones →
-Cuentas de prueba) y pagar con sus tarjetas de prueba. En el nombre del titular: `APRO` = pago aprobado,
-`OTHE` = rechazado, `CONT` = pendiente. Revisar que el pedido pase a **pagado** en el admin (pestaña Pedidos e
+**Probar en staging (tarjeta en la web):** hacer un pedido con Mercado Pago y pagar en el formulario con una
+**tarjeta de prueba** (ej. Mastercard `5031 7557 3453 0604`, venc. `11/30`, CVV `123`). No hace falta iniciar sesión.
+En el nombre del titular: `APRO` = aprobado, `OTHE` = rechazado, `CONT` = pendiente. El email del pagador puede ser
+cualquiera, menos el de tu cuenta de Mercado Pago.
+
+**Pagar con cuenta de Mercado Pago** (link "Prefiero pagar con mi cuenta"): ese medio sí va a la página de Mercado Pago.
+Para probarlo hace falta un usuario comprador de prueba creado en Tus integraciones → Cuentas de prueba (se ingresa con su
+usuario, contraseña y el código de verificación que muestra el panel), en una ventana de incógnito. Revisar que el pedido pase a **pagado** en el admin (pestaña Pedidos e
 Historial, autor `mercadopago`) y que llegue el mail de pago confirmado.
+
+El formulario de tarjeta (Card Payment Brick) es de Mercado Pago: los datos de la tarjeta nunca pasan por nuestro
+servidor, solo un token. El monto lo pone el servidor desde el pedido. Hay tope de intentos por IP y por pedido.
 
 Cómo funciona: el servidor **nunca cree** lo que dice el webhook ni la URL de vuelta; siempre consulta el pago a la API
 de Mercado Pago y verifica moneda (UYU) y monto. Los pagos en efectivo dentro de Mercado Pago están desactivados

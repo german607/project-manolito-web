@@ -134,6 +134,8 @@ pagosManualesRouter.get('/pedidos/:id/pago', async (req, res) => {
   res.json({
     id: p.id, total: p.total, pago: p.pago, estado: p.estado, comprobante: !!p.comprobante,
     vence: new Date(new Date(p.creado).getTime() + VENCE_HORAS * 3600_000), datos: await datosDePago(p),
+    // Mercado Pago: la página muestra el formulario de tarjeta (Card Payment Brick) con esta clave pública
+    mpPublicKey: p.pago === 'mercadopago' ? process.env.MP_PUBLIC_KEY ?? null : undefined,
   });
 });
 

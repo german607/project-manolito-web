@@ -28,12 +28,13 @@ test('datos para transferir: sin cargar no se inventan; cargados incluyen monto 
   assert.equal(await datosDePago(p), null, 'sin datos cargados: se coordina aparte');
 
   const a = await leerAjustesPagos();
-  a.transferencia = { banco: 'BROU', tipoCuenta: 'Caja de ahorro en pesos', cuenta: '001234567-00001', cuentaOtrosBancos: '00123456700001', titular: 'Manolito', documento: '' };
+  a.transferencia = { banco: 'BROU', sucursal: '115 Cordón', tipoCuenta: 'Caja de ahorro en pesos', cuenta: '001234567-00001', cuentaOtrosBancos: '00123456700001', titular: 'Manolito', documento: '' };
   await guardarAjustesPagos(a, 'admin@test.com');
   const d = (await datosDePago(p))!;
   const campo = (e: string) => d.campos.find(c => c.etiqueta.startsWith(e))?.valor;
   assert.equal(campo('Cuenta para transferir desde BROU'), '001234567-00001');
   assert.equal(campo('Cuenta para transferir desde otro banco'), '00123456700001');
+  assert.equal(campo('Sucursal'), '115 Cordón');
   assert.equal(campo('Monto'), `$${p.total}`);
   assert.equal(campo('Referencia'), `MANOLITO-${id}`);
   assert.equal(campo('RUT'), undefined, 'los campos vacíos no se muestran');
@@ -86,4 +87,5 @@ test('ajustes guardados antes del campo "otro banco" siguen funcionando', async 
   const d = (await datosDePago((await buscarPedido(id))!))!;
   assert.ok(d.campos.some(c => c.etiqueta === 'Cuenta para transferir desde Itaú' && c.valor === '1234567'));
   assert.ok(!d.campos.some(c => c.etiqueta.includes('otro banco')), 'vacío: no se muestra');
+  assert.ok(!d.campos.some(c => c.etiqueta === 'Sucursal'), 'sin sucursal cargada: no se muestra');
 });

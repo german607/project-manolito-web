@@ -14,6 +14,7 @@ import { buscarPedido, VENCE_HORAS, type Pedido } from './pedidos.js';
 export const AjustesPagos = z.object({
   transferencia: z.object({
     banco: z.string().trim().max(60),
+    sucursal: z.string().trim().max(60).default(''),            // opcional; algunos bancos la piden para transferir
     tipoCuenta: z.string().trim().max(40),
     cuenta: z.string().trim().max(60),                          // para transferir desde el mismo banco
     cuentaOtrosBancos: z.string().trim().max(60).default(''),   // para transferir desde otro banco (en algunos bancos, ej. BROU, es otro número)
@@ -26,7 +27,7 @@ export const AjustesPagos = z.object({
 export type AjustesPagos = z.infer<typeof AjustesPagos>;
 
 const VACIO: AjustesPagos = {
-  transferencia: { banco: '', tipoCuenta: 'Caja de ahorro en pesos', cuenta: '', cuentaOtrosBancos: '', titular: '', documento: '' },
+  transferencia: { banco: '', sucursal: '', tipoCuenta: 'Caja de ahorro en pesos', cuenta: '', cuentaOtrosBancos: '', titular: '', documento: '' },
   abitab_redpagos: { texto: '' },
   prex_midinero: { texto: '' },
 };
@@ -61,7 +62,7 @@ export async function datosDePago(p: Pick<Pedido, 'id' | 'pago' | 'total'>): Pro
     return {
       titulo: 'Datos para la transferencia',
       campos: [
-        { etiqueta: 'Banco', valor: t.banco }, { etiqueta: 'Tipo de cuenta', valor: t.tipoCuenta },
+        { etiqueta: 'Banco', valor: t.banco }, { etiqueta: 'Sucursal', valor: t.sucursal }, { etiqueta: 'Tipo de cuenta', valor: t.tipoCuenta },
         { etiqueta: `Cuenta para transferir desde ${t.banco || 'el mismo banco'}`, valor: t.cuenta },
         { etiqueta: 'Cuenta para transferir desde otro banco', valor: t.cuentaOtrosBancos },
         { etiqueta: 'Titular', valor: t.titular },

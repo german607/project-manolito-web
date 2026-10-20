@@ -265,7 +265,7 @@ $('#formPagos').addEventListener('submit', async e => {
   const f = e.target, t = k => f.elements['t_' + k].value;
   try {
     await api('/ajustes/pagos', { method: 'PUT', body: {
-      transferencia: { banco: t('banco'), tipoCuenta: t('tipoCuenta'), cuenta: t('cuenta'), cuentaOtrosBancos: t('cuentaOtrosBancos'), titular: t('titular'), documento: t('documento') },
+      transferencia: { banco: t('banco'), sucursal: t('sucursal'), tipoCuenta: t('tipoCuenta'), cuenta: t('cuenta'), cuentaOtrosBancos: t('cuentaOtrosBancos'), titular: t('titular'), documento: t('documento') },
       abitab_redpagos: { texto: f.elements.abitab.value }, prex_midinero: { texto: f.elements.prex.value },
     } });
     toast('Datos guardados ✓');

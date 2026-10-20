@@ -3,10 +3,15 @@
 | | Staging | Producción |
 |---|---|---|
 | Rama de git | `develop` | `main` |
-| Web (Vercel) | `project-manolito-web-frontend.vercel.app` / `manolitouy.com` | (dominio de producción) |
-| API (Railway) | entorno **staging**: `project-manolito-web-staging.up.railway.app` | entorno **production** |
+| Web (Vercel) | previews de Vercel / `manolito-dev.vercel.app` | `manolitouy.com` y `www.manolitouy.com` |
+| API (Railway) | `project-manolito-web-staging.up.railway.app` | `project-manolito-web-production.up.railway.app` |
 | Base de datos | Postgres propio de staging | Postgres propio de producción |
 | Imágenes | bucket `manolito-img-storage-76u0au` | bucket `manolito-img-storage-dzycai` |
+
+**Cómo Vercel elige el backend** (`frontend/vercel.json`): según el **dominio** desde el que se entra.
+`manolitouy.com` y `www.manolitouy.com` → backend de producción; **cualquier otro dominio** → staging.
+Así, un preview o un dominio nuevo nunca toca datos reales. Si se suma otro dominio de producción, hay que agregarlo
+ahí; si no, va a usar staging (con su base de prueba y el Mercado Pago de prueba).
 
 Cada entorno tiene **su propia base y su propio bucket**: nunca apuntar staging a la base de producción (ni copiar
 la base de staging a producción: tiene pedidos y usuarios de prueba). Al arrancar, el log dice a qué base está

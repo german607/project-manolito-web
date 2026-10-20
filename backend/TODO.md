@@ -32,6 +32,16 @@
 - [x] **Nombre del bebé obligatorio**: el servidor rechaza (400) el portachupete y las boxes que lo traen sin `nombreBebe` (vacío o solo espacios; máx. 20). Cubre los tres caminos (sección Portachupetes, "Armá tu box" y boxes, más la cotización del carrito), con tests de cada uno
 - [x] **Mínimo de 2 productos en "Armá tu box"**: cada armado lleva un id (`armado`) que genera `arma.js`; el servidor exige 2 productos distintos por armado (cada armado por separado, no se suman entre sí) y rechaza productos sueltos que no sean el portachupete. El carrito marca el armado incompleto y `arma.js` avisa "Elegí al menos 2 productos". Con tests. En el admin y en los mails cada producto dice a qué armado pertenece ("Armado 1"), y el admin ahora también muestra el modelo del portachupete
 
+## Pagos manuales (transferencia, Abitab, Prex) — Etapa 1
+- [x] Datos para pagar editables en el admin (pestaña Ajustes); el cliente los ve con botones para copiar, monto y referencia `MANOLITO-<id>`
+- [x] El cliente sube el comprobante (foto o PDF, verificado por sus primeros bytes) desde la pantalla de gracias o el link del mail. Se guarda en una carpeta privada del bucket (`privado/`), nunca en las imágenes públicas
+- [x] Acceso con un token por pedido (en la base solo su hash). Token incorrecto o de otro pedido: 404
+- [x] Con comprobante subido el pedido no vence: queda "en revisión". Aviso por mail al admin
+- [x] En el admin: "Comprobante recibido" + "Ver comprobante" + botón "Confirmar pago" (mail al cliente, historial). Con tests
+- [ ] Cargar los datos bancarios reales en el admin → Ajustes (staging y producción)
+- [ ] Etapa 2 (con volumen): conciliar con el estado de cuenta del banco (CSV) por referencia y monto
+- [ ] Etapa 3 (si hace falta): pago automático por transferencia instantánea / QR con un proveedor (ej. Toke)
+
 ## Trackeo
 - [x] **Historial de cambios** (tabla `historial`, pestaña Historial del admin): precios, stock, activo y fotos de productos y boxes; creación y cambios de estado de pedidos. Guarda quién (email del admin, cliente, `mercadopago`, `sistema`, `migración`), cuándo y el antes → después. Se escribe en la misma transacción que el cambio
 - [x] **Métricas de ventas** en el Resumen del admin: vendido, ticket promedio, más vendidos, medios de pago, formas de entrega y embudo visita → carrito → checkout → pedido → pago (carritos abandonados). Eventos anónimos nuevos: `carrito_agregar`, `checkout`
@@ -76,7 +86,7 @@ la base no se puede descargar desde la web.
 - [ ] Webhook: rechazar notificaciones con `ts` viejo (ej. más de 10 minutos)
 
 ### Baja
-- [ ] La página de "¡Pago recibido!" cree lo que dice la URL (`?pago=ok`): consultar el estado real del pedido al servidor
+- [x] La página de "¡Pago recibido!" ya no cree lo que dice la URL: `POST /api/mercadopago/confirmar` consulta el pago a Mercado Pago y devuelve el estado real
 - [ ] Revisar dependencias automáticamente (Dependabot o `npm audit` en CI)
 - [ ] Backups de la base: activar los backups de Postgres en Railway y que no sean públicos (tienen datos personales de clientes)
 - [ ] Logs de producción sin datos personales (nombre, teléfono, email, dirección)
@@ -90,8 +100,9 @@ la base no se puede descargar desde la web.
 
 ### Pagos
 - [x] Pedidos sin pagar (cualquier medio) se cancelan solos a las 2 h, devuelven el stock y se avisa al cliente. Mercado Pago deja de aceptar el pago a la misma hora; si igual entra uno tarde, se reactiva el pedido o se avisa para devolver la plata
-- [ ] Webhook: manejar reembolsos y contracargos (`refunded`, `charged_back`) y verificar que la moneda sea UYU
-- [ ] Mail al cliente cuando el pago se confirma (hoy solo hay mail al crear y al enviar)
+- [x] Pagos verificados siempre contra la API de Mercado Pago (moneda UYU y monto). Devoluciones y contracargos: si no se envió, se cancela y vuelve el stock; siempre se avisa al admin. Webhook configurado en el panel (firmado), sin `notification_url` en la preferencia. Sin pagos en efectivo dentro de Mercado Pago. Con tests (API simulada)
+- [ ] Configurar Mercado Pago (credenciales, webhook y prueba con usuario de prueba): pasos en `DEPLOY.md`
+- [x] Mail al cliente cuando el pago se confirma (por Mercado Pago o marcado a mano en el admin)
 - [x] Las boxes no cobran $20 por letra extra en el portachupete (confirmado 2026-10-16); el recargo es solo para el portachupete suelto
 
 ### Catálogo desde el admin

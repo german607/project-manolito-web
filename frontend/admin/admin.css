@@ -38,6 +38,16 @@ h2.sub{font-size:1.15rem;margin-top:8px;}
 .embudo-paso .track{height:10px;}
 .embudo-paso small{color:var(--ink-soft);font-weight:600;}
 .cambio{font-size:.85rem;}
+.comprobante{font-size:.85rem;font-weight:700;color:var(--pink-deep);}
+.comprobante a{text-decoration:underline;color:inherit;}
+.pedido .confirmar{margin-top:8px;width:100%;}
+.form-ajustes{display:flex;flex-direction:column;gap:12px;max-width:720px;}
+.form-ajustes h3{margin:8px 0 0;}
+.form-ajustes label{display:flex;flex-direction:column;gap:6px;font-size:.85rem;}
+.form-ajustes input,.form-ajustes textarea{font:inherit;font-weight:600;border:1.5px solid var(--line);border-radius:10px;padding:9px 10px;background:var(--white);}
+.form-ajustes .btn{align-self:flex-start;}
+.campos2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media (max-width:560px){.campos2{grid-template-columns:1fr;}}
 .cambio s{color:var(--ink-soft);}
 td.quien{color:var(--ink-soft);font-size:.82rem;}
 

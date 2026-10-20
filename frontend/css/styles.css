@@ -592,6 +592,22 @@
   .cuenta-nota{text-align:center;font-size:.85rem;color:var(--ink-soft);}
   .cuenta-nota a{color:var(--green-deep);font-weight:700;text-decoration:underline;text-underline-offset:3px;}
 
+  /* ---------- Pago manual (transferencia, Abitab, Prex) ---------- */
+  .pago-manual{width:100%;text-align:left;background:var(--cream);border:1px solid rgba(63,58,52,.1);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:12px;}
+  .pago-manual[hidden]{display:none;}
+  .pago-manual h4{font-family:'Baloo 2';font-weight:700;font-size:1.05rem;}
+  .pm-texto{white-space:pre-line;font-size:.9rem;}
+  .pm-campos{display:flex;flex-direction:column;gap:8px;}
+  .pm-campo{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--white);border-radius:12px;padding:8px 10px 8px 12px;}
+  .pm-campo dt{font-size:.75rem;color:var(--ink-soft);font-weight:700;}
+  .pm-campo dd{display:flex;align-items:center;gap:8px;font-weight:800;font-variant-numeric:tabular-nums;text-align:right;overflow-wrap:anywhere;}
+  .pm-copiar{border:1.5px solid rgba(63,58,52,.16);background:var(--white);border-radius:999px;padding:5px 10px;font:inherit;font-size:.75rem;font-weight:700;cursor:pointer;white-space:nowrap;color:var(--green-deep);}
+  .pm-estado{font-size:.88rem;}
+  .pm-ok{color:#2F6B4A;font-weight:800;}
+  .pm-aviso{color:#A63D3D;font-weight:700;}
+  .pm-subir{align-self:flex-start;cursor:pointer;}
+  @media (max-width:560px){.pm-campo{flex-direction:column;align-items:flex-start;}.pm-campo dd{text-align:left;}}
+
   /* ---------- Celulares ---------- */
   /* iPhone hace zoom al tocar un campo con letra de menos de 16px y la página queda corrida */
   @media (max-width:860px){

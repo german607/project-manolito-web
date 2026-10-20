@@ -22,6 +22,7 @@
       <button role="tab" data-tab="boxes">Boxes</button>
       <button role="tab" data-tab="pedidos">Pedidos</button>
       <button role="tab" data-tab="historial">Historial</button>
+      <button role="tab" data-tab="ajustes">Ajustes</button>
     </nav>
     <button class="link" id="logout">Salir</button>
   </header>
@@ -65,6 +66,25 @@
   <section class="panel" id="tab-boxes" hidden>
     <div class="row-head"><h2>Boxes</h2></div>
     <div class="card table-wrap"><table id="tablaBoxes"></table></div>
+  </section>
+
+  <section class="panel" id="tab-ajustes" hidden>
+    <div class="row-head"><h2>Datos para pagar</h2><p class="hint">Es lo que ve el cliente al elegir transferencia, Abitab o Prex. Si no cargás la cuenta, se le dice que le vas a escribir.</p></div>
+    <form class="card form-ajustes" id="formPagos">
+      <h3>Transferencia bancaria</h3>
+      <div class="campos2">
+        <label>Banco<input name="t_banco" maxlength="60" placeholder="BROU"></label>
+        <label>Tipo de cuenta<input name="t_tipoCuenta" maxlength="40"></label>
+        <label>Número de cuenta<input name="t_cuenta" maxlength="60"></label>
+        <label>Titular<input name="t_titular" maxlength="80"></label>
+        <label>RUT / CI del titular <small>(opcional)</small><input name="t_documento" maxlength="30"></label>
+      </div>
+      <h3>Giro Abitab / Red Pagos</h3>
+      <label>Instrucciones<textarea name="abitab" maxlength="500" rows="3" placeholder="A nombre de … · CI …"></textarea></label>
+      <h3>Prex / Mi Dinero</h3>
+      <label>Instrucciones<textarea name="prex" maxlength="500" rows="3" placeholder="Cuenta Prex N° …"></textarea></label>
+      <button class="btn" type="submit">Guardar</button>
+    </form>
   </section>
 
   <section class="panel" id="tab-historial" hidden>

@@ -6,7 +6,8 @@ import { HttpError } from './errores.js';
 import { ESTADOS, cambiarEstado } from './pedidos.js';
 import { HOY_UY, ZONA_UY } from './publico.js';
 import { soloAdmin } from './auth.js';
-import { guardarImagen } from './imagenes.js';
+import { guardarImagen, leerPrivado } from './imagenes.js';
+import { AjustesPagos, guardarAjustesPagos, leerAjustesPagos } from './pagosManuales.js';
 
 export const FRONTEND = fileURLToPath(new URL('../../frontend', import.meta.url));
 
@@ -157,11 +158,29 @@ adminRouter.put('/productos/:id/foto', express.raw({ type: 'image/*', limit: '5m
   res.json(await productos.uno(p.id));
 });
 
+// Comprobante de pago subido por el cliente (archivo privado: solo lo ve el admin)
+adminRouter.get('/pedidos/:id/comprobante', async (req, res) => {
+  const p = await q1<{ comprobante: string | null; comprobante_tipo: string }>('SELECT comprobante, comprobante_tipo FROM pedidos WHERE id = $1', [Number(req.params.id)]);
+  if (!p?.comprobante) throw new HttpError(404, 'Este pedido no tiene comprobante');
+  res.set({ 'Content-Type': p.comprobante_tipo, 'Cache-Control': 'private, no-store', 'Content-Disposition': 'inline' }).send(await leerPrivado(p.comprobante));
+});
+
+// ---------- Ajustes ----------
+
+adminRouter.get('/ajustes/pagos', async (_req, res) => {
+  res.json(await leerAjustesPagos());
+});
+adminRouter.put('/ajustes/pagos', async (req, res) => {
+  const valor = AjustesPagos.parse(req.body);
+  await guardarAjustesPagos(valor, res.locals.usuario.email);
+  res.json(valor);
+});
+
 // ---------- Historial ----------
 
 adminRouter.get('/historial', async (req, res) => {
   const { entidad, id } = z.object({
-    entidad: z.enum(['producto', 'box', 'pedido']).optional().catch(undefined),
+    entidad: z.enum(['producto', 'box', 'pedido', 'ajustes']).optional().catch(undefined),
     id: z.string().max(60).optional().catch(undefined),
   }).parse(req.query);
   const filtros: string[] = [], params: unknown[] = [];
@@ -174,7 +193,8 @@ adminRouter.get('/historial', async (req, res) => {
 
 adminRouter.get('/pedidos', async (req, res) => {
   const estado = z.enum(ESTADOS).optional().catch(undefined).parse(req.query.estado);
-  res.json(await q(`SELECT * FROM pedidos ${estado ? 'WHERE estado = $1' : ''} ORDER BY id DESC LIMIT 200`, estado ? [estado] : []));
+  const filas = await q(`SELECT * FROM pedidos ${estado ? 'WHERE estado = $1' : ''} ORDER BY id DESC LIMIT 200`, estado ? [estado] : []);
+  res.json(filas.map(({ token_pago: _t, ...p }) => p));
 });
 
 adminRouter.patch('/pedidos/:id', async (req, res) => {

@@ -111,7 +111,11 @@ const ESQUEMA = `
     recargo       integer NOT NULL DEFAULT 0,
     total         integer NOT NULL,
     mp_payment_id text,
-    usuario_id    integer REFERENCES usuarios(id) -- NULL = compra sin cuenta
+    usuario_id    integer REFERENCES usuarios(id), -- NULL = compra sin cuenta
+    token_pago    text,                  -- sha256 del token para ver los datos de pago y subir el comprobante
+    comprobante   text,                  -- clave del archivo privado (bucket o disco) del comprobante de pago
+    comprobante_tipo   text,
+    comprobante_subido timestamptz       -- con comprobante, el pedido no vence: queda en revisión
   );
   CREATE INDEX IF NOT EXISTS pedidos_pendientes ON pedidos (creado) WHERE estado = 'pendiente';
 
@@ -137,6 +141,12 @@ const ESQUEMA = `
   CREATE INDEX IF NOT EXISTS historial_entidad ON historial (entidad, entidad_id, cuando DESC);
   CREATE INDEX IF NOT EXISTS historial_cuando ON historial (cuando DESC);
 
+  -- Ajustes editables desde el admin (ej. datos bancarios para transferencias)
+  CREATE TABLE IF NOT EXISTS ajustes (
+    clave text PRIMARY KEY,
+    valor jsonb NOT NULL
+  );
+
   CREATE TABLE IF NOT EXISTS migraciones (
     n        integer PRIMARY KEY,
     aplicada timestamptz NOT NULL DEFAULT now()
@@ -159,6 +169,11 @@ const MIGRACIONES: (() => Promise<void>)[] = [
       if (r.length) await registrar('migración', 'box', id, 'editar', { precio: [viejo, nuevo] });
     }
     await q("UPDATE boxes SET etiqueta = 'PREMIUM' WHERE id = 'especial-manolito' AND etiqueta = 'COMPLETA'");
+  },
+  // 2: pagos manuales (transferencia, Abitab, Prex): token del pedido y comprobante subido por el cliente
+  async () => {
+    await q(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS token_pago text, ADD COLUMN IF NOT EXISTS comprobante text,
+      ADD COLUMN IF NOT EXISTS comprobante_tipo text, ADD COLUMN IF NOT EXISTS comprobante_subido timestamptz`);
   },
 ];
 
@@ -191,7 +206,7 @@ export async function iniciarDb() {
 // ---------- Historial ----------
 // Llamar dentro de la misma transacción que el cambio: así nunca queda un cambio sin registrar (ni al revés)
 export type Autor = string; // email del admin, 'cliente', 'sistema', 'mercadopago'
-export const registrar = (autor: Autor, entidad: 'producto' | 'box' | 'pedido', id: string | number, accion: string, cambios: Record<string, unknown> = {}) =>
+export const registrar = (autor: Autor, entidad: 'producto' | 'box' | 'pedido' | 'ajustes', id: string | number, accion: string, cambios: Record<string, unknown> = {}) =>
   q('INSERT INTO historial (autor, entidad, entidad_id, accion, cambios) VALUES ($1, $2, $3, $4, $5)',
     [autor, entidad, String(id), accion, JSON.stringify(cambios)]);
 

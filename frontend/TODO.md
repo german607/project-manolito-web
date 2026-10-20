@@ -33,7 +33,7 @@
 ## Seguridad
 - [ ] Sacar los 4 `onclick=` inline de `index.html` (flechas de los carruseles) y pasarlos a `js/main.js`, para poder activar una Content-Security-Policy estricta
 - [ ] Regla para todo código nuevo: nunca meter datos del servidor o del usuario con `innerHTML` sin escapar (usar `textContent` o `esc()`, como en el carrito y el admin)
-- [ ] La página de "¡Pago recibido!" debe consultar el estado real del pedido, no confiar en `?pago=ok` de la URL
+- [x] La página de "¡Pago recibido!" consulta el estado real del pago al servidor (no confía en la URL)
 - [ ] Opcional: servir las fuentes desde el propio sitio en vez de Google Fonts (CSP más simple y no se comparte la IP de los visitantes con Google)
 
 ## Fase 6 — Producción

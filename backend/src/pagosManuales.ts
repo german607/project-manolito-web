@@ -15,7 +15,8 @@ export const AjustesPagos = z.object({
   transferencia: z.object({
     banco: z.string().trim().max(60),
     tipoCuenta: z.string().trim().max(40),
-    cuenta: z.string().trim().max(60),
+    cuenta: z.string().trim().max(60),                          // para transferir desde el mismo banco
+    cuentaOtrosBancos: z.string().trim().max(60).default(''),   // para transferir desde otro banco (en algunos bancos, ej. BROU, es otro número)
     titular: z.string().trim().max(80),
     documento: z.string().trim().max(30), // RUT o CI del titular (opcional)
   }),
@@ -25,14 +26,19 @@ export const AjustesPagos = z.object({
 export type AjustesPagos = z.infer<typeof AjustesPagos>;
 
 const VACIO: AjustesPagos = {
-  transferencia: { banco: '', tipoCuenta: 'Caja de ahorro en pesos', cuenta: '', titular: '', documento: '' },
+  transferencia: { banco: '', tipoCuenta: 'Caja de ahorro en pesos', cuenta: '', cuentaOtrosBancos: '', titular: '', documento: '' },
   abitab_redpagos: { texto: '' },
   prex_midinero: { texto: '' },
 };
 
 export async function leerAjustesPagos(): Promise<AjustesPagos> {
   const r = await q1<{ valor: AjustesPagos }>("SELECT valor FROM ajustes WHERE clave = 'pagos'");
-  return { ...VACIO, ...r?.valor };
+  // Campo por campo: los ajustes guardados antes de existir un campo nuevo lo toman vacío
+  return {
+    transferencia: { ...VACIO.transferencia, ...r?.valor.transferencia },
+    abitab_redpagos: { ...VACIO.abitab_redpagos, ...r?.valor.abitab_redpagos },
+    prex_midinero: { ...VACIO.prex_midinero, ...r?.valor.prex_midinero },
+  };
 }
 export async function guardarAjustesPagos(valor: AjustesPagos, autor: string) {
   await tx(async () => {
@@ -51,12 +57,14 @@ export async function datosDePago(p: Pick<Pedido, 'id' | 'pago' | 'total'>): Pro
   const comunes = [{ etiqueta: 'Monto', valor: `$${p.total}` }, { etiqueta: 'Referencia (ponela en el concepto)', valor: referencia(p.id) }];
   if (p.pago === 'transferencia') {
     const t = a.transferencia;
-    if (!t.cuenta) return null; // sin datos cargados: se coordina por mail/Instagram
+    if (!t.cuenta && !t.cuentaOtrosBancos) return null; // sin datos cargados: se coordina por mail/Instagram
     return {
       titulo: 'Datos para la transferencia',
       campos: [
         { etiqueta: 'Banco', valor: t.banco }, { etiqueta: 'Tipo de cuenta', valor: t.tipoCuenta },
-        { etiqueta: 'Número de cuenta', valor: t.cuenta }, { etiqueta: 'Titular', valor: t.titular },
+        { etiqueta: `Cuenta para transferir desde ${t.banco || 'el mismo banco'}`, valor: t.cuenta },
+        { etiqueta: 'Cuenta para transferir desde otro banco', valor: t.cuentaOtrosBancos },
+        { etiqueta: 'Titular', valor: t.titular },
         ...(t.documento ? [{ etiqueta: 'RUT / CI', valor: t.documento }] : []), ...comunes,
       ].filter(c => c.valor),
     };
@@ -113,10 +121,14 @@ export async function subirComprobante(id: number, token: string, datos: Buffer)
     await q('UPDATE pedidos SET comprobante = $1, comprobante_tipo = $2, comprobante_subido = now() WHERE id = $3', [clave, tipo[0], id]);
     await registrar('cliente', 'pedido', id, 'comprobante', { comprobante: [p.comprobante ? 'anterior' : null, 'subido'] });
   });
-  if (process.env.ADMIN_EMAIL) {
-    enviarMail(process.env.ADMIN_EMAIL, `Comprobante recibido: pedido #${id} — $${p.total}`,
+  // Producción: a comprobantes@ (COMPROBANTES_EMAIL), con el archivo adjunto para que quede archivado.
+  // Sin esa variable (staging) va a ADMIN_EMAIL
+  const destino = process.env.COMPROBANTES_EMAIL ?? process.env.ADMIN_EMAIL;
+  if (destino) {
+    enviarMail(destino, `Comprobante recibido: pedido #${id} — $${p.total}`,
       `${p.nombre} subió el comprobante de ${p.pago} del pedido #${id} ($${p.total}, referencia ${referencia(id)}).\n` +
-      `Revisalo en el admin → Pedidos y, si la plata entró, tocá "Confirmar pago".`);
+      `Revisalo en el admin → Pedidos y, si la plata entró, tocá "Confirmar pago".`, p.email, // "Responder" le escribe al cliente
+      [{ nombre: `comprobante-pedido-${id}.${tipo[1]}`, datos }]);
   }
 }
 

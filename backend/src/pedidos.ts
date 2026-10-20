@@ -243,7 +243,7 @@ pedidosRouter.post('/pedidos', async (req, res) => {
     (manual ? `\n\nCuando pagues, subí el comprobante acá (así el pedido no vence mientras lo revisamos):\n${linkComprobante(id, token)}` : ''));
   if (process.env.ADMIN_EMAIL) {
     enviarMail(process.env.ADMIN_EMAIL, `Nuevo pedido #${id} — $${p.total}`,
-      `${p.nombre} · ${p.telefono} · ${p.email}\nPago: ${p.pago}\n\n${resumen(p)}`);
+      `${p.nombre} · ${p.telefono} · ${p.email}\nPago: ${p.pago}\n\n${resumen(p)}`, p.email); // "Responder" le escribe al cliente
   }
 
   res.status(201).json({ id, subtotal: p.subtotal, recargo: p.recargo, total: p.total, pagoUrl, instrucciones, token, datos });

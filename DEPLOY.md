@@ -7,6 +7,8 @@
 | API (Railway) | `project-manolito-web-staging.up.railway.app` | `project-manolito-web-production.up.railway.app` |
 | Base de datos | Postgres propio de staging | Postgres propio de producción |
 | Imágenes | bucket `manolito-img-storage-76u0au` | bucket `manolito-img-storage-dzycai` |
+| Admin (`ADMIN_EMAIL`) | `admin.staging@manolitouy.com` | `admin@manolitouy.com` |
+| Comprobantes | a `admin.staging@` (sin `COMPROBANTES_EMAIL`) | `comprobantes@manolitouy.com` |
 
 **Cómo Vercel elige el backend** (`frontend/vercel.json`): según el **dominio** desde el que se entra.
 `manolitouy.com` y `www.manolitouy.com` → backend de producción; **cualquier otro dominio** → staging.
@@ -25,7 +27,8 @@ conectado: `Entorno: production · Base: <host>/railway`.
 4. Servicio web → **Variables**:
    - `DATABASE_URL` = referencia al Postgres **de producción** (`${{Postgres.DATABASE_URL}}`)
    - Bucket: preset "AWS SDK" del bucket **de producción** (`AWS_S3_BUCKET_NAME`, `AWS_ENDPOINT_URL`, …)
-   - `ADMIN_EMAIL`, `ADMIN_PASSWORD` (16+ caracteres; distinta de la de staging)
+   - `ADMIN_EMAIL=admin@manolitouy.com`, `ADMIN_PASSWORD` (16+ caracteres; distinta de la de staging)
+   - `COMPROBANTES_EMAIL=comprobantes@manolitouy.com`
    - `TRUST_PROXY=2`, `BASE_URL` y `FRONTEND_URL` = dominio de producción
    - `RESEND_API_KEY`, `MAIL_FROM`, `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`, `PAGO_INSTRUCCIONES`
 5. Subir las imágenes al bucket: `./scripts/subir-imagenes.sh produccion`.
@@ -65,6 +68,24 @@ servidor, solo un token. El monto lo pone el servidor desde el pedido. Hay tope 
 Cómo funciona: el servidor **nunca cree** lo que dice el webhook ni la URL de vuelta; siempre consulta el pago a la API
 de Mercado Pago y verifica moneda (UYU) y monto. Los pagos en efectivo dentro de Mercado Pago están desactivados
 (no se pagan dentro de las 2 h que dura el pedido); Abitab y Red Pagos se ofrecen aparte en el checkout.
+
+## Mails
+
+- **Outlook (Microsoft 365, GoDaddy):** la casilla de Manolito (ej. `hola@manolitouy.com`) para leer y contestar.
+  Sus registros DNS (MX, SPF `secureserver.net`, DKIM `selector1/2`, `_dmarc`, `autodiscover`) **no se tocan**.
+- **Resend:** los mails automáticos de la web, desde `pedidos@manolitouy.com`.
+  1. resend.com → Domains → Add Domain → `manolitouy.com` (región us-east-1).
+  2. Cargar en GoDaddy los 3 registros que muestra (TXT `resend._domainkey`, MX y TXT en `send`). Van en el subdominio
+     `send`, así que no chocan con los de Outlook.
+  3. Railway (staging y producción): `RESEND_API_KEY`, `MAIL_FROM=Manolito <pedidos@manolitouy.com>`,
+     `MAIL_REPLY_TO=hola@manolitouy.com`, `ADMIN_EMAIL` (staging: `admin.staging@manolitouy.com`; producción:
+     `admin@manolitouy.com`). Es también el usuario con el que se ingresa al admin de cada entorno, y donde llegan los avisos.
+- Si un cliente responde un mail automático, la respuesta llega al Outlook (`MAIL_REPLY_TO`). En los avisos de pedido
+  nuevo y comprobante recibido, "Responder" le escribe directo al cliente.
+- **Comprobantes de pago:** cuando un cliente sube un comprobante, el aviso va a `COMPROBANTES_EMAIL` **con el archivo
+  adjunto**. Producción: `COMPROBANTES_EMAIL=comprobantes@manolitouy.com` (crear esa casilla o alias en Outlook).
+  Staging: no configurarla, así van a `admin.staging@manolitouy.com` y no se mezclan pruebas con comprobantes reales.
+- Sin `RESEND_API_KEY` los mails no salen: solo quedan en el log del servidor.
 
 ## Cambios de catálogo: `seed.ts` NO alcanza
 

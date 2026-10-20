@@ -28,13 +28,16 @@ export async function crearPreferencia(p: { id: number; total: number; email: st
     idempotencia: `pedido-${p.id}`,
     body: JSON.stringify({
       items: [{ title: `Pedido Manolito #${p.id}`, quantity: 1, unit_price: p.total, currency_id: 'UYU' }],
-      payer: { email: p.email, name: p.nombre },
+      // Sin email del cliente: Mercado Pago lo pide en su página. Precargarlo hace fallar el pago ("Algo salió mal")
+      // cuando el email es de una cuenta real y el vendedor es de prueba (o al revés)
+      payer: { name: p.nombre },
       external_reference: String(p.id),
       statement_descriptor: 'MANOLITO', // lo que ve el cliente en el resumen de la tarjeta
       // Sin pagos en efectivo (cupón Abitab / Red Pagos): no se pagan dentro de las 2 h que dura el pedido.
       // Igual se ofrecen aparte en el checkout, coordinados a mano
       payment_methods: { excluded_payment_types: [{ id: 'ticket' }, { id: 'atm' }] },
       expires: true, // después de esta fecha Mercado Pago no acepta el pago
+      expiration_date_from: new Date().toISOString(),
       expiration_date_to: p.vence.toISOString(),
       back_urls: {
         success: `${base}/checkout.html?pedido=${p.id}&pago=ok`,

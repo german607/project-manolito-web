@@ -17,13 +17,14 @@ document.addEventListener('click',function(e){if(e.target.closest('a[href*="inst
   document.addEventListener('keydown',function(e){if(e.key==='Escape')abrir(false);});
 })();
 
-// Link de cuenta del header: "Ingresar", o el nombre si ya hay sesión
+// Ícono de cuenta del header: lleva a ingresar, o al panel / la cuenta si ya hay sesión
 (function(){
   var a=document.querySelector('[data-cuenta]'); if(!a) return;
   if(!/login\.html$/.test(location.pathname)) a.href='login.html?volver='+encodeURIComponent(location.pathname+location.hash);
   fetch('/api/auth/yo').then(function(r){return r.json();}).then(function(d){
     var u=d.usuario; if(!u) return;
-    a.textContent=u.rol==='admin'?'Panel':'Hola, '+u.nombre.split(' ')[0];
+    var t=u.rol==='admin'?'Panel de admin':'Hola, '+u.nombre.split(' ')[0];
+    a.title=t; a.setAttribute('aria-label',t); a.classList.add('on'); // con sesión: ícono relleno
     if(u.rol==='admin') a.href='admin/';
     else if(!/login\.html$/.test(location.pathname)) a.href='login.html';
   }).catch(function(){});

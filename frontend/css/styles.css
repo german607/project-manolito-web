@@ -500,6 +500,8 @@
   /* ---------- Carrito ---------- */
   .cart-link{position:relative;display:inline-flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:50%;color:var(--green-deep);transition:background .2s ease;}
   .cart-link:hover,.cart-link[aria-current=page]{background:var(--white);color:var(--green-deep);}
+  .cuenta-link.on svg *{fill-opacity:.55;}
+  @media(max-width:600px){.cart-link{width:38px;height:40px;}}
   .cart-count{position:absolute;top:-2px;right:-4px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--green-deep);color:var(--white);font-family:'Baloo 2';font-weight:700;font-size:.7rem;line-height:18px;text-align:center;}
   .cart-count[hidden]{display:none;}
 

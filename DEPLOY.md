@@ -11,7 +11,9 @@
 | Comprobantes | a `admin.staging@` (sin `COMPROBANTES_EMAIL`) | `comprobantes@manolitouy.com` |
 
 **Cómo Vercel elige el backend** (`frontend/vercel.json`): según el **dominio** desde el que se entra.
-`manolitouy.com` y `www.manolitouy.com` → backend de producción; **cualquier otro dominio** → staging.
+`manolitouy.com` → backend de producción; **cualquier otro dominio** → staging.
+`www.manolitouy.com` redirige a `manolitouy.com` (un solo dominio para Google). Todo dominio que no sea
+`manolitouy.com` lleva `X-Robots-Tag: noindex`, así staging y los previews no aparecen en buscadores.
 Así, un preview o un dominio nuevo nunca toca datos reales. Si se suma otro dominio de producción, hay que agregarlo
 ahí; si no, va a usar staging (con su base de prueba y el Mercado Pago de prueba).
 

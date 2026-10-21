@@ -104,6 +104,16 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
       card.dataset.boxId=b.id;
       card.classList.toggle('agotada',b.agotada);
     });
+    // Datos para Google (resultados con precio y stock), con los precios del admin
+    var abs=function(u){return 'https://manolitouy.com/'+String(u||'').replace(/^\//,'').replace(/\?.*$/,'');};
+    var ld=document.createElement('script'); ld.type='application/ld+json';
+    ld.textContent=JSON.stringify({'@context':'https://schema.org','@type':'ItemList',itemListElement:list.map(function(b,i){
+      return {'@type':'ListItem',position:i+1,item:{'@type':'Product',name:b.nombre,image:abs(b.foto),
+        description:'Box de regalo para bebé. Trae: '+b.items.join(', ')+'.',brand:{'@type':'Brand',name:'Manolito'},
+        offers:{'@type':'Offer',price:b.precio,priceCurrency:'UYU',url:'https://manolitouy.com/#boxes',
+          availability:'https://schema.org/'+(b.agotada?'OutOfStock':'InStock')}}};
+    })});
+    document.head.appendChild(ld);
   }).catch(function(){});
   var actual=null, colorSel='';
   function open(card){
@@ -183,4 +193,15 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
     ph.querySelector('.bs-next').addEventListener('click',function(e){e.stopPropagation();go(cur+1);});
     mark(0);
   });
+})();
+
+// Preguntas frecuentes como datos estructurados (FAQPage), a partir de la sección #faq
+(function(){
+  var qs=document.querySelectorAll('#faq .faq-item'); if(!qs.length) return;
+  var ld=document.createElement('script'); ld.type='application/ld+json';
+  ld.textContent=JSON.stringify({'@context':'https://schema.org','@type':'FAQPage',mainEntity:[].map.call(qs,function(d){
+    return {'@type':'Question',name:d.querySelector('summary').textContent.replace('+','').trim(),
+      acceptedAnswer:{'@type':'Answer',text:d.querySelector('.faq-a').textContent.trim()}};
+  })});
+  document.head.appendChild(ld);
 })();

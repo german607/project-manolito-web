@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /checkout.html
+Disallow: /login.html
+Disallow: /api/
+
+Sitemap: https://manolitouy.com/sitemap.xml

@@ -79,6 +79,9 @@ const server = app.listen(PORT, () => {
   // A qué base está conectado (sin la contraseña): evita confundir staging con producción
   const db = new URL(process.env.DATABASE_URL!);
   console.log(`Entorno: ${process.env.RAILWAY_ENVIRONMENT_NAME ?? 'local'} · Base: ${db.hostname}${db.pathname}${process.env.DB_SCHEMA ? ` (esquema ${process.env.DB_SCHEMA})` : ''}`);
+  // Qué variables de Mercado Pago ve (no sus valores): si falta alguna, el checkout no ofrece Mercado Pago
+  const mp = ['MP_ACCESS_TOKEN', 'MP_PUBLIC_KEY', 'MP_WEBHOOK_SECRET'].map(v => `${v} ${process.env[v]?.trim() ? 'ok' : 'FALTA'}`);
+  console.log(`Mercado Pago: ${mp.join(' · ')}`);
   revisarBucket();
 });
 

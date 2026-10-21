@@ -549,6 +549,10 @@
   .cart-sum label.opt{flex-direction:row;align-items:center;gap:10px;font-weight:600;cursor:pointer;}
   .cart-sum label.opt input{accent-color:var(--green-deep);width:16px;height:16px;}
   .cart-sum label.opt small{color:var(--ink-soft);}
+  /* Nota que aparece solo con la opción elegida */
+  .cart-sum label.opt{flex-wrap:wrap;}
+  .cart-sum label.opt .opt-nota{display:none;flex-basis:100%;padding-left:26px;margin-top:-4px;font-weight:500;font-style:italic;}
+  .cart-sum label.opt input:checked ~ .opt-nota{display:block;}
   .cart-totals{border-top:1px dashed rgba(63,58,52,.15);padding-top:12px;display:flex;flex-direction:column;gap:6px;font-size:.9rem;}
   .cart-totals > div{display:flex;justify-content:space-between;}
   .cart-totals > div[hidden]{display:none;}
@@ -605,8 +609,20 @@
   .pm-estado{font-size:.88rem;}
   .pm-ok{color:#2F6B4A;font-weight:800;}
   .pm-aviso{color:#A63D3D;font-weight:700;}
-  .pm-subir{align-self:flex-start;cursor:pointer;}
+  .pm-subir{align-self:stretch;cursor:pointer;text-align:center;}
+  .pago-manual .pt-alt{align-self:center;text-align:center;}
+  #gInicio[hidden]{display:none;} /* .btn define display y pisaría el atributo hidden */
   @media (max-width:560px){.pm-campo{flex-direction:column;align-items:flex-start;}.pm-campo dd{text-align:left;}}
+
+  /* ---------- Pago con tarjeta (Card Payment Brick de Mercado Pago) ---------- */
+  .pago-tarjeta{width:100%;text-align:left;display:flex;flex-direction:column;gap:10px;}
+  .pago-tarjeta[hidden]{display:none;}
+  .pago-tarjeta h4{font-family:'Baloo 2';font-weight:700;font-size:1.05rem;}
+  #mpBrick{min-height:120px;}
+  .pago-seguro{display:flex;gap:10px;align-items:flex-start;background:var(--green-pale);border-radius:14px;padding:12px 14px;font-size:.85rem;line-height:1.45;}
+  .pago-seguro svg{flex:0 0 auto;color:var(--green-deep);margin-top:1px;}
+  .pt-alt{align-self:center;font-size:.85rem;font-weight:700;color:var(--green-deep);text-decoration:underline;text-underline-offset:3px;}
+  .pt-alt[hidden]{display:none;}
 
   /* ---------- Celulares ---------- */
   /* iPhone hace zoom al tocar un campo con letra de menos de 16px y la página queda corrida */

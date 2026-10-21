@@ -101,7 +101,11 @@ la base no se puede descargar desde la web.
 ### Pagos
 - [x] Pedidos sin pagar (cualquier medio) se cancelan solos a las 2 h, devuelven el stock y se avisa al cliente. Mercado Pago deja de aceptar el pago a la misma hora; si igual entra uno tarde, se reactiva el pedido o se avisa para devolver la plata
 - [x] Pagos verificados siempre contra la API de Mercado Pago (moneda UYU y monto). Devoluciones y contracargos: si no se envió, se cancela y vuelve el stock; siempre se avisa al admin. Webhook configurado en el panel (firmado), sin `notification_url` en la preferencia. Sin pagos en efectivo dentro de Mercado Pago. Con tests (API simulada)
-- [ ] Configurar Mercado Pago (credenciales, webhook y prueba con usuario de prueba): pasos en `DEPLOY.md`
+- [x] Pago de prueba de punta a punta en staging (pedido #7 aprobado por Mercado Pago y marcado pagado por el backend)
+- [x] **Pago con tarjeta dentro de la web** (Card Payment Brick): `POST /api/mercadopago/pagar` con el token del pedido; monto desde la base; mensajes claros de rechazo; tope de 5 rechazos por pedido y 10 intentos/10 min por IP. Con tests sobre la ruta real. "Pagar con mi cuenta de Mercado Pago" sigue yendo a Checkout Pro
+- [ ] Staging: cargar las "Credenciales de prueba" de la cuenta real (`MP_ACCESS_TOKEN` + `MP_PUBLIC_KEY`) y probar una tarjeta APRO en el formulario
+- [ ] Producción: credenciales de producción + webhook en modo producción
+- [ ] Si un banco exige 3DS (desafío de seguridad), sumar el Status Screen Brick para resolverlo (hoy no se pide 3DS)
 - [x] Mail al cliente cuando el pago se confirma (por Mercado Pago o marcado a mano en el admin)
 - [x] Las boxes no cobran $20 por letra extra en el portachupete (confirmado 2026-10-16); el recargo es solo para el portachupete suelto
 

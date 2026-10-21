@@ -64,7 +64,7 @@
 
         <fieldset>
           <legend>Pago</legend>
-          <label class="opt"><input type="radio" name="pago" value="transferencia" checked> Transferencia bancaria</label>
+          <label class="opt"><input type="radio" name="pago" value="transferencia" checked> Transferencia bancaria <small class="opt-nota">Al confirmar el pedido vas a ver los datos para transferir.</small></label>
           <label class="opt"><input type="radio" name="pago" value="abitab_redpagos"> Giro Abitab / Red Pagos</label>
           <label class="opt"><input type="radio" name="pago" value="prex_midinero"> Prex / Mi Dinero</label>
           <label class="opt" id="payMP" hidden><input type="radio" name="pago" value="mercadopago"> Mercado Pago <small>(+10%)</small></label>
@@ -91,7 +91,17 @@
       <p id="gTexto"></p>
       <p class="cart-extra" id="gExtra" hidden></p>
       <div class="pago-manual" id="gPago" hidden></div>
-      <a class="btn btn-green" href="index.html">Volver al inicio</a>
+      <div class="pago-tarjeta" id="gTarjeta" hidden>
+        <h4>Pagá con tarjeta</h4>
+        <div class="pago-seguro">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+          <p><b>Pago 100% seguro con Mercado Pago.</b> Los datos de tu tarjeta los procesa directamente Mercado Pago: Manolito nunca los ve ni los guarda.</p>
+        </div>
+        <div id="mpBrick"></div>
+        <p class="cart-error" id="mpError" role="alert"></p>
+        <a class="pt-alt" id="mpCuenta" hidden>Prefiero pagar con mi cuenta de Mercado Pago</a>
+      </div>
+      <a class="btn btn-green" id="gInicio" href="index.html">Volver al inicio</a>
     </div>
   </div>
 </section>

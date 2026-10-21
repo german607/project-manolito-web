@@ -3,8 +3,8 @@ import { z } from 'zod';
 import { q, q1, tx, productos, boxes, registrar, STOCK_SQL, type Autor, type Producto, type Box } from './db.js';
 import { HttpError } from './errores.js';
 import { enviarMail } from './mail.js';
-import { crearPreferencia, firmaValida, obtenerPago, type PagoMP } from './mercadopago.js';
-import { crearToken, datosDePago, datosEnTexto, linkComprobante, MANUALES } from './pagosManuales.js';
+import { crearPreferencia, firmaValida, MOTIVOS_RECHAZO, obtenerPago, pagarConTarjeta, type PagoMP } from './mercadopago.js';
+import { crearToken, datosDePago, datosEnTexto, linkComprobante, MANUALES, pedidoConToken } from './pagosManuales.js';
 
 export const ESTADOS = ['pendiente', 'pagado', 'enviado', 'entregado', 'cancelado'] as const;
 const LETRAS_INCLUIDAS = 5;
@@ -212,7 +212,7 @@ pedidosRouter.post('/carrito', async (req, res) => {
       avisos.push({ i, nombre: item?.nombre, error: e.message });
     }
   }
-  res.json({ lineas, avisos, ...totales(lineas, pago), mercadopago: !!process.env.MP_ACCESS_TOKEN });
+  res.json({ lineas, avisos, ...totales(lineas, pago), mercadopago: !!process.env.MP_ACCESS_TOKEN, mpPublicKey: process.env.MP_PUBLIC_KEY ?? null });
 });
 
 pedidosRouter.post('/pedidos', async (req, res) => {
@@ -232,17 +232,18 @@ pedidosRouter.post('/pedidos', async (req, res) => {
   }
   // Pago manual (transferencia, Abitab, Prex): datos para pagar y token para subir el comprobante
   const manual = (MANUALES as readonly string[]).includes(p.pago);
-  const token = manual ? await crearToken(id) : undefined;
+  // Token del pedido: para ver los datos de pago y subir el comprobante (manual) o pagar con tarjeta acá mismo (Mercado Pago)
+  const token = await crearToken(id);
   const datos = manual ? await datosDePago(p) : null;
   const instrucciones = pagoUrl ? undefined : `${datosEnTexto(datos)}\n\n${AVISO_VENCE}`;
 
   enviarMail(p.email, `Recibimos tu pedido Manolito #${id}`,
     `¡Gracias ${p.nombre}! Recibimos tu pedido.\n\n${resumen(p)}\n\n` +
-    (pagoUrl ? `Si no completaste el pago, podés hacerlo desde el link que te mostramos en la web. ${AVISO_VENCE}` : instrucciones) +
-    (token ? `\n\nCuando pagues, subí el comprobante acá (así el pedido no vence mientras lo revisamos):\n${linkComprobante(id, token)}` : ''));
+    (p.pago === 'mercadopago' ? `Si no completaste el pago, podés pagar con tarjeta acá: ${linkComprobante(id, token)}\n${AVISO_VENCE}` : instrucciones) +
+    (manual ? `\n\nCuando pagues, subí el comprobante acá (así el pedido no vence mientras lo revisamos):\n${linkComprobante(id, token)}` : ''));
   if (process.env.ADMIN_EMAIL) {
     enviarMail(process.env.ADMIN_EMAIL, `Nuevo pedido #${id} — $${p.total}`,
-      `${p.nombre} · ${p.telefono} · ${p.email}\nPago: ${p.pago}\n\n${resumen(p)}`);
+      `${p.nombre} · ${p.telefono} · ${p.email}\nPago: ${p.pago}\n\n${resumen(p)}`, p.email); // "Responder" le escribe al cliente
   }
 
   res.status(201).json({ id, subtotal: p.subtotal, recargo: p.recargo, total: p.total, pagoUrl, instrucciones, token, datos });
@@ -294,6 +295,47 @@ pedidosRouter.post('/mercadopago/webhook', async (req, res) => {
   const tipo = req.query.type ?? req.body?.type;
   if (tipo === 'payment') await procesarPago(String(req.query['data.id']));
   res.sendStatus(200);
+});
+
+// Pago con tarjeta dentro de nuestra web (Card Payment Brick). Requiere el token del pedido
+const Tarjeta = z.object({
+  pedido: z.coerce.number().int().positive(),
+  t: z.string().regex(/^[a-f0-9]{48}$/),
+  formData: z.object({
+    token: z.string().min(10).max(200),
+    payment_method_id: z.string().min(2).max(40),
+    issuer_id: z.union([z.string().max(20), z.number()]).optional(),
+    installments: z.coerce.number().int().min(1).max(24),
+    payer: z.object({
+      email: z.email().max(120),
+      identification: z.object({ type: z.string().max(20), number: z.string().max(30) }).optional(),
+    }),
+  }),
+});
+// ponytail: tope de intentos rechazados por pedido en memoria (por proceso); frena a quien prueba tarjetas robadas en serie
+const rechazos = new Map<number, number>();
+const MAX_RECHAZOS = 5;
+
+pedidosRouter.post('/mercadopago/pagar', async (req, res) => {
+  const { pedido: id, t, formData } = Tarjeta.parse(req.body);
+  const p = await pedidoConToken(id, t);
+  if (p.pago !== 'mercadopago') throw new HttpError(400, 'Este pedido no se paga con Mercado Pago');
+  if (p.estado !== 'pendiente') throw new HttpError(409, p.estado === 'cancelado' ? 'El pedido venció. Hacelo de nuevo.' : 'Este pedido ya está pago.');
+  if ((rechazos.get(id) ?? 0) >= MAX_RECHAZOS) throw new HttpError(429, 'Demasiados intentos rechazados para este pedido. Probá otro medio de pago o escribinos.');
+
+  let pago: PagoMP;
+  try {
+    pago = await pagarConTarjeta(p, formData);
+  } catch (e) {
+    console.error('Mercado Pago (tarjeta):', e);
+    throw new HttpError(502, 'No pudimos procesar el pago. Probá de nuevo en un rato.');
+  }
+  if (pago.status === 'rejected') rechazos.set(id, (rechazos.get(id) ?? 0) + 1);
+  const { pedido } = await procesarPago(String(pago.id)); // misma verificación que el webhook: moneda, monto, historial, mails
+  res.json({
+    estado: pedido?.estado ?? p.estado, pago: pago.status, detalle: pago.status_detail,
+    mensaje: pago.status === 'rejected' ? MOTIVOS_RECHAZO[pago.status_detail ?? ''] ?? 'El pago fue rechazado. Probá con otra tarjeta.' : undefined,
+  });
 });
 
 // Vuelta del cliente desde Mercado Pago: confirma al instante (sin esperar el webhook) y dice el estado real

@@ -50,6 +50,45 @@ export async function crearPreferencia(p: { id: number; total: number; email: st
   return pref.init_point;
 }
 
+// Pago con tarjeta desde nuestra web (Card Payment Brick): el navegador manda el token de la tarjeta que
+// generan los campos seguros de Mercado Pago; acá nunca llegan los datos de la tarjeta.
+// El monto sale del pedido en la base, nunca del navegador.
+export type DatosTarjeta = {
+  token: string; payment_method_id: string; issuer_id?: string | number; installments: number;
+  payer: { email: string; identification?: { type: string; number: string } };
+};
+export async function pagarConTarjeta(p: { id: number; total: number }, t: DatosTarjeta): Promise<PagoMP> {
+  return mp('/v1/payments', {
+    method: 'POST',
+    idempotencia: `tarjeta-${p.id}-${t.token}`, // un intento por token de tarjeta: reintentar no cobra dos veces
+    body: JSON.stringify({
+      transaction_amount: p.total,
+      token: t.token,
+      description: `Pedido Manolito #${p.id}`,
+      installments: t.installments,
+      payment_method_id: t.payment_method_id,
+      ...(t.issuer_id ? { issuer_id: Number(t.issuer_id) } : {}),
+      payer: t.payer,
+      external_reference: String(p.id),
+      statement_descriptor: 'MANOLITO',
+    }),
+  });
+}
+
+// Mensajes para el cliente según el motivo del rechazo (status_detail de Mercado Pago)
+export const MOTIVOS_RECHAZO: Record<string, string> = {
+  cc_rejected_bad_filled_card_number: 'Revisá el número de la tarjeta.',
+  cc_rejected_bad_filled_date: 'Revisá la fecha de vencimiento.',
+  cc_rejected_bad_filled_security_code: 'Revisá el código de seguridad.',
+  cc_rejected_bad_filled_other: 'Revisá los datos de la tarjeta.',
+  cc_rejected_insufficient_amount: 'La tarjeta no tiene fondos suficientes.',
+  cc_rejected_call_for_authorize: 'Tenés que autorizar el pago con tu banco y volver a intentar.',
+  cc_rejected_card_disabled: 'La tarjeta no está activa: llamá a tu banco para activarla.',
+  cc_rejected_duplicated_payment: 'Ya hiciste un pago por ese monto. Si necesitás volver a pagar, usá otra tarjeta.',
+  cc_rejected_high_risk: 'El pago fue rechazado. Probá con otra tarjeta u otro medio de pago.',
+  cc_rejected_max_attempts: 'Llegaste al límite de intentos. Probá con otra tarjeta.',
+};
+
 export type PagoMP = { id: number; status: string; status_detail?: string; external_reference: string; transaction_amount: number; currency_id: string };
 export async function obtenerPago(id: string): Promise<PagoMP> {
   return mp(`/v1/payments/${encodeURIComponent(id)}`);

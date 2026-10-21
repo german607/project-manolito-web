@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { q, q1, tx, productos, boxes, registrar, STOCK_SQL, type Autor, type Producto, type Box } from './db.js';
 import { HttpError } from './errores.js';
-import { enviarMail } from './mail.js';
+import { enviarMail, plantilla, parrafo, caja, esc } from './mail.js';
 import { crearPreferencia, firmaValida, MOTIVOS_RECHAZO, obtenerPago, pagarConTarjeta, type PagoMP } from './mercadopago.js';
 import { crearToken, datosDePago, datosEnTexto, linkComprobante, MANUALES, pedidoConToken } from './pagosManuales.js';
 
@@ -135,6 +135,29 @@ const resumen = (p: Pedido) => [
   `Entrega: ${p.entrega}${p.direccion ? ` — ${p.direccion}` : ''} (el envío se coordina aparte)`,
 ].filter(Boolean).join('\n');
 
+// El mismo resumen, como tabla para los mails HTML
+const ENTREGA: Record<string, string> = { pickup: 'Retiro', envio: 'Envío' };
+const resumenHtml = (p: Pedido) => {
+  const armados = numerarArmados(p.items);
+  const fila = (izq: string, der: string, fuerte = false) =>
+    `<tr><td style="padding:10px 0;border-bottom:1px solid #F3E6E0;font-size:14px;line-height:1.45;color:#3F3A34;${fuerte ? 'font-weight:700;font-size:16px;border-bottom:0' : ''}">${izq}</td>` +
+    `<td align="right" valign="top" style="padding:10px 0 10px 12px;border-bottom:1px solid #F3E6E0;font-size:14px;white-space:nowrap;color:#3F3A34;font-weight:700;${fuerte ? 'font-size:16px;border-bottom:0' : ''}">${der}</td></tr>`;
+  const detalle = (l: Linea) => [l.armado ? `Armado ${armados.indexOf(l.armado) + 1}` : '', l.color ? (l.estampado ? `Estampada: ${l.estampado}` : l.color) : '',
+    l.nombreBebe ? `“${l.nombreBebe}”` : '', l.modelo ? `Modelo: ${l.modelo}` : ''].filter(Boolean).join(' · ');
+  return `<div style="font-family:'Baloo 2','Trebuchet MS',Helvetica,Arial,sans-serif;font-size:17px;font-weight:700;color:#3F3A34;margin:8px 0 2px">Tu pedido #${p.id}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px">
+${p.items.map(l => fila(`<b>${l.cantidad > 1 ? `${l.cantidad} × ` : ''}${esc(l.nombre)}</b>${detalle(l) ? `<br><span style="color:#7A6F62;font-size:13px">${esc(detalle(l))}</span>` : ''}`, `$${l.total}`)).join('')}
+${p.recargo ? fila('Recargo Mercado Pago', `$${p.recargo}`) : ''}
+${fila('Total', `$${p.total}`, true)}
+</table>
+<p style="margin:0 0 20px;font-size:13px;line-height:1.5;color:#7A6F62">Entrega: ${esc(ENTREGA[p.entrega] ?? p.entrega)}${p.direccion ? ` — ${esc(p.direccion)}` : ''} (el envío se coordina aparte)</p>`;
+};
+// Mail al cliente: texto (como antes) + HTML con la plantilla de la web
+const mailCliente = (p: Pedido, m: { titulo: string; intro: string; antes?: string; despues?: string; textoExtra?: string; boton?: { texto: string; url: string } }) => ({
+  texto: `${m.intro}\n\n${resumen(p)}${m.textoExtra ? `\n\n${m.textoExtra}` : ''}${m.boton ? `\n\n${m.boton.texto}: ${m.boton.url}` : ''}`,
+  html: plantilla({ titulo: m.titulo, intro: m.intro, cuerpo: (m.antes ?? '') + resumenHtml(p) + (m.despues ?? ''), boton: m.boton }),
+});
+
 // Qué stock mueve cada línea. Pedidos anteriores a guardar `componentes`:
 // sus productos sueltos sí descontaban, sus boxes no (y por eso tampoco devuelven nada).
 const stockDe = (l: Linea) => l.componentes ?? (l.tipo === 'producto' ? [{ id: l.id, cantidad: l.cantidad }] : []);
@@ -166,9 +189,11 @@ export async function cambiarEstado(id: number, estado: Pedido['estado'], mpPaym
     return (await q1<Pedido>('UPDATE pedidos SET estado = $1, mp_payment_id = COALESCE($2, mp_payment_id) WHERE id = $3 RETURNING *',
       [estado, mpPaymentId ?? null, id]))!;
   });
-  if (estado === 'enviado') enviarMail(p.email, `Tu pedido Manolito #${p.id} está en camino`, `¡Hola ${p.nombre}! Tu pedido ya salió.\n\n${resumen(p)}`);
+  if (estado === 'enviado') enviarMail(p.email, `Tu pedido Manolito #${p.id} está en camino`,
+    mailCliente(p, { titulo: '¡Tu pedido está en camino!', intro: `¡Hola ${p.nombre}! Tu pedido ya salió. Esperamos que lo disfruten mucho.` }));
   // Pago confirmado: por Mercado Pago o marcado a mano por el admin (transferencia, Abitab, Prex)
-  if (estado === 'pagado') enviarMail(p.email, `Recibimos el pago de tu pedido Manolito #${p.id}`, `¡Hola ${p.nombre}! Ya está confirmado el pago. Te avisamos cuando lo enviemos.\n\n${resumen(p)}`);
+  if (estado === 'pagado') enviarMail(p.email, `Recibimos el pago de tu pedido Manolito #${p.id}`,
+    mailCliente(p, { titulo: '¡Pago confirmado!', intro: `¡Hola ${p.nombre}! Ya está confirmado el pago. Ahora preparamos tu pedido con mucho cariño y te avisamos cuando lo enviemos.` }));
   return p;
 }
 
@@ -189,8 +214,11 @@ export async function vencerPedidos() {
   const vencidos = await q<{ id: number }>("SELECT id FROM pedidos WHERE estado = 'pendiente' AND comprobante IS NULL AND creado <= now() - make_interval(hours => $1)", [VENCE_HORAS]);
   for (const { id } of vencidos) {
     const p = await cambiarEstado(id, 'cancelado', undefined, 'sistema (venció sin pago)');
-    enviarMail(p.email, `Tu pedido Manolito #${id} se canceló`,
-      `¡Hola ${p.nombre}! Pasaron ${VENCE_HORAS} horas sin que recibiéramos el pago, así que el pedido se canceló.\n\n${resumen(p)}\n\nSi todavía lo querés, podés hacerlo de nuevo en la web o escribirnos por Instagram.`);
+    const fin = 'Si todavía lo querés, podés hacerlo de nuevo en la web o escribirnos por Instagram.';
+    enviarMail(p.email, `Tu pedido Manolito #${id} se canceló`, mailCliente(p, {
+      titulo: 'Tu pedido se canceló', intro: `¡Hola ${p.nombre}! Pasaron ${VENCE_HORAS} horas sin que recibiéramos el pago, así que el pedido se canceló.`,
+      textoExtra: fin, despues: parrafo(fin), boton: { texto: 'Volver a la tienda', url: process.env.FRONTEND_URL ?? process.env.BASE_URL ?? 'http://localhost:3000' },
+    }));
   }
   return vencidos.length;
 }
@@ -239,10 +267,19 @@ pedidosRouter.post('/pedidos', async (req, res) => {
   const datos = manual ? await datosDePago(p) : null;
   const instrucciones = pagoUrl ? undefined : `${datosEnTexto(datos)}\n\n${AVISO_VENCE}`;
 
-  enviarMail(p.email, `Recibimos tu pedido Manolito #${id}`,
-    `¡Gracias ${p.nombre}! Recibimos tu pedido.\n\n${resumen(p)}\n\n` +
-    (p.pago === 'mercadopago' ? `Si no completaste el pago, podés pagar con tarjeta acá: ${linkComprobante(id, token)}\n${AVISO_VENCE}` : instrucciones) +
-    (manual ? `\n\nCuando pagues, subí el comprobante acá (así el pedido no vence mientras lo revisamos):\n${linkComprobante(id, token)}` : ''));
+  const link = linkComprobante(id, token);
+  enviarMail(p.email, `Recibimos tu pedido Manolito #${id}`, p.pago === 'mercadopago'
+    ? mailCliente(p, {
+      titulo: '¡Gracias por tu pedido!', intro: `¡Hola ${p.nombre}! Recibimos tu pedido. Si todavía no completaste el pago, podés hacerlo con tarjeta desde el botón.`,
+      textoExtra: AVISO_VENCE, despues: parrafo(AVISO_VENCE), boton: { texto: 'Pagar con tarjeta', url: link },
+    })
+    : mailCliente(p, {
+      titulo: '¡Gracias por tu pedido!', intro: `¡Hola ${p.nombre}! Recibimos tu pedido. Te dejamos los datos para hacer el pago.`,
+      textoExtra: `${instrucciones}${manual ? '\n\nCuando pagues, subí el comprobante (así el pedido no vence mientras lo revisamos)' : ''}`,
+      despues: (datos ? caja(datos.titulo, datos.campos, datos.texto) : parrafo(datosEnTexto(null))) + parrafo(AVISO_VENCE) +
+        (manual ? parrafo('Cuando pagues, subí el comprobante desde el botón: así el pedido no vence mientras lo revisamos.') : ''),
+      boton: manual ? { texto: 'Subir comprobante', url: link } : undefined,
+    }));
   if (process.env.ADMIN_EMAIL) {
     enviarMail(process.env.ADMIN_EMAIL, `Nuevo pedido #${id} — $${p.total}`,
       `${p.nombre} · ${p.telefono} · ${p.email}\nPago: ${p.pago}\n\n${resumen(p)}`, p.email); // "Responder" le escribe al cliente

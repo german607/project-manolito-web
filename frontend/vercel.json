@@ -2,6 +2,17 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "redirects": [
     {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.manolitouy.com"
+        }
+      ],
+      "destination": "https://manolitouy.com/:path*",
+      "permanent": true
+    },
+    {
       "source": "/admin",
       "destination": "/admin/",
       "permanent": true
@@ -24,26 +35,6 @@
         {
           "type": "host",
           "value": "manolitouy.com"
-        }
-      ],
-      "destination": "https://project-manolito-web-production.up.railway.app/assets/img/:path*"
-    },
-    {
-      "source": "/api/:path*",
-      "has": [
-        {
-          "type": "host",
-          "value": "www.manolitouy.com"
-        }
-      ],
-      "destination": "https://project-manolito-web-production.up.railway.app/api/:path*"
-    },
-    {
-      "source": "/assets/img/:path*",
-      "has": [
-        {
-          "type": "host",
-          "value": "www.manolitouy.com"
         }
       ],
       "destination": "https://project-manolito-web-production.up.railway.app/assets/img/:path*"
@@ -76,6 +67,21 @@
         {
           "key": "Strict-Transport-Security",
           "value": "max-age=31536000; includeSubDomains"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "missing": [
+        {
+          "type": "host",
+          "value": "manolitouy.com"
+        }
+      ],
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
         }
       ]
     }

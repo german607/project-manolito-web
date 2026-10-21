@@ -105,7 +105,7 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
       card.classList.toggle('agotada',b.agotada);
     });
   }).catch(function(){});
-  var actual=null;
+  var actual=null, colorSel='';
   function open(card){
     actual=card;
     var img=card.querySelector('.box-photo img.cur')||card.querySelector('.box-photo img');
@@ -127,30 +127,41 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
     // Sin id no hay backend: solo queda consultar por Instagram
     document.getElementById('bmBuy').hidden=!card.dataset.boxId;
     document.getElementById('bmNameWrap').hidden=!/portachupete/i.test(card.querySelector('.box-items').textContent);
-    document.getElementById('bmName').value=''; document.getElementById('bmError').textContent='';
+    document.getElementById('bmName').value='';
+    // Colores: los cuadraditos de la tarjeta; queda elegido el que se estaba mirando (si es uno solo)
+    var cs=document.getElementById('bmColors'), vistos=[], on=card.querySelectorAll('button.bc.on');
+    colorSel=on.length===1?on[0].title:''; cs.innerHTML='';
+    card.querySelectorAll('button.bc').forEach(function(b){
+      if(vistos.indexOf(b.title)>=0) return; vistos.push(b.title);
+      var c=document.createElement('button'); c.type='button'; c.className='chip'+(b.title===colorSel?' sel':'');
+      c.innerHTML='<i style="background:'+b.style.background+'"></i>'; c.appendChild(document.createTextNode(b.title));
+      c.addEventListener('click',function(){colorSel=b.title;[].forEach.call(cs.children,function(x){x.classList.toggle('sel',x===c);});});
+      cs.appendChild(c);
+    });
+    document.getElementById('bmColorWrap').hidden=!vistos.length;
     var agotada=card.classList.contains('agotada'), add=document.getElementById('bmAdd');
     add.disabled=agotada; add.textContent=agotada?'Sin stock por ahora':'Agregar al carrito';
     document.getElementById('bmNameWrap').hidden=document.getElementById('bmNameWrap').hidden||agotada;
+    document.getElementById('bmColorWrap').hidden=document.getElementById('bmColorWrap').hidden||agotada;
     ov.classList.add('open'); ov.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden';
   }
   function close(){ov.classList.remove('open');ov.setAttribute('aria-hidden','true');document.body.style.overflow='';}
   document.querySelectorAll('.box-card').forEach(function(card){
     var hint=document.createElement('div'); hint.className='box-hint'; hint.textContent='Ver qué trae';
     var cta=card.querySelector('.box-cta'); if(cta) cta.parentNode.insertBefore(hint,cta);
-    card.addEventListener('click',function(e){ if(e.target.closest('.box-cta'))return; open(card); });
+    card.addEventListener('click',function(){ open(card); }); // "Comprar" también abre la ventana
   });
   document.getElementById('bmClose').addEventListener('click',close);
   document.getElementById('bmAdd').addEventListener('click',function(){
-    var nombre=document.getElementById('bmName').value.trim();
-    if(!document.getElementById('bmNameWrap').hidden&&!nombre){
-      document.getElementById('bmError').textContent='Escribí el nombre del bebé para el portachupete.';
-      document.getElementById('bmName').focus(); return;
-    }
-    Carrito.agregar({tipo:'box',id:actual.dataset.boxId,nombreBebe:nombre||undefined});
+    var nombre=document.getElementById('bmName').value.trim(), faltan=[];
+    if(!document.getElementById('bmColorWrap').hidden&&!colorSel) faltan.push('El color de la box');
+    if(!document.getElementById('bmNameWrap').hidden&&!nombre) faltan.push('El nombre del bebé para el portachupete');
+    if(faltan.length){ Carrito.aviso(faltan); return; }
+    Carrito.agregar({tipo:'box',id:actual.dataset.boxId,color:colorSel||undefined,nombreBebe:nombre||undefined});
     close(); Carrito.abrir(); track('carrito_agregar',actual.dataset.boxId);
   });
   ov.addEventListener('click',function(e){if(e.target===ov)close();});
-  document.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!document.querySelector('dialog[open]'))close();});
 })();
 
 // Mini box: carrete de fotos; al tocar un color se muestra la foto de ese color

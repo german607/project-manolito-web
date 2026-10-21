@@ -65,6 +65,7 @@ const ESQUEMA = `
     nombre   text NOT NULL,
     precio   integer NOT NULL CHECK (precio >= 0),
     items    jsonb NOT NULL,             -- lo que trae, para mostrar
+    colores  jsonb,                      -- colores en que viene (el cliente elige uno); NULL = sin elección
     foto     text,
     etiqueta text,                       -- ej. "PREMIUM"
     activo   boolean NOT NULL DEFAULT true
@@ -170,10 +171,16 @@ const MIGRACIONES: (() => Promise<void>)[] = [
     }
     await q("UPDATE boxes SET etiqueta = 'PREMIUM' WHERE id = 'especial-manolito' AND etiqueta = 'COMPLETA'");
   },
+  // 3 (abajo) agrega los colores de las boxes.
   // 2: pagos manuales (transferencia, Abitab, Prex): token del pedido y comprobante subido por el cliente
   async () => {
     await q(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS token_pago text, ADD COLUMN IF NOT EXISTS comprobante text,
       ADD COLUMN IF NOT EXISTS comprobante_tipo text, ADD COLUMN IF NOT EXISTS comprobante_subido timestamptz`);
+  },
+  // 3: colores de cada box (el cliente tiene que elegir uno al comprar). Se toman del catálogo inicial
+  async () => {
+    await q('ALTER TABLE boxes ADD COLUMN IF NOT EXISTS colores jsonb');
+    for (const b of BOXES) await q('UPDATE boxes SET colores = $1 WHERE id = $2 AND colores IS NULL', [JSON.stringify(b.colores), b.id]);
   },
 ];
 
@@ -195,8 +202,8 @@ export async function iniciarDb() {
           [p.id, p.nombre, p.descripcion, p.precio, p.colores && JSON.stringify(p.colores), p.personalizable, p.foto]);
       }
       for (const b of BOXES) {
-        await q('INSERT INTO boxes (id, nombre, precio, items, foto, etiqueta) VALUES ($1, $2, $3, $4, $5, $6)',
-          [b.id, b.nombre, b.precio, JSON.stringify(b.items), b.foto, b.etiqueta]);
+        await q('INSERT INTO boxes (id, nombre, precio, items, foto, etiqueta, colores) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+          [b.id, b.nombre, b.precio, JSON.stringify(b.items), b.foto, b.etiqueta, JSON.stringify(b.colores)]);
         for (const p of b.productos) await q('INSERT INTO box_productos (box_id, producto_id) VALUES ($1, $2)', [b.id, p]);
       }
     }
@@ -227,7 +234,7 @@ export type Producto = {
 };
 export type Componente = { id: string; nombre: string; cantidad: number; stock: number | null };
 export type Box = {
-  id: string; nombre: string; precio: number; items: string[];
+  id: string; nombre: string; precio: number; items: string[]; colores: string[] | null;
   foto: string | null; etiqueta: string | null; activo: boolean;
   componentes: Componente[]; agotada: boolean; // agotada = algún producto que trae no tiene stock suficiente
 };

@@ -127,6 +127,19 @@
     cotizar:cotizar,
     lineasHTML:lineasHTML,
     abrir:abrir,
+    // Popup que bloquea la compra: lista lo que falta completar
+    aviso:function(faltan){
+      var d=document.getElementById('avisoFalta');
+      if(!d){
+        d=document.createElement('dialog'); d.id='avisoFalta'; d.className='aviso';
+        d.innerHTML='<h3>Antes de agregarlo al carrito</h3><p>Falta completar:</p><ul></ul><button type="button" class="btn btn-green" style="width:100%">Entendido</button>';
+        d.querySelector('button').addEventListener('click',function(){d.close();});
+        d.addEventListener('click',function(e){if(e.target===d)d.close();});
+        document.body.appendChild(d);
+      }
+      d.querySelector('ul').innerHTML=faltan.map(function(f){return '<li>'+esc(f)+'</li>';}).join('');
+      d.showModal();
+    },
     // item: {tipo:'producto'|'box', id, cantidad?, color?, nombreBebe?}. Abre el panel para mostrar lo agregado.
     agregar:function(item){
       var items=leer(), nuevo={tipo:item.tipo,id:item.id,cantidad:item.cantidad||1};

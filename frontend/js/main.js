@@ -17,6 +17,18 @@ document.addEventListener('click',function(e){if(e.target.closest('a[href*="inst
   document.addEventListener('keydown',function(e){if(e.key==='Escape')abrir(false);});
 })();
 
+// Selector de modelo de babero: una foto por modelo (el servidor valida "N° 1" a "N° 6")
+window.elegirBabero=function(cont,actual,alElegir){
+  cont.innerHTML='';
+  for(var n=1;n<=6;n++){(function(n){
+    var v='N° '+n, b=document.createElement('button'); b.type='button'; b.className='pm-img'+(v===actual?' sel':'');
+    b.setAttribute('aria-label','Elegir babero modelo '+n);
+    b.innerHTML='<img alt="Babero de algodón, modelo '+n+'" loading="lazy" src="assets/img/baberos/babero-'+n+'.jpg"><span class="pm-tag">'+(v===actual?'✓ ':'')+v+'</span>';
+    b.addEventListener('click',function(){alElegir(v);window.elegirBabero(cont,v,alElegir);});
+    cont.appendChild(b);
+  })(n);}
+};
+
 // Ícono de cuenta del header: lleva a ingresar, o al panel / la cuenta si ya hay sesión
 (function(){
   var a=document.querySelector('[data-cuenta]'); if(!a) return;
@@ -116,7 +128,7 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
     })});
     document.head.appendChild(ld);
   }).catch(function(){});
-  var actual=null, colorSel='';
+  var actual=null, colorSel='', baberoSel='';
   function open(card){
     actual=card;
     var img=card.querySelector('.box-photo img.cur')||card.querySelector('.box-photo img');
@@ -150,10 +162,13 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
       cs.appendChild(c);
     });
     document.getElementById('bmColorWrap').hidden=!vistos.length;
+    baberoSel=''; elegirBabero(document.getElementById('bmBab'),'',function(v){baberoSel=v;});
+    document.getElementById('bmBabWrap').hidden=!/babero/i.test(card.querySelector('.box-items').textContent);
     var agotada=card.classList.contains('agotada'), add=document.getElementById('bmAdd');
     add.disabled=agotada; add.textContent=agotada?'Sin stock por ahora':'Agregar al carrito';
     document.getElementById('bmNameWrap').hidden=document.getElementById('bmNameWrap').hidden||agotada;
     document.getElementById('bmColorWrap').hidden=document.getElementById('bmColorWrap').hidden||agotada;
+    document.getElementById('bmBabWrap').hidden=document.getElementById('bmBabWrap').hidden||agotada;
     ov.classList.add('open'); ov.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden';
   }
   function close(){ov.classList.remove('open');ov.setAttribute('aria-hidden','true');document.body.style.overflow='';}
@@ -166,9 +181,10 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
   document.getElementById('bmAdd').addEventListener('click',function(){
     var nombre=document.getElementById('bmName').value.trim(), faltan=[];
     if(!document.getElementById('bmColorWrap').hidden&&!colorSel) faltan.push('El color de la box');
+    if(!document.getElementById('bmBabWrap').hidden&&!baberoSel) faltan.push('El modelo de babero');
     if(!document.getElementById('bmNameWrap').hidden&&!nombre) faltan.push('El nombre del bebé para el portachupete');
     if(faltan.length){ Carrito.aviso(faltan); return; }
-    Carrito.agregar({tipo:'box',id:actual.dataset.boxId,color:colorSel||undefined,nombreBebe:nombre||undefined});
+    Carrito.agregar({tipo:'box',id:actual.dataset.boxId,color:colorSel||undefined,babero:baberoSel||undefined,nombreBebe:nombre||undefined});
     close(); Carrito.abrir(); track('carrito_agregar',actual.dataset.boxId);
   });
   ov.addEventListener('click',function(e){if(e.target===ov)close();});

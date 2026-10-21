@@ -8,7 +8,7 @@
     try{localStorage.setItem(KEY,JSON.stringify(items));}catch(e){}
     contador(); window.dispatchEvent(new Event('carrito'));
   }
-  function igual(a,b){return a.tipo===b.tipo&&a.id===b.id&&(a.color||'')===(b.color||'')&&(a.nombreBebe||'')===(b.nombreBebe||'')&&(a.modelo||'')===(b.modelo||'')&&(a.estampado||'')===(b.estampado||'')&&(a.armado||'')===(b.armado||'');}
+  function igual(a,b){return a.tipo===b.tipo&&a.id===b.id&&(a.color||'')===(b.color||'')&&(a.nombreBebe||'')===(b.nombreBebe||'')&&(a.modelo||'')===(b.modelo||'')&&(a.babero||'')===(b.babero||'')&&(a.estampado||'')===(b.estampado||'')&&(a.armado||'')===(b.armado||'');}
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function plata(n){return '$'+Number(n||0).toLocaleString('es-UY');}
 
@@ -30,7 +30,7 @@
     c.avisos.forEach(function(a){avI[a.i]=a;});
     return items.map(function(it,i){
       var l=porI[i], av=avI[i];
-      var detalle=[it.armado?'Armado '+(armados.indexOf(it.armado)+1):'',it.color==='Estampada'&&it.estampado?'Estampada: '+it.estampado:it.color,it.nombreBebe?'“'+it.nombreBebe+'”':'',it.modelo].filter(Boolean).join(' · ');
+      var detalle=[it.armado?'Armado '+(armados.indexOf(it.armado)+1):'',it.color==='Estampada'&&it.estampado?'Estampada: '+it.estampado:it.color,it.nombreBebe?'“'+it.nombreBebe+'”':'',it.modelo,it.babero?'Babero '+it.babero:''].filter(Boolean).join(' · ');
       return '<article class="cart-line'+(av?' bad':'')+(editable?'':' ro')+'" data-i="'+i+'">'+
         (l&&l.foto?'<img src="'+esc(l.foto)+'" alt="">':'<div class="cart-ph"></div>')+
         '<div class="cart-info"><h4>'+esc(l?l.nombre:(av&&av.nombre)||'Producto no disponible')+'</h4>'+
@@ -117,7 +117,7 @@
   window.addEventListener('storage',function(e){if(e.key===KEY){contador();window.dispatchEvent(new Event('carrito'));}}); // otra pestaña
 
   // El ícono del header abre el panel (sin JS, el link lleva al checkout)
-  document.querySelectorAll('.cart-link').forEach(function(a){
+  document.querySelectorAll('.cart-link:not(.cuenta-link)').forEach(function(a){
     a.addEventListener('click',function(e){e.preventDefault();abrir();});
   });
 
@@ -148,6 +148,7 @@
       if(item.color) nuevo.color=item.color;
       if(item.nombreBebe) nuevo.nombreBebe=item.nombreBebe;
       if(item.modelo) nuevo.modelo=item.modelo;
+      if(item.babero) nuevo.babero=item.babero;
       if(item.estampado) nuevo.estampado=item.estampado;
       if(item.armado) nuevo.armado=item.armado; // productos de un mismo "Armá tu box"
       var ya=items.filter(function(x){return igual(x,nuevo);})[0];

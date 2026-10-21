@@ -163,14 +163,16 @@
 
   document.getElementById('armaCart').addEventListener('click',function(){
     var elegidos=P.filter(function(p){return st[p.id]&&st[p.id].on;});
-    if(elegidos.length<2){toast('Elegí al menos 2 productos para armar tu box.');return;} // el servidor también lo controla
-    for(var k=0;k<elegidos.length;k++){
-      var p=elegidos[k], s=st[p.id];
-      if(p.c&&!s.color){toast('Elegí el color de '+p.n+'.');return;}
-      if(p.est&&s.color==='Estampada'&&!s.estampado){toast('Escribí qué estampado querés para '+p.n+'.');return;}
-      if(p.name&&!s.name){toast('Escribí el nombre del bebé para el portachupete.');return;}
-      if(p.modelo&&!s.modelo){toast('Elegí el modelo del portachupete.');abrirModelos(p);return;}
-    }
+    // Todo lo que falta en un popup; el servidor también lo controla
+    var faltan=elegidos.length<2?['Elegir al menos 2 productos para armar tu box']:[];
+    elegidos.forEach(function(p){
+      var s=st[p.id];
+      if(p.c&&!s.color) faltan.push('El color de '+p.n);
+      if(p.est&&s.color==='Estampada'&&!s.estampado) faltan.push('Qué estampado querés para '+p.n);
+      if(p.name&&!s.name) faltan.push('El nombre del bebé para el portachupete');
+      if(p.modelo&&!s.modelo) faltan.push('El modelo del portachupete');
+    });
+    if(faltan.length){Carrito.aviso(faltan);return;}
     var armado='a'+Date.now().toString(36); // agrupa los productos de este armado (el servidor exige 2 distintos por armado)
     elegidos.forEach(function(p){
       var s=st[p.id];

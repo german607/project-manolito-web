@@ -80,11 +80,13 @@ export async function calcular(
       if (!b?.activo) throw new HttpError(400, `La box "${it.id}" no existe`);
       if (it.armado) throw new HttpError(400, 'Las boxes no van dentro de un armado');
       if (!it.nombreBebe && b.items.some(i => /portachupete/i.test(i))) throw new HttpError(400, `Falta el nombre del bebé para el portachupete de ${b.nombre}`);
+      if (b.colores?.length && !it.color) throw new HttpError(400, `Elegí el color de ${b.nombre}`);
+      if (it.color && !b.colores?.includes(it.color)) throw new HttpError(400, `Color "${it.color}" no disponible para ${b.nombre}`);
       // La box no cobra letras extra en el portachupete (confirmado con Manolito): solo el portachupete suelto
       for (const c of b.componentes) {
         if (c.stock !== null && c.stock < c.cantidad * it.cantidad) throw new HttpError(409, `${b.nombre}: no queda stock de ${c.nombre}`);
       }
-      lineas.push({ tipo: 'box', id: b.id, nombre: b.nombre, cantidad: it.cantidad, nombreBebe: it.nombreBebe, precioUnitario: b.precio, total: b.precio * it.cantidad,
+      lineas.push({ tipo: 'box', id: b.id, nombre: b.nombre, cantidad: it.cantidad, color: it.color, nombreBebe: it.nombreBebe, precioUnitario: b.precio, total: b.precio * it.cantidad,
         componentes: b.componentes.map(c => ({ id: c.id, cantidad: c.cantidad * it.cantidad })) });
       continue;
     }

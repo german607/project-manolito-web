@@ -34,8 +34,11 @@
   nameI.addEventListener('input',upd);
   add.addEventListener('click',function(){
     var nombre=nameI.value.trim();
-    if(!lam){toast('Elegí un modelo tocando una foto.');grid.scrollIntoView({behavior:'smooth',block:'center'});return;}
-    if(!nombre){toast('Escribí el nombre del bebé.');nameI.focus();return;}
+    var faltan=[];
+    if(!lam) faltan.push('El modelo (tocá una foto para elegirlo)');
+    if(!nombre) faltan.push('El nombre del bebé');
+    if(faltan.length&&window.Carrito){Carrito.aviso(faltan);return;}
+    if(faltan.length){toast('Falta: '+faltan.join(' y ').toLowerCase()+'.');return;}
     var modelo=mat+' N° '+lam+(detI.value.trim()?' — '+detI.value.trim():'');
     if(window.Carrito){
       Carrito.agregar({tipo:'producto',id:'porta',nombreBebe:nombre,modelo:modelo});

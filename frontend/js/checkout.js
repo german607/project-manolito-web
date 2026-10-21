@@ -1,7 +1,7 @@
 (function(){
   var $=function(id){return document.getElementById(id);};
   function plata(n){return '$'+Number(n||0).toLocaleString('es-UY');}
-  var form=$('checkout'), cot=null;
+  var form=$('checkout'), cot=null, cupon='';
 
   function mostrar(cual){
     $('checkoutVacio').hidden=cual!=='vacio';
@@ -19,8 +19,14 @@
     if(!items.length){mostrar('vacio');return;}
     if(!contado){contado=true;track('checkout');} // embudo: llegó al checkout con algo en el carrito
     mostrar('lleno');
-    Carrito.cotizar(pago()).then(function(c){
+    Carrito.cotizar(pago(),cupon).then(function(c){
       cot=c;
+      // Código de descuento: aplicado, o el motivo por el que no sirve
+      var msg=$('cuponMsg');
+      if(c.cuponError){msg.textContent=c.cuponError;msg.className='cupon-msg mal';cupon='';}
+      else if(c.cupon){msg.innerHTML='✓ Código <b></b> aplicado · <button type="button" class="cart-remove" id="cuponQuitar">Quitar</button>';msg.querySelector('b').textContent=c.cupon;msg.className='cupon-msg ok';
+        $('cuponQuitar').onclick=function(){cupon='';$('cuponInput').value='';msg.textContent='';cotizar();};}
+      $('rowDescuento').hidden=!c.descuento; $('lblDescuento').textContent='Descuento'+(c.cupon?' ('+c.cupon+')':''); $('totDescuento').textContent='-'+plata(c.descuento);
       $('resumenLineas').innerHTML=Carrito.lineasHTML(items,c,false);
       $('payMP').hidden=!c.mercadopago;
       if(!c.mercadopago&&pago()==='mercadopago'){form.querySelector('input[name=pago][value=transferencia]').checked=true;cotizar();return;}
@@ -31,6 +37,9 @@
     }).catch(function(err){$('resumenLineas').innerHTML='<p class="cart-error">'+err.message+'</p>';});
   }
   window.addEventListener('carrito',cotizar);
+  function aplicarCupon(){var v=$('cuponInput').value.trim(); if(!v) return; cupon=v; $('cuponMsg').textContent='Revisando…'; $('cuponMsg').className='cupon-msg'; cotizar();}
+  $('cuponAplicar').addEventListener('click',aplicarCupon);
+  $('cuponInput').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();aplicarCupon();}});
   $('editarCarrito').addEventListener('click',function(){Carrito.abrir();});
 
   // Con sesión iniciada, el pedido queda en la cuenta y se completan nombre y email
@@ -59,7 +68,7 @@
     var btn=$('confirmar'); btn.disabled=true; btn.textContent='Enviando…';
     var body={
       cliente:{nombre:form.nombre.value,telefono:form.telefono.value,email:form.email.value,direccion:entrega()==='pickup'?undefined:form.direccion.value},
-      entrega:entrega(), pago:pago(), items:Carrito.items()
+      entrega:entrega(), pago:pago(), items:Carrito.items(), cupon:cupon||undefined
     };
     fetch('/api/pedidos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
       .then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error(d.detalles?d.detalles.join(' · '):d.error);return d;});})

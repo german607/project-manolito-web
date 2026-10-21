@@ -34,7 +34,7 @@ $('#logout').addEventListener('click', async () => {
 
 // ---------- Pestañas ----------
 
-const CARGAR = { resumen: cargarResumen, productos: cargarProductos, boxes: cargarBoxes, pedidos: cargarPedidos, historial: cargarHistorial, ajustes: cargarAjustes };
+const CARGAR = { resumen: cargarResumen, productos: cargarProductos, boxes: cargarBoxes, pedidos: cargarPedidos, cupones: cargarCupones, historial: cargarHistorial, ajustes: cargarAjustes };
 const tabActual = () => (CARGAR[location.hash.slice(1)] ? location.hash.slice(1) : 'resumen');
 
 function abrirTab(tab) {
@@ -196,7 +196,7 @@ async function cargarPedidos() {
         ${p.comprobante ? `<p class="comprobante">📎 Comprobante recibido ${fecha(p.comprobante_subido)} · <a href="/api/admin/pedidos/${p.id}/comprobante" target="_blank" rel="noopener">Ver comprobante</a></p>` : ''}
       </div>
       <div>
-        <p class="tot">${plata(p.total)}</p>
+        <p class="tot">${plata(p.total)}</p>${p.descuento ? `<p class="meta">Descuento ${esc(p.cupon)}: -${plata(p.descuento)}</p>` : ''}
         <select class="estado" aria-label="Estado del pedido ${p.id}">${ESTADOS.map(e => `<option ${e === p.estado ? 'selected' : ''}>${e}</option>`).join('')}</select>
         ${p.estado === 'pendiente' && p.pago !== 'mercadopago' ? '<button class="btn sm confirmar" type="button">Confirmar pago</button>' : ''}
       </div>
@@ -233,10 +233,10 @@ fetch('/api/auth/yo').then(r => r.json()).then(({ usuario }) => {
 
 // ---------- Historial ----------
 
-const CAMPOS = { comprobante: 'Comprobante', datosDePago: 'Datos para pagar', precio: 'Precio', stockCargado: 'Stock', controlaStock: 'Controla stock', activo: 'Activo', estado: 'Estado', foto: 'Foto', total: 'Total', pago: 'Pago' };
+const CAMPOS = { cupon: 'Código de descuento', descuento: 'Descuento', minimo: 'Compra mínima', usosMax: 'Usos máximos', vence: 'Vence', comprobante: 'Comprobante', datosDePago: 'Datos para pagar', precio: 'Precio', stockCargado: 'Stock', controlaStock: 'Controla stock', activo: 'Activo', estado: 'Estado', foto: 'Foto', total: 'Total', pago: 'Pago' };
 const ACCIONES = { comprobante: 'Subió el comprobante de', crear: 'Creó', editar: 'Editó', foto: 'Cambió la foto de', estado: 'Cambió el estado de' };
 const valor = (campo, x) => x === null || x === undefined ? '—' : typeof x === 'boolean' ? (x ? 'sí' : 'no')
-  : campo === 'precio' || campo === 'total' ? plata(x) : campo === 'pago' ? PAGOS[x] || x : campo === 'foto' ? 'imagen' : String(x);
+  : campo === 'precio' || campo === 'total' || campo === 'minimo' ? plata(x) : campo === 'pago' ? PAGOS[x] || x : campo === 'foto' ? 'imagen' : String(x);
 $('#filtroHistorial').addEventListener('change', () => cargarHistorial().catch(err => toast(err.message)));
 
 async function cargarHistorial() {
@@ -244,12 +244,43 @@ async function cargarHistorial() {
   const [filas, prods, bxs] = await Promise.all([api('/historial' + (entidad ? '?entidad=' + entidad : '')), api('/productos'), api('/boxes')]);
   const nombres = Object.fromEntries([...prods, ...bxs].map(x => [x.id, x.nombre]));
   const fecha = s => new Date(s).toLocaleString('es-UY', { timeZone: 'America/Montevideo', dateStyle: 'short', timeStyle: 'short' });
-  const que = h => h.entidad === 'pedido' ? `pedido #${h.entidad_id}` : nombres[h.entidad_id] || h.entidad_id; // los nombres de las boxes ya dicen "Box ..."
+  const que = h => h.entidad === 'pedido' ? `pedido #${h.entidad_id}` : h.entidad === 'cupon' ? `el código ${h.entidad_id}` : nombres[h.entidad_id] || h.entidad_id; // los nombres de las boxes ya dicen "Box ..."
   $('#tablaHistorial').innerHTML = filas.length ? `<thead><tr><th>Cuándo</th><th>Quién</th><th>Qué</th><th>Cambio</th></tr></thead><tbody>${filas.map(h => `
     <tr><td>${fecha(h.cuando)}</td><td class="quien">${esc(h.autor)}</td><td>${esc(ACCIONES[h.accion] || h.accion)} ${esc(que(h))}</td>
       <td class="cambio">${Object.entries(h.cambios).map(([c, [a, b]]) => `${esc(CAMPOS[c] || c)}: ${a === null ? '' : `<s>${esc(valor(c, a))}</s> → `}<b>${esc(valor(c, b))}</b>`).join('<br>')}</td></tr>`).join('')}</tbody>`
     : '<tbody><tr><td class="empty">Todavía no hay cambios registrados.</td></tr></tbody>';
 }
+
+// ---------- Cupones ----------
+
+async function cargarCupones() {
+  const cs = await api('/cupones');
+  const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Montevideo' }); // AAAA-MM-DD en Uruguay
+  const estado = c => !c.activo ? 'Pausado' : c.vence && c.vence < hoy ? 'Vencido' : c.usos_max !== null && c.usos >= c.usos_max ? 'Agotado' : 'Activo';
+  $('#tablaCupones').innerHTML = cs.length ? `<thead><tr><th>Código</th><th>Descuento</th><th>Compra mínima</th><th>Usos</th><th>Vence</th><th>Estado</th><th>Activo</th></tr></thead><tbody>${cs.map(c => `
+    <tr data-codigo="${esc(c.codigo)}"><td><b>${esc(c.codigo)}</b></td><td>${c.tipo === 'porcentaje' ? c.valor + '%' : plata(c.valor)}</td>
+      <td>${c.minimo ? plata(c.minimo) : '—'}</td><td>${c.usos}${c.usos_max !== null ? ' / ' + c.usos_max : ''}</td>
+      <td>${c.vence ? ddmm(c.vence) + '/' + c.vence.slice(0, 4) : '—'}</td><td>${estado(c)}</td>
+      <td><label class="switch"><input type="checkbox" ${c.activo ? 'checked' : ''}> <span>${c.activo ? 'Sí' : 'No'}</span></label></td></tr>`).join('')}</tbody>`
+    : '<tbody><tr><td class="empty">Todavía no hay códigos. Creá el primero arriba.</td></tr></tbody>';
+  document.querySelectorAll('#tablaCupones input[type=checkbox]').forEach(cb => cb.addEventListener('change', async () => {
+    try {
+      await api('/cupones/' + encodeURIComponent(cb.closest('tr').dataset.codigo), { method: 'PATCH', body: { activo: cb.checked } });
+      toast(cb.checked ? 'Código activado ✓' : 'Código pausado ✓'); cargarCupones();
+    } catch (err) { toast(err.message); cb.checked = !cb.checked; }
+  }));
+}
+$('#formCupon').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target.elements, num = v => (v === '' ? null : Number(v));
+  try {
+    await api('/cupones', { method: 'POST', body: {
+      codigo: f.codigo.value, tipo: f.tipo.value, valor: Number(f.valor.value), minimo: num(f.minimo.value) ?? 0,
+      usosMax: num(f.usosMax.value), vence: f.vence.value || null,
+    } });
+    toast('Código creado ✓'); e.target.reset(); cargarCupones();
+  } catch (err) { toast(err.message); }
+});
 
 // ---------- Ajustes: datos para pagar ----------
 

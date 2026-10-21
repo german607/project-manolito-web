@@ -76,8 +76,14 @@
         <div class="cart-lines" id="resumenLineas"></div>
         <div class="cart-totals">
           <div><span>Subtotal</span><span id="totSub">$0</span></div>
+          <div id="rowDescuento" class="tot-desc" hidden><span id="lblDescuento">Descuento</span><span id="totDescuento">$0</span></div>
           <div id="rowRecargo" hidden><span>Recargo Mercado Pago</span><span id="totRecargo">$0</span></div>
           <div class="cart-total"><span>Total</span><b id="totTotal">$0</b></div>
+        </div>
+        <div class="cupon">
+          <label for="cuponInput">¿Tenés un código de descuento?</label>
+          <div class="cupon-row"><input id="cuponInput" maxlength="30" autocomplete="off" autocapitalize="characters" placeholder="Ej: BIENVENIDA10"><button type="button" class="btn btn-outline btn-sm" id="cuponAplicar">Aplicar</button></div>
+          <p class="cupon-msg" id="cuponMsg" role="status"></p>
         </div>
         <p class="cart-note">El envío se coordina aparte: la cadetería la paga quien recibe.</p>
         <button class="btn btn-green" id="confirmar" type="submit" form="checkout" style="width:100%;">Confirmar pedido</button>

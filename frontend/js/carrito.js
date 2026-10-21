@@ -17,8 +17,8 @@
     document.querySelectorAll('.cart-count').forEach(function(el){el.textContent=n;el.hidden=!n;});
   }
 
-  function cotizar(pago){
-    return fetch('/api/carrito',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:leer(),pago:pago||'transferencia'})})
+  function cotizar(pago,cupon){
+    return fetch('/api/carrito',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:leer(),pago:pago||'transferencia',cupon:cupon||undefined})})
       .then(function(r){if(!r.ok)throw new Error('No pudimos cargar los precios. Probá de nuevo en un rato.');return r.json();});
   }
 

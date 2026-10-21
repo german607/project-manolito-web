@@ -575,6 +575,14 @@
   .cart-totals > div[hidden]{display:none;}
   .cart-total{font-size:1.1rem;font-weight:800;}
   .cart-total b{font-family:'Baloo 2';color:var(--green-deep);font-size:1.4rem;}
+  .tot-desc{color:var(--green-deep);font-weight:700;}
+  .cupon{display:flex;flex-direction:column;gap:6px;font-size:.85rem;font-weight:700;}
+  .cupon-row{display:flex;gap:8px;}
+  .cupon-row input{flex:1;min-width:0;font:inherit;font-weight:700;text-transform:uppercase;border:1.5px solid rgba(63,58,52,.16);border-radius:12px;padding:9px 12px;background:var(--white);color:var(--ink);}
+  .cupon-row input:focus{outline:2px solid var(--green);outline-offset:1px;border-color:transparent;}
+  .cupon-msg{margin:0;font-size:.82rem;min-height:1em;}
+  .cupon-msg:empty{display:none;}
+  .cupon-msg.ok{color:var(--green-deep);} .cupon-msg.mal{color:#A63D3D;}
   .cart-note{font-size:.78rem;color:var(--ink-soft);text-align:center;}
 
   .cart-empty,.cart-done{max-width:520px;margin:0 auto;text-align:center;background:var(--white);border-radius:24px;padding:36px 24px;border:1px solid rgba(63,58,52,.08);display:flex;flex-direction:column;gap:14px;align-items:center;}

@@ -42,6 +42,11 @@
 - [ ] Etapa 2 (con volumen): conciliar con el estado de cuenta del banco (CSV) por referencia y monto
 - [ ] Etapa 3 (si hace falta): pago automático por transferencia instantánea / QR con un proveedor (ej. Toke)
 
+## Códigos de descuento
+- [x] Tabla `cupones` (porcentaje o monto fijo, compra mínima, tope de usos, vencimiento, activo). Se crean y pausan en el admin → Cupones (queda en el Historial)
+- [x] Checkout: campo "¿Tenés un código de descuento?". El servidor calcula el descuento; el recargo de Mercado Pago va sobre lo descontado. El pedido guarda `cupon` y `descuento` (migración 4)
+- [x] Usos: se cuentan al crear el pedido (en la misma transacción, sin pasarse del tope) y se devuelven si el pedido se cancela o vence. Con tests
+
 ## Trackeo
 - [x] **Historial de cambios** (tabla `historial`, pestaña Historial del admin): precios, stock, activo y fotos de productos y boxes; creación y cambios de estado de pedidos. Guarda quién (email del admin, cliente, `mercadopago`, `sistema`, `migración`), cuándo y el antes → después. Se escribe en la misma transacción que el cambio
 - [x] **Métricas de ventas** en el Resumen del admin: vendido, ticket promedio, más vendidos, medios de pago, formas de entrega y embudo visita → carrito → checkout → pedido → pago (carritos abandonados). Eventos anónimos nuevos: `carrito_agregar`, `checkout`

@@ -116,7 +116,22 @@ const ESQUEMA = `
     token_pago    text,                  -- sha256 del token para ver los datos de pago y subir el comprobante
     comprobante   text,                  -- clave del archivo privado (bucket o disco) del comprobante de pago
     comprobante_tipo   text,
-    comprobante_subido timestamptz       -- con comprobante, el pedido no vence: queda en revisión
+    comprobante_subido timestamptz,      -- con comprobante, el pedido no vence: queda en revisión
+    cupon         text,                  -- código de descuento usado (ver cupones)
+    descuento     integer NOT NULL DEFAULT 0
+  );
+
+  -- Códigos de descuento (admin → Cupones)
+  CREATE TABLE IF NOT EXISTS cupones (
+    codigo   text PRIMARY KEY,           -- en mayúsculas
+    tipo     text NOT NULL CHECK (tipo IN ('porcentaje','monto')),
+    valor    integer NOT NULL CHECK (valor > 0),
+    minimo   integer NOT NULL DEFAULT 0, -- compra mínima
+    usos_max integer,                    -- NULL = sin límite
+    usos     integer NOT NULL DEFAULT 0, -- pedidos no cancelados que lo usaron
+    vence    date,                       -- último día válido (hora de Uruguay); NULL = no vence
+    activo   boolean NOT NULL DEFAULT true,
+    creado   timestamptz NOT NULL DEFAULT now()
   );
   CREATE INDEX IF NOT EXISTS pedidos_pendientes ON pedidos (creado) WHERE estado = 'pendiente';
 
@@ -182,6 +197,10 @@ const MIGRACIONES: (() => Promise<void>)[] = [
     await q('ALTER TABLE boxes ADD COLUMN IF NOT EXISTS colores jsonb');
     for (const b of BOXES) await q('UPDATE boxes SET colores = $1 WHERE id = $2 AND colores IS NULL', [JSON.stringify(b.colores), b.id]);
   },
+  // 4: códigos de descuento en los pedidos (la tabla cupones la crea el esquema)
+  async () => {
+    await q('ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS cupon text, ADD COLUMN IF NOT EXISTS descuento integer NOT NULL DEFAULT 0');
+  },
 ];
 
 // Crea las tablas, aplica migraciones y carga el catálogo inicial si la base está vacía.
@@ -213,7 +232,7 @@ export async function iniciarDb() {
 // ---------- Historial ----------
 // Llamar dentro de la misma transacción que el cambio: así nunca queda un cambio sin registrar (ni al revés)
 export type Autor = string; // email del admin, 'cliente', 'sistema', 'mercadopago'
-export const registrar = (autor: Autor, entidad: 'producto' | 'box' | 'pedido' | 'ajustes', id: string | number, accion: string, cambios: Record<string, unknown> = {}) =>
+export const registrar = (autor: Autor, entidad: 'producto' | 'box' | 'pedido' | 'ajustes' | 'cupon', id: string | number, accion: string, cambios: Record<string, unknown> = {}) =>
   q('INSERT INTO historial (autor, entidad, entidad_id, accion, cambios) VALUES ($1, $2, $3, $4, $5)',
     [autor, entidad, String(id), accion, JSON.stringify(cambios)]);
 

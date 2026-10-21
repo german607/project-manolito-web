@@ -5,7 +5,7 @@
   var P=[
     {id:'trapito',n:'Trapito de apego',p:890,c:COL,img:IM.trapito,i:'<path d="M12 21s-7-4.35-9.5-8.5C.5 8.5 3 5 6.5 5c2 0 3.5 1 5.5 3 2-2 3.5-3 5.5-3C21 5 23.5 8.5 21.5 12.5 19 16.65 12 21 12 21z"/>'},
     {id:'zapatitos',n:'Zapatitos tejidos',p:490,c:COL,img:IM.zapatitos,i:'<path d="M4 6h7v6l7 2a2 2 0 0 1 2 2v2H4z"/><path d="M4 12h7"/>'},
-    {id:'babero',n:'Babero de algodón',p:190,bab:1,img:IM.babero,i:'<path d="M5 4c1 4 3 6 7 6s6-2 7-6"/><path d="M5 4l-1 9a8 8 0 0 0 16 0l-1-9"/>'},
+    {id:'babero',n:'Babero de algodón',p:190,c:COL4,est:1,bab:1,img:IM.babero,i:'<path d="M5 4c1 4 3 6 7 6s6-2 7-6"/><path d="M5 4l-1 9a8 8 0 0 0 16 0l-1-9"/>'},
     {id:'manta',n:'Manta de muselina',p:890,c:COL4,est:1,img:IM.manta,i:'<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 10h16M4 14h16"/>'},
     {id:'peine',n:'Set de peine bamboo',p:690,img:IM.peine,i:'<rect x="6" y="3" width="6" height="12" rx="3"/><path d="M9 15v6"/><path d="M16 4v17M14 5h4M14 9h4M14 13h4"/>'},
     {id:'sonajero',n:'Sonajero de tela',p:690,img:IM.sonajero,i:'<circle cx="12" cy="7" r="4"/><path d="M12 11v4"/><rect x="9" y="15" width="6" height="6" rx="3"/>'},

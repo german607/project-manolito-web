@@ -333,6 +333,7 @@ pedidosRouter.post('/mercadopago/pagar', async (req, res) => {
     throw new HttpError(502, 'No pudimos procesar el pago. Probá de nuevo en un rato.');
   }
   if (pago.status === 'rejected') rechazos.set(id, (rechazos.get(id) ?? 0) + 1);
+  if (pago.status !== 'approved') console.log(`Mercado Pago (tarjeta): pedido #${id} → pago ${pago.id} ${pago.status} (${pago.status_detail})`);
   const { pedido } = await procesarPago(String(pago.id)); // misma verificación que el webhook: moneda, monto, historial, mails
   res.json({
     estado: pedido?.estado ?? p.estado, pago: pago.status, detalle: pago.status_detail,

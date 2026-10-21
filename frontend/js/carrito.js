@@ -2,7 +2,8 @@
 // Los precios siempre los calcula el servidor (/api/carrito).
 (function(){
   var KEY='manolito-carrito';
-  function leer(){try{return JSON.parse(localStorage.getItem(KEY))||[];}catch(e){return [];}}
+  // Las boxes guardadas antes de que se eligiera color ya no se pueden comprar: se descartan solas
+  function leer(){try{return (JSON.parse(localStorage.getItem(KEY))||[]).filter(function(it){return it.tipo!=='box'||it.color;});}catch(e){return [];}}
   function guardar(items){
     try{localStorage.setItem(KEY,JSON.stringify(items));}catch(e){}
     contador(); window.dispatchEvent(new Event('carrito'));
@@ -129,6 +130,7 @@
     abrir:abrir,
     // Popup que bloquea la compra: lista lo que falta completar
     aviso:function(faltan){
+      if(!window.HTMLDialogElement){alert('Falta completar:\n- '+faltan.join('\n- '));return;} // navegadores viejos
       var d=document.getElementById('avisoFalta');
       if(!d){
         d=document.createElement('dialog'); d.id='avisoFalta'; d.className='aviso';

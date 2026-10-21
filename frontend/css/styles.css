@@ -455,6 +455,13 @@
   .pm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:14px;}
   .pm-img{position:relative;border:2px solid transparent;border-radius:16px;padding:0;background:#fff;cursor:pointer;overflow:hidden;box-shadow:0 6px 18px -12px rgba(63,58,52,.3);}
   .pm-img img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;}
+  /* Foto grande de un modelo de portachupete (porta.js) */
+  dialog.pz{margin:auto;border:0;padding:0;border-radius:20px;background:var(--white);max-width:min(560px,calc(100vw - 32px));overflow:visible;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+  dialog.pz::backdrop{background:rgba(40,36,32,.6);}
+  dialog.pz img{display:block;width:100%;max-height:calc(100vh - 140px);object-fit:contain;border-radius:20px 20px 0 0;}
+  dialog.pz p{margin:0;padding:12px 16px;text-align:center;font-family:'Baloo 2';font-weight:700;color:var(--green-deep);}
+  .pz-x{position:absolute;top:-14px;right:-14px;width:40px;height:40px;border-radius:50%;border:0;background:var(--white);color:var(--ink);font-size:1.6rem;line-height:1;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);}
+  @media(max-width:600px){.pz-x{top:8px;right:8px;}}
   .pm-img.sel{border-color:var(--green-deep);}
   .pm-tag{position:absolute;left:8px;bottom:8px;background:rgba(255,255,255,.92);border-radius:999px;padding:4px 10px;font-weight:800;font-size:.76rem;}
   .pm-img.sel .pm-tag{background:var(--green-deep);color:#fff;}

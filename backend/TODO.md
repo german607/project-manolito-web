@@ -52,7 +52,7 @@
 - [x] **Métricas de ventas** en el Resumen del admin: vendido, ticket promedio, más vendidos, medios de pago, formas de entrega y embudo visita → carrito → checkout → pedido → pago (carritos abandonados). Eventos anónimos nuevos: `carrito_agregar`, `checkout`
 - [x] **Bases por entorno**: el log de arranque muestra entorno y base; procedimiento en `DEPLOY.md`
 - [x] Migración 1: precios nuevos de las boxes y etiqueta PREMIUM (staging tenía los viejos porque `seed.ts` no actualiza bases existentes)
-- [ ] Crear el entorno de producción siguiendo `DEPLOY.md`
+- [x] Crear el entorno de producción siguiendo `DEPLOY.md` (manolitouy.com, base y bucket propios)
 - [ ] Historial: limpiar registros de más de 2 años si la tabla crece mucho (hoy no hace falta)
 
 ## Seguridad
@@ -81,19 +81,19 @@ la base no se puede descargar desde la web.
 - [ ] Achicar las fotos (hoy 3,7 MB por página completa): con un server chico, el ancho de banda se agota antes que la CPU
 
 ### Media
-- [ ] Headers de seguridad (`X-Powered-By` ya está oculto): agregar `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `frame-ancestors 'none'` / `X-Frame-Options: DENY` (evita que metan el admin en un iframe para engañar clicks)
+- [x] Headers de seguridad: `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `X-Frame-Options: DENY` y HSTS los pone Vercel (`frontend/vercel.json`); `X-Powered-By` oculto
 - [ ] Content-Security-Policy: permitir solo scripts propios y Google Fonts. Requiere sacar los 4 `onclick=` inline del `index.html` (ver frontend/TODO.md)
 - [x] Fotos subidas: se verifica que el archivo sea realmente una imagen (primeros bytes JPG/PNG/WebP), no solo el `Content-Type` que manda el navegador
 - [ ] `/api/eventos` acepta cualquier `ref` (probado: crea una fila por cada texto distinto, la base puede crecer sin límite). Aceptar solo páginas, boxes y productos que existen
 - [ ] Sin `RESEND_API_KEY` los mails, con nombre, teléfono y dirección del cliente, se escriben en la consola. En producción, fallar en vez de loguear datos personales
 - [ ] Verificar el header `Origin` en los requests del admin que modifican datos (defensa extra además de `SameSite`)
-- [ ] El registro de intentos de login crece sin límite en memoria: limpiar entradas vencidas
-- [ ] Webhook: rechazar notificaciones con `ts` viejo (ej. más de 10 minutos)
+- [x] El registro de intentos de login se limpia: con más de 10.000 entradas se borran las vencidas
+- [ ] Webhook: rechazar notificaciones con `ts` viejo (ej. más de 10 minutos). Hoy solo se verifica la firma
 
 ### Baja
 - [x] La página de "¡Pago recibido!" ya no cree lo que dice la URL: `POST /api/mercadopago/confirmar` consulta el pago a Mercado Pago y devuelve el estado real
 - [ ] Revisar dependencias automáticamente (Dependabot o `npm audit` en CI)
-- [ ] Backups de la base: activar los backups de Postgres en Railway y que no sean públicos (tienen datos personales de clientes)
+- [ ] Backups de la base: activar los backups de Postgres en Railway y que no sean públicos (tienen datos personales de clientes). Además, una copia diaria fuera de Railway (ver Resiliencia)
 - [ ] Logs de producción sin datos personales (nombre, teléfono, email, dirección)
 
 ## Fase 5b — Pendientes detectados al revisar el código
@@ -109,7 +109,8 @@ la base no se puede descargar desde la web.
 - [x] Pago de prueba de punta a punta en staging (pedido #7 aprobado por Mercado Pago y marcado pagado por el backend)
 - [x] **Pago con tarjeta dentro de la web** (Card Payment Brick): `POST /api/mercadopago/pagar` con el token del pedido; monto desde la base; mensajes claros de rechazo; tope de 5 rechazos por pedido y 10 intentos/10 min por IP. Con tests sobre la ruta real. "Pagar con mi cuenta de Mercado Pago" sigue yendo a Checkout Pro
 - [ ] Staging: cargar las "Credenciales de prueba" de la cuenta real (`MP_ACCESS_TOKEN` + `MP_PUBLIC_KEY`) y probar una tarjeta APRO en el formulario
-- [ ] Producción: credenciales de producción + webhook en modo producción
+- [x] Producción: credenciales de producción cargadas (el checkout ofrece Mercado Pago)
+- [ ] Producción: webhook en modo producción (`https://manolitouy.com/api/mercadopago/webhook`) + `MP_WEBHOOK_SECRET`
 - [ ] Si un banco exige 3DS (desafío de seguridad), sumar el Status Screen Brick para resolverlo (hoy no se pide 3DS)
 - [x] Mail al cliente cuando el pago se confirma (por Mercado Pago o marcado a mano en el admin)
 - [x] Las boxes no cobran $20 por letra extra en el portachupete (confirmado 2026-10-16); el recargo es solo para el portachupete suelto
@@ -124,19 +125,19 @@ la base no se puede descargar desde la web.
 ### Mantenimiento
 - [x] Compras simultáneas de la última unidad: el stock se bloquea por fila (`SELECT ... FOR UPDATE`), con test
 - [x] Migraciones de la base (tabla `migraciones`, lista `MIGRACIONES` en `db.ts`): para cambiar la estructura o el catálogo de una base que ya tiene datos, agregar una función al final de la lista
-- [ ] Tests de lo sensible: firma del webhook, login del admin, descuento y devolución de stock
-- [ ] Log de requests y errores (para saber qué pasó cuando algo falla en producción)
+- [x] Tests de lo sensible: firma del webhook, login del admin, descuento y devolución de stock, cupones
+- [ ] Log de requests y errores (para saber qué pasó cuando algo falla en producción). Hoy se loguean el arranque (entorno, base, Mercado Pago, bucket), los errores de Mercado Pago y los pagos con tarjeta no aprobados
 - [x] Sesiones en la base (tabla `sesiones`, token guardado como hash): reiniciar el server no desloguea a nadie
 - [x] Versión de Node fijada (`engines` >=20.12). Con Postgres (`pg`) ya no hay módulos nativos que compilar
 
 ## Fase 6 — Producción
-- [ ] Hosting en Railway: servicio web (este repo) + servicio Postgres. Config en `railway.json` y `package.json` de la raíz
+- [x] Hosting en Railway: servicio web (este repo) + servicio Postgres + bucket, por entorno (staging = `develop`, producción = `main`). Config en `railway.json` y `package.json` de la raíz
 - [x] Frontend en Vercel (`frontend/vercel.json`): reenvía `/api` y `/assets/img` a Railway. El dominio de Railway redirige a la web (`FRONTEND_URL`)
-- [ ] Configurar `TRUST_PROXY` (probablemente 2: Vercel + Railway) y verificarlo en `/api/admin/diagnostico` comparando con https://ifconfig.me
+- [ ] Configurar `TRUST_PROXY` (ver Configuración pendiente)
 - [ ] Quien le pegue directo a Railway puede inventar su IP y esquivar los límites por IP. El login ya tiene límite por cuenta; para pedidos y eventos, evaluar exigir un header secreto que solo ponga Vercel (Vercel Middleware)
-- [ ] Dominio propio con HTTPS (ej. `manolito.com.uy`)
+- [x] Dominio propio con HTTPS: `manolitouy.com` (`www` redirige al dominio sin www)
 - [x] Variables de entorno en `.env` (Mercado Pago, mail, contraseña del admin)
-- [ ] Backups automáticos del Postgres de Railway
+- [ ] Backups automáticos del Postgres de Railway (ver Seguridad → Baja y Resiliencia)
 
 ## Fase 7 — Legal
 - [ ] Ver con el contador la facturación electrónica (CFE)
@@ -146,10 +147,28 @@ la base no se puede descargar desde la web.
 - [x] Registro e ingreso de clientes (`/api/auth`), contraseñas con scrypt, mismo mensaje de error para email inexistente o clave incorrecta
 - [x] El admin ingresa por el mismo login: su cuenta sale de `ADMIN_EMAIL` + `ADMIN_PASSWORD` y se crea o actualiza al arrancar
 - [x] Los pedidos de clientes logueados quedan asociados a su cuenta (`pedidos.usuario_id`); comprar sin cuenta sigue permitido
-- [ ] **Recuperar contraseña** por mail (link con token que vence): necesita Resend configurado. Hasta entonces, un cliente que olvida la clave no puede recuperarla
+- [ ] **Recuperar contraseña** por mail (link con token que vence). Resend ya está configurado: se puede hacer. Hasta entonces, un cliente que olvida la clave no puede recuperarla
 - [ ] Historial de pedidos del cliente (`GET /api/cuenta/pedidos`)
 - [ ] Verificar el email al registrarse (hoy cualquiera puede registrarse con un email ajeno)
 
-## Más adelante (solo si hace falta)
-- Cupones de descuento
-- Control de stock automático
+## Resiliencia (caída de Railway del 2026-10-21: se revocaron las credenciales de los buckets y se pausaron los deploys)
+- [ ] Redeploy de staging y producción cuando Railway habilite los deploys, para tomar las credenciales nuevas del bucket (sin eso, las imágenes dan 502)
+- [ ] Imágenes del catálogo servidas por Vercel desde el repo; el bucket solo para las fotos subidas desde el admin (en otra carpeta, para no tapar las del repo). Así una caída de Railway no rompe la web
+- [ ] Copia diaria de la base fuera de Railway (ej. GitHub Action con `pg_dump` a Cloudflare R2 o Backblaze)
+- [ ] Copia de las imágenes del bucket fuera de Railway (`aws s3 sync`)
+- [ ] Checkout en modo degradado: si la API no responde, aviso "hacé tu pedido por Instagram" con el detalle del carrito para copiar
+- [ ] Monitoreo con alertas (UptimeRobot o Better Stack) sobre `/api/health` y una imagen
+
+## Configuración pendiente (Railway / paneles, sin código)
+- [ ] `TRUST_PROXY=2` en producción, verificado en `/api/admin/diagnostico` comparando con https://ifconfig.me
+- [ ] Datos bancarios reales en admin → Ajustes (staging y producción)
+- [ ] Staging: "Credenciales de prueba" de Mercado Pago de la cuenta real
+
+## Hecho que antes figuraba como "más adelante"
+- [x] Cupones de descuento (ver Códigos de descuento)
+- [x] Control de stock automático (stock por producto, las boxes descuentan sus componentes, se devuelve al cancelar)
+
+## Otros cambios hechos
+- [x] Boxes: el cliente elige el color (migración 3) y, en las que traen babero, el modelo de babero (N° 1 a N° 6). El servidor valida ambos
+- [x] "Armá tu box": el babero lleva color (o estampado) y modelo
+- [x] Mails al cliente en HTML con el diseño de la web (pedido recibido, pago confirmado, en camino, cancelado), con texto alternativo

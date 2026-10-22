@@ -9,6 +9,21 @@
   function letras(s){return (s||'').replace(/\s+/g,'').length;}
   function precio(){var l=letras(nameI.value);return BASE+(l>INC?(l-INC)*EXTRA:0);}
   function toast(m){toastE.textContent=m;toastE.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(function(){toastE.classList.remove('show');},4000);}
+  // Foto grande al tocar un modelo (el modelo también queda elegido); se cierra con la cruz, Esc o tocando afuera
+  var zoom;
+  function ver(src,titulo){
+    if(!window.HTMLDialogElement) return;
+    if(!zoom){
+      zoom=document.createElement('dialog'); zoom.className='pz';
+      zoom.innerHTML='<button type="button" class="pz-x" aria-label="Cerrar">&times;</button><img alt=""><p></p>';
+      zoom.querySelector('.pz-x').onclick=function(){zoom.close();};
+      zoom.addEventListener('click',function(e){if(e.target===zoom)zoom.close();});
+      document.body.appendChild(zoom);
+    }
+    zoom.querySelector('img').src=src; zoom.querySelector('img').alt='Portachupete '+titulo;
+    zoom.querySelector('p').textContent='Elegiste: '+titulo;
+    zoom.showModal();
+  }
   function pintar(){
     tabs.innerHTML=''; grid.innerHTML='';
     Object.keys(N).forEach(function(m){
@@ -20,7 +35,7 @@
       var im=document.createElement('img'); im.loading='lazy'; im.alt='Portachupete de '+mat.toLowerCase()+', modelo '+n;
       im.src='assets/img/portachupetes/modelos/'+mat.toLowerCase()+'-'+n+'.jpg'; f.appendChild(im);
       f.appendChild(el('span','pm-tag',(n===lam?'✓ ':'')+'N° '+n));
-      f.onclick=function(){lam=n;pintar();}; grid.appendChild(f);
+      f.onclick=function(){lam=n;pintar();ver(im.src,mat+' N° '+n);}; grid.appendChild(f);
     })(n);}
     selE.textContent=lam?'Elegiste: '+mat+' N° '+lam:'Todavía no elegiste modelo';
     selE.classList.toggle('ok',!!lam);

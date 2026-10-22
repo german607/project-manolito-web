@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { q, q1, tx, productos, boxes, registrar, STOCK_SQL, type Autor, type Producto, type Box } from './db.js';
 import { HttpError } from './errores.js';
+import { aplicarCupon, usarCupon, sumarUso, Codigo } from './cupones.js';
 import { enviarMail, plantilla, parrafo, caja, esc } from './mail.js';
 import { crearPreferencia, firmaValida, MOTIVOS_RECHAZO, obtenerPago, pagarConTarjeta, type PagoMP } from './mercadopago.js';
 import { crearToken, datosDePago, datosEnTexto, linkComprobante, MANUALES, pedidoConToken } from './pagosManuales.js';
@@ -10,6 +11,8 @@ export const ESTADOS = ['pendiente', 'pagado', 'enviado', 'entregado', 'cancelad
 const LETRAS_INCLUIDAS = 5;
 const PRECIO_LETRA_EXTRA = 20;
 const RECARGO_MERCADOPAGO = 0.10; // "Mercado Pago (con 10% adicional)" según las preguntas frecuentes
+// Modelos de babero: una foto por modelo (frontend/assets/img/baberos/babero-N.jpg). Se elige en las boxes que traen babero y en "Armá tu box"
+export const MODELOS_BABERO = Array.from({ length: 6 }, (_, i) => `N° ${i + 1}`);
 export const VENCE_HORAS = 2; // pedidos sin pagar se cancelan solos y liberan el stock
 const AVISO_VENCE = `Tenés ${VENCE_HORAS} horas para hacer el pago; si no, el pedido se cancela automáticamente.`;
 
@@ -20,7 +23,8 @@ export const Item = z.object({
   color: z.string().optional(),
   nombreBebe: z.string().trim().max(20).optional(),
   estampado: z.string().trim().max(60).optional(), // qué estampado quiere (solo con color "Estampada")
-  modelo: z.string().trim().max(120).optional(), // modelo de portachupete elegido (material, lámina, detalle)
+  modelo: z.string().trim().max(120).optional(), // modelo de portachupete elegido (material, lámina, detalle) o de babero
+  babero: z.string().optional(), // modelo de babero de una box que trae babero
   armado: z.string().trim().min(1).max(40).optional(), // id del armado de "Armá tu box" al que pertenece (lo genera el navegador)
 });
 
@@ -36,6 +40,7 @@ export const PedidoInput = z.object({
   entrega: z.enum(['cadeteria', 'pickup', 'interior']),
   pago: Pago,
   items: z.array(Item).min(1).max(30),
+  cupon: Codigo.optional(),
 }).refine(p => p.entrega === 'pickup' || !!p.cliente.direccion, {
   message: 'La dirección es obligatoria salvo para pick-up', path: ['cliente', 'direccion'],
 });
@@ -44,12 +49,13 @@ export type PedidoInput = z.infer<typeof PedidoInput>;
 export const CarritoInput = z.object({
   items: z.array(Item).max(30),
   pago: Pago.default('transferencia'),
+  cupon: z.string().max(40).optional(), // se valida al aplicarlo: un código mal escrito se informa, no rompe la cotización
 });
 
 // componentes = stock que mueve la línea. Pedidos viejos no lo tienen: ver stockDe()
 export type Linea = {
   tipo: 'producto' | 'box'; id: string; nombre: string; cantidad: number;
-  color?: string; estampado?: string; nombreBebe?: string; modelo?: string; armado?: string; precioUnitario: number; total: number;
+  color?: string; estampado?: string; nombreBebe?: string; modelo?: string; babero?: string; armado?: string; precioUnitario: number; total: number;
   componentes?: { id: string; cantidad: number }[];
 };
 
@@ -69,7 +75,7 @@ export function armadosIncompletos(items: z.infer<typeof Item>[]) {
 
 // Precio siempre calculado acá con los datos de la base: nunca se confía en el precio que manda el navegador
 export async function calcular(
-  input: { items: z.infer<typeof Item>[]; pago: z.infer<typeof Pago> },
+  input: { items: z.infer<typeof Item>[]; pago: z.infer<typeof Pago>; cupon?: string },
   buscarProducto: (id: string) => Promise<Producto | undefined>,
   buscarBox: (id: string) => Promise<Box | undefined>,
 ) {
@@ -82,11 +88,14 @@ export async function calcular(
       if (!it.nombreBebe && b.items.some(i => /portachupete/i.test(i))) throw new HttpError(400, `Falta el nombre del bebé para el portachupete de ${b.nombre}`);
       if (b.colores?.length && !it.color) throw new HttpError(400, `Elegí el color de ${b.nombre}`);
       if (it.color && !b.colores?.includes(it.color)) throw new HttpError(400, `Color "${it.color}" no disponible para ${b.nombre}`);
+      const conBabero = b.componentes.some(c => c.id === 'babero');
+      if (conBabero && !it.babero) throw new HttpError(400, `Elegí el modelo de babero de ${b.nombre}`);
+      if (it.babero && (!conBabero || !MODELOS_BABERO.includes(it.babero))) throw new HttpError(400, `Modelo de babero no disponible para ${b.nombre}`);
       // La box no cobra letras extra en el portachupete (confirmado con Manolito): solo el portachupete suelto
       for (const c of b.componentes) {
         if (c.stock !== null && c.stock < c.cantidad * it.cantidad) throw new HttpError(409, `${b.nombre}: no queda stock de ${c.nombre}`);
       }
-      lineas.push({ tipo: 'box', id: b.id, nombre: b.nombre, cantidad: it.cantidad, color: it.color, nombreBebe: it.nombreBebe, precioUnitario: b.precio, total: b.precio * it.cantidad,
+      lineas.push({ tipo: 'box', id: b.id, nombre: b.nombre, cantidad: it.cantidad, color: it.color, nombreBebe: it.nombreBebe, babero: it.babero, precioUnitario: b.precio, total: b.precio * it.cantidad,
         componentes: b.componentes.map(c => ({ id: c.id, cantidad: c.cantidad * it.cantidad })) });
       continue;
     }
@@ -99,25 +108,28 @@ export async function calcular(
     if (it.estampado && it.color !== 'Estampada') throw new HttpError(400, `El estampado solo va con el color Estampada`);
     if (it.nombreBebe && !p.personalizable) throw new HttpError(400, `${p.nombre} no lleva nombre`);
     if (!it.nombreBebe && p.personalizable) throw new HttpError(400, `Falta el nombre del bebé para ${p.nombre}`);
+    if (p.id === 'babero' && !MODELOS_BABERO.includes(it.modelo ?? '')) throw new HttpError(400, `Elegí el modelo de ${p.nombre}`);
     if (p.stock !== null && p.stock < it.cantidad) throw new HttpError(409, p.stock ? `Quedan solo ${p.stock} de ${p.nombre}` : `${p.nombre} está sin stock`);
     const extra = p.personalizable ? Math.max(0, letras(it.nombreBebe) - LETRAS_INCLUIDAS) * PRECIO_LETRA_EXTRA : 0;
     const unit = p.precio + extra;
-    lineas.push({ tipo: 'producto', id: p.id, nombre: p.nombre, cantidad: it.cantidad, color: it.color, estampado: it.estampado, nombreBebe: it.nombreBebe, modelo: p.personalizable ? it.modelo : undefined, armado: it.armado, precioUnitario: unit, total: unit * it.cantidad,
+    lineas.push({ tipo: 'producto', id: p.id, nombre: p.nombre, cantidad: it.cantidad, color: it.color, estampado: it.estampado, nombreBebe: it.nombreBebe, modelo: p.personalizable || p.id === 'babero' ? it.modelo : undefined, armado: it.armado, precioUnitario: unit, total: unit * it.cantidad,
       componentes: [{ id: p.id, cantidad: it.cantidad }] });
   }
-  return { lineas, ...totales(lineas, input.pago) };
+  const subtotal = lineas.reduce((s, l) => s + l.total, 0);
+  const { cupon, descuento } = input.cupon ? await aplicarCupon(input.cupon, subtotal) : { cupon: undefined, descuento: 0 };
+  return { lineas, cupon, ...totales(subtotal, descuento, input.pago) };
 }
 
-function totales(lineas: Linea[], pago: z.infer<typeof Pago>) {
-  const subtotal = lineas.reduce((s, l) => s + l.total, 0);
-  const recargo = pago === 'mercadopago' ? Math.round(subtotal * RECARGO_MERCADOPAGO) : 0;
-  return { subtotal, recargo, total: subtotal + recargo };
+// El recargo de Mercado Pago va sobre lo que se paga, ya con el descuento
+function totales(subtotal: number, descuento: number, pago: z.infer<typeof Pago>) {
+  const recargo = pago === 'mercadopago' ? Math.round((subtotal - descuento) * RECARGO_MERCADOPAGO) : 0;
+  return { subtotal, descuento, recargo, total: subtotal - descuento + recargo };
 }
 
 export type Pedido = {
   id: number; creado: Date; estado: (typeof ESTADOS)[number]; nombre: string; telefono: string;
   email: string; direccion: string | null; entrega: string; pago: string; items: Linea[];
-  subtotal: number; recargo: number; total: number; mp_payment_id: string | null; usuario_id: number | null;
+  subtotal: number; descuento: number; cupon: string | null; recargo: number; total: number; mp_payment_id: string | null; usuario_id: number | null;
   token_pago: string | null; comprobante: string | null; comprobante_tipo: string | null; comprobante_subido: Date | null;
 };
 
@@ -129,7 +141,8 @@ export const buscarPedido = (id: number, bloquear = false) =>
 export const numerarArmados = (items: Linea[]) => [...new Set(items.map(l => l.armado).filter(Boolean))] as string[];
 
 const resumen = (p: Pedido) => [
-  ...p.items.map(l => `- ${l.cantidad} x ${l.nombre}${l.color ? ` (${l.color}${l.estampado ? `: ${l.estampado}` : ''})` : ''}${l.nombreBebe ? ` "${l.nombreBebe}"` : ''}${l.modelo ? ` [Modelo: ${l.modelo}]` : ''}${l.armado ? ` (Armado ${numerarArmados(p.items).indexOf(l.armado) + 1})` : ''}: $${l.total}`),
+  ...p.items.map(l => `- ${l.cantidad} x ${l.nombre}${l.color ? ` (${l.color}${l.estampado ? `: ${l.estampado}` : ''})` : ''}${l.nombreBebe ? ` "${l.nombreBebe}"` : ''}${l.modelo ? ` [Modelo: ${l.modelo}]` : ''}${l.babero ? ` [Babero: ${l.babero}]` : ''}${l.armado ? ` (Armado ${numerarArmados(p.items).indexOf(l.armado) + 1})` : ''}: $${l.total}`),
+  p.descuento ? `Descuento (${p.cupon}): -$${p.descuento}` : '',
   p.recargo ? `Recargo Mercado Pago: $${p.recargo}` : '',
   `Total: $${p.total}`,
   `Entrega: ${p.entrega}${p.direccion ? ` — ${p.direccion}` : ''} (el envío se coordina aparte)`,
@@ -143,10 +156,11 @@ const resumenHtml = (p: Pedido) => {
     `<tr><td style="padding:10px 0;border-bottom:1px solid #F3E6E0;font-size:14px;line-height:1.45;color:#3F3A34;${fuerte ? 'font-weight:700;font-size:16px;border-bottom:0' : ''}">${izq}</td>` +
     `<td align="right" valign="top" style="padding:10px 0 10px 12px;border-bottom:1px solid #F3E6E0;font-size:14px;white-space:nowrap;color:#3F3A34;font-weight:700;${fuerte ? 'font-size:16px;border-bottom:0' : ''}">${der}</td></tr>`;
   const detalle = (l: Linea) => [l.armado ? `Armado ${armados.indexOf(l.armado) + 1}` : '', l.color ? (l.estampado ? `Estampada: ${l.estampado}` : l.color) : '',
-    l.nombreBebe ? `“${l.nombreBebe}”` : '', l.modelo ? `Modelo: ${l.modelo}` : ''].filter(Boolean).join(' · ');
+    l.nombreBebe ? `“${l.nombreBebe}”` : '', l.modelo ? `Modelo: ${l.modelo}` : '', l.babero ? `Babero: ${l.babero}` : ''].filter(Boolean).join(' · ');
   return `<div style="font-family:'Baloo 2','Trebuchet MS',Helvetica,Arial,sans-serif;font-size:17px;font-weight:700;color:#3F3A34;margin:8px 0 2px">Tu pedido #${p.id}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px">
 ${p.items.map(l => fila(`<b>${l.cantidad > 1 ? `${l.cantidad} × ` : ''}${esc(l.nombre)}</b>${detalle(l) ? `<br><span style="color:#7A6F62;font-size:13px">${esc(detalle(l))}</span>` : ''}`, `$${l.total}`)).join('')}
+${p.descuento ? fila(`Descuento (${esc(p.cupon)})`, `-$${p.descuento}`) : ''}
 ${p.recargo ? fila('Recargo Mercado Pago', `$${p.recargo}`) : ''}
 ${fila('Total', `$${p.total}`, true)}
 </table>
@@ -183,8 +197,8 @@ export async function cambiarEstado(id: number, estado: Pedido['estado'], mpPaym
   const p = await tx(async () => {
     const antes = await buscarPedido(id, true);
     if (!antes) throw new HttpError(404, 'Pedido no encontrado');
-    if (estado === 'cancelado' && antes.estado !== 'cancelado') await devolverStock(antes.items);
-    if (antes.estado === 'cancelado' && estado !== 'cancelado') await descontarStock(antes.items);
+    if (estado === 'cancelado' && antes.estado !== 'cancelado') { await devolverStock(antes.items); if (antes.cupon) await sumarUso(antes.cupon, -1); }
+    if (antes.estado === 'cancelado' && estado !== 'cancelado') { await descontarStock(antes.items); if (antes.cupon) await sumarUso(antes.cupon, 1); }
     if (antes.estado !== estado) await registrar(autor, 'pedido', id, 'estado', { estado: [antes.estado, estado] });
     return (await q1<Pedido>('UPDATE pedidos SET estado = $1, mp_payment_id = COALESCE($2, mp_payment_id) WHERE id = $3 RETURNING *',
       [estado, mpPaymentId ?? null, id]))!;
@@ -199,12 +213,13 @@ export async function cambiarEstado(id: number, estado: Pedido['estado'], mpPaym
 
 export const insertar = (input: PedidoInput, c: Awaited<ReturnType<typeof calcular>>, usuarioId: number | null = null, autor: Autor = 'cliente') => tx(async () => {
   await descontarStock(c.lineas);
+  if (c.cupon) await usarCupon(c.cupon);
   const { cliente } = input;
-  const r = await q1<{ id: number }>(`INSERT INTO pedidos (nombre, telefono, email, direccion, entrega, pago, items, subtotal, recargo, total, usuario_id)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`, [
+  const r = await q1<{ id: number }>(`INSERT INTO pedidos (nombre, telefono, email, direccion, entrega, pago, items, subtotal, descuento, cupon, recargo, total, usuario_id)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id`, [
     cliente.nombre, cliente.telefono, cliente.email, cliente.direccion ?? null, input.entrega, input.pago,
-    JSON.stringify(c.lineas), c.subtotal, c.recargo, c.total, usuarioId]);
-  await registrar(autor, 'pedido', r!.id, 'crear', { total: [null, c.total], pago: [null, input.pago] });
+    JSON.stringify(c.lineas), c.subtotal, c.descuento, c.cupon ?? null, c.recargo, c.total, usuarioId]);
+  await registrar(autor, 'pedido', r!.id, 'crear', { total: [null, c.total], pago: [null, input.pago], ...(c.cupon ? { cupon: [null, c.cupon] } : {}) });
   return r!.id;
 });
 
@@ -228,7 +243,7 @@ export const pedidosRouter = Router();
 // Cotiza el carrito sin crear el pedido. Cada ítem se valida por separado para poder marcar
 // cuál falla (sin stock, desactivado...) sin perder el resto del carrito.
 pedidosRouter.post('/carrito', async (req, res) => {
-  const { items, pago } = CarritoInput.parse(req.body);
+  const { items, pago, cupon } = CarritoInput.parse(req.body);
   const lineas: (Linea & { i: number; foto: string | null })[] = [];
   const avisos: { i: number; nombre?: string; error: string }[] = [];
   const incompletos = armadosIncompletos(items);
@@ -242,7 +257,12 @@ pedidosRouter.post('/carrito', async (req, res) => {
       avisos.push({ i, nombre: item?.nombre, error: e.message });
     }
   }
-  res.json({ lineas, avisos, ...totales(lineas, pago), mercadopago: !!process.env.MP_ACCESS_TOKEN, mpPublicKey: process.env.MP_PUBLIC_KEY ?? null });
+  const subtotal = lineas.reduce((s, l) => s + l.total, 0);
+  let descuento = 0, cuponError: string | undefined;
+  if (cupon) {
+    try { ({ descuento } = await aplicarCupon(cupon, subtotal)); } catch (e) { if (!(e instanceof HttpError)) throw e; cuponError = e.message; }
+  }
+  res.json({ lineas, avisos, ...totales(subtotal, descuento, pago), cupon: cupon && !cuponError ? cupon.trim().toUpperCase() : undefined, cuponError, mercadopago: !!process.env.MP_ACCESS_TOKEN, mpPublicKey: process.env.MP_PUBLIC_KEY ?? null });
 });
 
 pedidosRouter.post('/pedidos', async (req, res) => {

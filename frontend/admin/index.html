@@ -21,6 +21,7 @@
       <button role="tab" data-tab="productos">Productos</button>
       <button role="tab" data-tab="boxes">Boxes</button>
       <button role="tab" data-tab="pedidos">Pedidos</button>
+      <button role="tab" data-tab="cupones">Cupones</button>
       <button role="tab" data-tab="historial">Historial</button>
       <button role="tab" data-tab="ajustes">Ajustes</button>
     </nav>
@@ -89,11 +90,28 @@
     </form>
   </section>
 
+  <section class="panel" id="tab-cupones" hidden>
+    <div class="row-head"><h2>Códigos de descuento</h2><p class="hint">El cliente lo escribe en el checkout. Un uso se cuenta al hacer el pedido y se devuelve si el pedido se cancela o vence.</p></div>
+    <form class="card form-ajustes" id="formCupon">
+      <h3>Nuevo código</h3>
+      <div class="campos2">
+        <label>Código<input name="codigo" required maxlength="30" pattern="[A-Za-z0-9_\-]{3,30}" placeholder="BIENVENIDA10" style="text-transform:uppercase"></label>
+        <label>Tipo de descuento<select name="tipo"><option value="porcentaje">Porcentaje (%)</option><option value="monto">Monto fijo ($)</option></select></label>
+        <label>Descuento<input name="valor" type="number" required min="1" step="1" placeholder="10"></label>
+        <label><span>Compra mínima ($) <small>(opcional)</small></span><input name="minimo" type="number" min="0" step="1" placeholder="0"></label>
+        <label><span>Cantidad de usos <small>(vacío = sin límite)</small></span><input name="usosMax" type="number" min="1" step="1"></label>
+        <label><span>Válido hasta <small>(vacío = no vence)</small></span><input name="vence" type="date"></label>
+      </div>
+      <button class="btn" type="submit">Crear código</button>
+    </form>
+    <div class="card table-wrap"><table id="tablaCupones"></table></div>
+  </section>
+
   <section class="panel" id="tab-historial" hidden>
     <div class="row-head">
       <h2>Historial de cambios</h2>
       <select id="filtroHistorial" aria-label="Filtrar historial">
-        <option value="">Todo</option><option value="producto">Productos</option><option value="box">Boxes</option><option value="pedido">Pedidos</option>
+        <option value="">Todo</option><option value="producto">Productos</option><option value="box">Boxes</option><option value="pedido">Pedidos</option><option value="cupon">Cupones</option>
       </select>
     </div>
     <div class="card table-wrap"><table id="tablaHistorial"></table></div>

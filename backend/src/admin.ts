@@ -8,6 +8,7 @@ import { HOY_UY, ZONA_UY } from './publico.js';
 import { soloAdmin } from './auth.js';
 import { guardarImagen, leerPrivado } from './imagenes.js';
 import { AjustesPagos, guardarAjustesPagos, leerAjustesPagos } from './pagosManuales.js';
+import { NuevoCupon, listarCupones } from './cupones.js';
 
 export const FRONTEND = fileURLToPath(new URL('../../frontend', import.meta.url));
 
@@ -176,11 +177,39 @@ adminRouter.put('/ajustes/pagos', async (req, res) => {
   res.json(valor);
 });
 
+// ---------- Cupones (códigos de descuento) ----------
+
+adminRouter.get('/cupones', async (_req, res) => {
+  res.json(await listarCupones());
+});
+adminRouter.post('/cupones', async (req, res) => {
+  const c = NuevoCupon.parse(req.body);
+  await tx(async () => {
+    const r = await q(`INSERT INTO cupones (codigo, tipo, valor, minimo, usos_max, vence) VALUES ($1, $2, $3, $4, $5, $6)
+      ON CONFLICT (codigo) DO NOTHING RETURNING codigo`, [c.codigo, c.tipo, c.valor, c.minimo, c.usosMax, c.vence]);
+    if (!r.length) throw new HttpError(409, `Ya existe el código ${c.codigo}`);
+    await registrar(res.locals.usuario.email, 'cupon', c.codigo, 'crear',
+      { descuento: [null, c.tipo === 'porcentaje' ? `${c.valor}%` : `$${c.valor}`], minimo: [null, c.minimo], usosMax: [null, c.usosMax], vence: [null, c.vence] });
+  });
+  res.status(201).json(c);
+});
+// Se pausa / reactiva; no se borra (los pedidos guardan qué código usaron)
+adminRouter.patch('/cupones/:codigo', async (req, res) => {
+  const { activo } = z.object({ activo: z.boolean() }).strict().parse(req.body);
+  await tx(async () => {
+    const antes = await q1<{ activo: boolean }>('SELECT activo FROM cupones WHERE codigo = $1 FOR UPDATE', [req.params.codigo]);
+    if (!antes) throw new HttpError(404, 'No encontrado');
+    await q('UPDATE cupones SET activo = $1 WHERE codigo = $2', [activo, req.params.codigo]);
+    if (antes.activo !== activo) await registrar(res.locals.usuario.email, 'cupon', req.params.codigo, 'editar', { activo: [antes.activo, activo] });
+  });
+  res.json({ ok: true });
+});
+
 // ---------- Historial ----------
 
 adminRouter.get('/historial', async (req, res) => {
   const { entidad, id } = z.object({
-    entidad: z.enum(['producto', 'box', 'pedido', 'ajustes']).optional().catch(undefined),
+    entidad: z.enum(['producto', 'box', 'pedido', 'ajustes', 'cupon']).optional().catch(undefined),
     id: z.string().max(60).optional().catch(undefined),
   }).parse(req.query);
   const filtros: string[] = [], params: unknown[] = [];

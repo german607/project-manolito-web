@@ -74,7 +74,7 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
   function ico(p){return '<svg width="22" height="22" viewBox="0 0 24 24" '+S+'>'+p+'</svg>';}
   var P={
     babero:{i:ico('<path d="M5 4c1 4 3 6 7 6s6-2 7-6"/><path d="M5 4l-1 9a8 8 0 0 0 16 0l-1-9"/>'),d:'Babero de muselina de algodón, suave e hipoalergénico, con broche ajustable.'},
-    porta:{i:ico('<circle cx="12" cy="5" r="2.5"/><path d="M12 7.5V10"/><circle cx="7" cy="14" r="2"/><circle cx="12" cy="16" r="2"/><circle cx="17" cy="14" r="2"/>'),d:'Con el nombre de tu bebé (hasta 5 letras), en silicona libre de BPA o madera natural.',n:'<a class="bm-link" href="#portachupetes">Ver modelos en la sección Portachupetes</a>'},
+    porta:{i:ico('<circle cx="12" cy="5" r="2.5"/><path d="M12 7.5V10"/><circle cx="7" cy="14" r="2"/><circle cx="12" cy="16" r="2"/><circle cx="17" cy="14" r="2"/>'),d:'Con el nombre de tu bebé, en silicona libre de BPA o madera natural.',n:'<a class="bm-link" href="#portachupetes">Ver modelos en la sección Portachupetes</a>'},
     zapatitos:{i:ico('<path d="M4 6h7v6l7 2a2 2 0 0 1 2 2v2H4z"/><path d="M4 12h7"/>'),d:'Zapatitos tejidos con carita, suaves y abrigados para los primeros días.',n:'<span class="bm-note">Colores disponibles: rosa, celeste y beige.</span>'},
     sonajero:{i:ico('<circle cx="12" cy="8" r="4.5"/><path d="M12 12.5V16"/><circle cx="12" cy="19" r="2.5"/>'),d:'Sonajero de tela suave y seguro, ideal para estimular y calmar al bebé.'},
     trapito:{i:ico('<path d="M12 21s-7-4.35-9.5-8.5C.5 8.5 3 5 6.5 5c2 0 3.5 1 5.5 3 2-2 3.5-3 5.5-3C21 5 23.5 8.5 21.5 12.5 19 16.65 12 21 12 21z"/>'),d:'Trapito de apego de muselina, suave y abrazable, su compañero para dormir.',n:'<span class="bm-note">Colores disponibles: rosa, celeste y beige.</span>'},

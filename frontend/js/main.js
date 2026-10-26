@@ -17,18 +17,6 @@ document.addEventListener('click',function(e){if(e.target.closest('a[href*="inst
   document.addEventListener('keydown',function(e){if(e.key==='Escape')abrir(false);});
 })();
 
-// Selector de modelo de babero: una foto por modelo (el servidor valida "N° 1" a "N° 6")
-window.elegirBabero=function(cont,actual,alElegir){
-  cont.innerHTML='';
-  for(var n=1;n<=6;n++){(function(n){
-    var v='N° '+n, b=document.createElement('button'); b.type='button'; b.className='pm-img'+(v===actual?' sel':'');
-    b.setAttribute('aria-label','Elegir babero modelo '+n);
-    b.innerHTML='<img alt="Babero de algodón, modelo '+n+'" loading="lazy" src="assets/img/baberos/babero-'+n+'.jpg"><span class="pm-tag">'+(v===actual?'✓ ':'')+v+'</span>';
-    b.addEventListener('click',function(){alElegir(v);window.elegirBabero(cont,v,alElegir);});
-    cont.appendChild(b);
-  })(n);}
-};
-
 // Selector de modelo de portachupete: botones Silicona / Madera; cada uno abre una ventana con sus fotos.
 // Se toca una y "OK" la deja elegida ("Silicona N° 4")
 window.elegirPorta=function(cont,actual,alElegir){
@@ -172,7 +160,7 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
   function faltanBox(){
     var f=[];
     if(!document.getElementById('bmColorWrap').hidden&&!colorSel) f.push('El color de la box');
-    if(!document.getElementById('bmBabWrap').hidden&&!baberoSel) f.push('El modelo de babero');
+    if(!document.getElementById('bmBabWrap').hidden&&!baberoSel) f.push('El color del babero');
     if(!document.getElementById('bmPortaWrap').hidden&&!portaSel) f.push('El modelo del portachupete');
     if(!document.getElementById('bmNameWrap').hidden&&!document.getElementById('bmName').value.trim()) f.push('El nombre del bebé para el portachupete');
     return f;
@@ -211,7 +199,13 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
       cs.appendChild(c);
     });
     document.getElementById('bmColorWrap').hidden=!vistos.length;
-    baberoSel=''; elegirBabero(document.getElementById('bmBab'),'',function(v){baberoSel=v;marcarListo();});
+    // Color del babero: los mismos que en "Armá tu box"
+    baberoSel=''; var cb=document.getElementById('bmBab'); cb.innerHTML='';
+    ['Rosa','Celeste','Verde'].forEach(function(cn){
+      var c=document.createElement('button'); c.type='button'; c.className='chip'; c.textContent=cn;
+      c.addEventListener('click',function(){baberoSel=cn;[].forEach.call(cb.children,function(x){x.classList.toggle('sel',x===c);});marcarListo();});
+      cb.appendChild(c);
+    });
     document.getElementById('bmBabWrap').hidden=!/babero/i.test(card.querySelector('.box-items').textContent);
     portaSel=''; elegirPorta(document.getElementById('bmPorta'),'',function(v){portaSel=v;marcarListo();});
     document.getElementById('bmPortaWrap').hidden=!/portachupete/i.test(card.querySelector('.box-items').textContent);

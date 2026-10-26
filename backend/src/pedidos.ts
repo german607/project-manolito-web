@@ -11,8 +11,6 @@ export const ESTADOS = ['pendiente', 'pagado', 'enviado', 'entregado', 'cancelad
 const LETRAS_INCLUIDAS = 5;
 const PRECIO_LETRA_EXTRA = 20;
 const RECARGO_MERCADOPAGO = 0.10; // "Mercado Pago (con 10% adicional)" según las preguntas frecuentes
-// Modelos de babero: una foto por modelo (frontend/assets/img/baberos/babero-N.jpg). Se elige en las boxes que traen babero
-export const MODELOS_BABERO = Array.from({ length: 6 }, (_, i) => `N° ${i + 1}`);
 export const VENCE_HORAS = 2; // pedidos sin pagar se cancelan solos y liberan el stock
 const AVISO_VENCE = `Tenés ${VENCE_HORAS} horas para hacer el pago; si no, el pedido se cancela automáticamente.`;
 
@@ -24,7 +22,7 @@ export const Item = z.object({
   nombreBebe: z.string().trim().max(20).optional(),
   estampado: z.string().trim().max(60).optional(), // qué estampado quiere (solo con color "Estampada")
   modelo: z.string().trim().max(120).optional(), // modelo de portachupete elegido (material, lámina, detalle) o de babero
-  babero: z.string().optional(), // modelo de babero de una box que trae babero
+  babero: z.string().optional(), // color del babero de una box que trae babero
   armado: z.string().trim().min(1).max(40).optional(), // id del armado de "Armá tu box" al que pertenece (lo genera el navegador)
 });
 
@@ -89,8 +87,9 @@ export async function calcular(
       if (b.colores?.length && !it.color) throw new HttpError(400, `Elegí el color de ${b.nombre}`);
       if (it.color && !b.colores?.includes(it.color)) throw new HttpError(400, `Color "${it.color}" no disponible para ${b.nombre}`);
       const conBabero = b.componentes.some(c => c.id === 'babero');
-      if (conBabero && !it.babero) throw new HttpError(400, `Elegí el modelo de babero de ${b.nombre}`);
-      if (it.babero && (!conBabero || !MODELOS_BABERO.includes(it.babero))) throw new HttpError(400, `Modelo de babero no disponible para ${b.nombre}`);
+      // El babero de la box se elige por color, entre los del babero suelto
+      if (conBabero && !it.babero) throw new HttpError(400, `Elegí el color del babero de ${b.nombre}`);
+      if (it.babero && (!conBabero || !(await buscarProducto('babero'))?.colores?.includes(it.babero))) throw new HttpError(400, `Color de babero no disponible para ${b.nombre}`);
       const conPorta = b.componentes.some(c => c.id === 'porta');
       if (conPorta && !it.modelo) throw new HttpError(400, `Elegí el modelo del portachupete de ${b.nombre}`);
       if (it.modelo && !conPorta) throw new HttpError(400, `${b.nombre} no trae portachupete`);

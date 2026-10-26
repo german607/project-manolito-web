@@ -30,7 +30,7 @@ test('color Estampada pide contar qué estampado', async () => {
 });
 
 test('suma productos, boxes y cantidades', async () => {
-  const c = await cotizar([{ tipo: 'producto', id: 'babero', armado: 'a1', cantidad: 2 }, { tipo: 'box', id: 'mini-box', modelo: 'Silicona N° 1', babero: 'N° 2', color: 'Rosa', nombreBebe: 'Ema' }]);
+  const c = await cotizar([{ tipo: 'producto', id: 'babero', armado: 'a1', cantidad: 2 }, { tipo: 'box', id: 'mini-box', modelo: 'Silicona N° 1', babero: 'Celeste', color: 'Rosa', nombreBebe: 'Ema' }]);
   const [babero, mini] = [(await productos.uno('babero'))!.precio, (await boxes.una('mini-box'))!.precio]; // leídos de la base: no se rompe si cambian los precios
   assert.equal(c.subtotal, babero * 2 + mini);
 });
@@ -47,13 +47,13 @@ test('rechaza color inexistente y producto desconocido', async () => {
 
 test('el portachupete y las boxes que lo traen piden el nombre del bebé', async () => {
   await assert.rejects(cotizar([{ tipo: 'producto', id: 'porta' }]), /nombre del bebé/);
-  await assert.rejects(cotizar([{ tipo: 'box', id: 'mini-box', modelo: 'Silicona N° 1', babero: 'N° 2', color: 'Rosa' }]), /nombre del bebé/);
+  await assert.rejects(cotizar([{ tipo: 'box', id: 'mini-box', modelo: 'Silicona N° 1', babero: 'Celeste', color: 'Rosa' }]), /nombre del bebé/);
   await assert.rejects(cotizar([{ tipo: 'box', id: 'bienvenida', modelo: 'Silicona N° 1', color: 'Rosa' }]), /nombre del bebé/);
   await assert.doesNotReject(cotizar([{ tipo: 'box', id: 'bienvenida', modelo: 'Silicona N° 1', color: 'Rosa', nombreBebe: 'Ema' }]));
 });
 
 test('las boxes no cobran letras extra en el portachupete', async () => {
-  const c = await cotizar([{ tipo: 'box', id: 'mini-box', modelo: 'Silicona N° 1', babero: 'N° 2', color: 'Rosa', nombreBebe: 'Maximiliano' }]);
+  const c = await cotizar([{ tipo: 'box', id: 'mini-box', modelo: 'Silicona N° 1', babero: 'Celeste', color: 'Rosa', nombreBebe: 'Maximiliano' }]);
   assert.equal(c.total, (await boxes.una('mini-box'))!.precio);
 });
 
@@ -81,7 +81,7 @@ test('un pedido sin pagar vence a las 2 horas, devuelve el stock y se puede reac
 test('las boxes descuentan y devuelven el stock de los productos que traen', async () => {
   await setStock(['babero', 'porta'], 5);
   // Mini box (babero + portachupete) x2 y un portachupete suelto: el portachupete baja 3
-  const id = await comprar([{ tipo: 'box', id: 'mini-box', modelo: 'Silicona N° 1', babero: 'N° 2', color: 'Rosa', cantidad: 2, nombreBebe: 'Ema' }, { tipo: 'producto', id: 'porta', nombreBebe: 'Leo' }]);
+  const id = await comprar([{ tipo: 'box', id: 'mini-box', modelo: 'Silicona N° 1', babero: 'Celeste', color: 'Rosa', cantidad: 2, nombreBebe: 'Ema' }, { tipo: 'producto', id: 'porta', nombreBebe: 'Leo' }]);
   assert.deepEqual([await stock('babero'), await stock('porta')], [3, 2]);
 
   await cambiarEstado(id, 'cancelado');
@@ -90,14 +90,14 @@ test('las boxes descuentan y devuelven el stock de los productos que traen', asy
   // Sin stock de un producto, la box figura agotada y no se puede comprar
   await setStock(['babero'], 0);
   assert.equal((await boxes.una('mini-box'))!.agotada, true);
-  await assert.rejects(cotizar([{ tipo: 'box', id: 'mini-box', modelo: 'Silicona N° 1', babero: 'N° 2', color: 'Rosa', nombreBebe: 'Ema' }]), /no queda stock de Babero/);
+  await assert.rejects(cotizar([{ tipo: 'box', id: 'mini-box', modelo: 'Silicona N° 1', babero: 'Celeste', color: 'Rosa', nombreBebe: 'Ema' }]), /no queda stock de Babero/);
   assert.equal((await boxes.una('bienvenida'))!.agotada, false, 'la Bienvenida no trae babero');
 
   // Pedido viejo (sin `componentes`) de una box: al cancelarlo no inventa stock
   await setStock(['babero'], 5);
   const viejo = await q1<{ id: number }>(`INSERT INTO pedidos (nombre, telefono, email, entrega, pago, items, subtotal, total)
     VALUES ('Ana', '099', 'a@a.com', 'pickup', 'transferencia', $1, 890, 890) RETURNING id`,
-    [JSON.stringify([{ tipo: 'box', id: 'mini-box', modelo: 'Silicona N° 1', babero: 'N° 2', color: 'Rosa', nombre: 'Mini box', cantidad: 1, precioUnitario: 890, total: 890 }])]);
+    [JSON.stringify([{ tipo: 'box', id: 'mini-box', modelo: 'Silicona N° 1', babero: 'Celeste', color: 'Rosa', nombre: 'Mini box', cantidad: 1, precioUnitario: 890, total: 890 }])]);
   await cambiarEstado(viejo!.id, 'cancelado');
   assert.equal(await stock('babero'), 5);
 });
@@ -135,7 +135,7 @@ test('nombre del bebé obligatorio en todos los caminos: sección Portachupetes,
   // Armá tu box: el portachupete dentro de un armado
   await assert.rejects(cotizar([{ tipo: 'producto', id: 'porta', armado: 'a1' }, { tipo: 'producto', id: 'babero', armado: 'a1' }]), /nombre del bebé/);
   // Boxes que traen portachupete
-  await assert.rejects(cotizar([{ tipo: 'box', id: 'mini-box', modelo: 'Silicona N° 1', babero: 'N° 2', color: 'Rosa', nombreBebe: '  ' }]), /nombre del bebé/);
+  await assert.rejects(cotizar([{ tipo: 'box', id: 'mini-box', modelo: 'Silicona N° 1', babero: 'Celeste', color: 'Rosa', nombreBebe: '  ' }]), /nombre del bebé/);
 });
 
 test('Armá tu box: mínimo 2 productos distintos por armado', () => {
@@ -154,7 +154,7 @@ test('Armá tu box: mínimo 2 productos distintos por armado', () => {
 test('Armá tu box: los productos no se venden sueltos (salvo el portachupete) y las boxes no van en un armado', async () => {
   await assert.rejects(cotizar([{ tipo: 'producto', id: 'babero', modelo: 'N° 1' }]), /Armá tu box/, 'un babero sin armado se rechaza');
   await assert.doesNotReject(cotizar([{ tipo: 'producto', id: 'porta', nombreBebe: 'Lola' }]), 'el portachupete sí, desde su sección');
-  await assert.rejects(cotizar([{ tipo: 'box', id: 'mini-box', modelo: 'Silicona N° 1', babero: 'N° 2', color: 'Rosa', nombreBebe: 'Ema', armado: 'a1' }]), /no van dentro de un armado/);
+  await assert.rejects(cotizar([{ tipo: 'box', id: 'mini-box', modelo: 'Silicona N° 1', babero: 'Celeste', color: 'Rosa', nombreBebe: 'Ema', armado: 'a1' }]), /no van dentro de un armado/);
 });
 
 // ---------- Historial ----------
@@ -178,18 +178,18 @@ test('historial: se registra quién creó el pedido y cada cambio de estado; lo 
 test('boxes: hay que elegir uno de sus colores', async () => {
   await assert.rejects(cotizar([{ tipo: 'box', id: 'esencial', modelo: 'Silicona N° 1', nombreBebe: 'Ema' }]), /Elegí el color de Box Esencial/);
   await assert.rejects(cotizar([{ tipo: 'box', id: 'esencial', modelo: 'Silicona N° 1', color: 'Verde', nombreBebe: 'Ema' }]), /no disponible/, 'la Esencial no viene en verde');
-  const c = await cotizar([{ tipo: 'box', id: 'mini-box', modelo: 'Silicona N° 1', babero: 'N° 2', color: 'Verde', nombreBebe: 'Ema' }]);
+  const c = await cotizar([{ tipo: 'box', id: 'mini-box', modelo: 'Silicona N° 1', babero: 'Celeste', color: 'Verde', nombreBebe: 'Ema' }]);
   assert.equal(c.lineas[0].color, 'Verde', 'la Mini box sí, y el color queda en el pedido');
 });
 
-test('baberos: en las boxes que lo traen hay que elegir el modelo; suelto ("Armá tu box") va en rosa, celeste o verde', async () => {
+test('baberos: en las boxes que lo traen hay que elegir el color; suelto ("Armá tu box") va en rosa, celeste o verde', async () => {
   const porta = { tipo: 'producto' as const, id: 'porta', armado: 'b1', nombreBebe: 'Ema', modelo: 'Silicona N° 1' };
-  await assert.rejects(cotizar([{ tipo: 'box', id: 'mini-box', modelo: 'Silicona N° 1', color: 'Rosa', nombreBebe: 'Ema' }]), /modelo de babero de Mini box/);
-  await assert.rejects(cotizar([{ tipo: 'box', id: 'mini-box', modelo: 'Silicona N° 1', color: 'Rosa', nombreBebe: 'Ema', babero: 'N° 99' }]), /no disponible/);
-  await assert.rejects(cotizar([{ tipo: 'box', id: 'esencial', modelo: 'Silicona N° 1', color: 'Rosa', nombreBebe: 'Ema', babero: 'N° 1' }]), /no disponible/, 'la Esencial no trae babero');
+  await assert.rejects(cotizar([{ tipo: 'box', id: 'mini-box', modelo: 'Silicona N° 1', color: 'Rosa', nombreBebe: 'Ema' }]), /color del babero de Mini box/);
+  await assert.rejects(cotizar([{ tipo: 'box', id: 'mini-box', modelo: 'Silicona N° 1', color: 'Rosa', nombreBebe: 'Ema', babero: 'Beige' }]), /no disponible/);
+  await assert.rejects(cotizar([{ tipo: 'box', id: 'esencial', modelo: 'Silicona N° 1', color: 'Rosa', nombreBebe: 'Ema', babero: 'Celeste' }]), /no disponible/, 'la Esencial no trae babero');
   await assert.rejects(cotizar([{ tipo: 'producto', id: 'babero', armado: 'b1', color: 'Beige' }, porta]), /no disponible/);
-  const c = await cotizar([{ tipo: 'box', id: 'mini-box', modelo: 'Silicona N° 1', color: 'Rosa', nombreBebe: 'Ema', babero: 'N° 4' }, { tipo: 'producto', id: 'babero', armado: 'b1', color: 'Verde' }, porta]);
-  assert.equal(c.lineas[0].babero, 'N° 4');
+  const c = await cotizar([{ tipo: 'box', id: 'mini-box', modelo: 'Silicona N° 1', color: 'Rosa', nombreBebe: 'Ema', babero: 'Celeste' }, { tipo: 'producto', id: 'babero', armado: 'b1', color: 'Verde' }, porta]);
+  assert.equal(c.lineas[0].babero, 'Celeste');
   assert.equal(c.lineas[1].color, 'Verde');
 });
 

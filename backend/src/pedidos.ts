@@ -21,8 +21,7 @@ export const Item = z.object({
   color: z.string().optional(),
   nombreBebe: z.string().trim().max(20).optional(),
   estampado: z.string().trim().max(60).optional(), // qué estampado quiere (solo con color "Estampada")
-  modelo: z.string().trim().max(120).optional(), // modelo de portachupete elegido (material, lámina, detalle) o de babero
-  babero: z.string().optional(), // color del babero de una box que trae babero
+  modelo: z.string().trim().max(120).optional(), // modelo de portachupete elegido (material, lámina, detalle)
   armado: z.string().trim().min(1).max(40).optional(), // id del armado de "Armá tu box" al que pertenece (lo genera el navegador)
 });
 
@@ -53,7 +52,7 @@ export const CarritoInput = z.object({
 // componentes = stock que mueve la línea. Pedidos viejos no lo tienen: ver stockDe()
 export type Linea = {
   tipo: 'producto' | 'box'; id: string; nombre: string; cantidad: number;
-  color?: string; estampado?: string; nombreBebe?: string; modelo?: string; babero?: string; armado?: string; precioUnitario: number; total: number;
+  color?: string; estampado?: string; nombreBebe?: string; modelo?: string; babero?: string /* pedidos viejos: color/modelo del babero de la box */; armado?: string; precioUnitario: number; total: number;
   componentes?: { id: string; cantidad: number }[];
 };
 
@@ -86,10 +85,7 @@ export async function calcular(
       if (!it.nombreBebe && b.items.some(i => /portachupete/i.test(i))) throw new HttpError(400, `Falta el nombre del bebé para el portachupete de ${b.nombre}`);
       if (b.colores?.length && !it.color) throw new HttpError(400, `Elegí el color de ${b.nombre}`);
       if (it.color && !b.colores?.includes(it.color)) throw new HttpError(400, `Color "${it.color}" no disponible para ${b.nombre}`);
-      const conBabero = b.componentes.some(c => c.id === 'babero');
-      // El babero de la box se elige por color, entre los del babero suelto
-      if (conBabero && !it.babero) throw new HttpError(400, `Elegí el color del babero de ${b.nombre}`);
-      if (it.babero && (!conBabero || !(await buscarProducto('babero'))?.colores?.includes(it.babero))) throw new HttpError(400, `Color de babero no disponible para ${b.nombre}`);
+      // El babero de la box va del mismo color que la box
       const conPorta = b.componentes.some(c => c.id === 'porta');
       if (conPorta && !it.modelo) throw new HttpError(400, `Elegí el modelo del portachupete de ${b.nombre}`);
       if (it.modelo && !conPorta) throw new HttpError(400, `${b.nombre} no trae portachupete`);
@@ -97,7 +93,7 @@ export async function calcular(
       for (const c of b.componentes) {
         if (c.stock !== null && c.stock < c.cantidad * it.cantidad) throw new HttpError(409, `${b.nombre}: no queda stock de ${c.nombre}`);
       }
-      lineas.push({ tipo: 'box', id: b.id, nombre: b.nombre, cantidad: it.cantidad, color: it.color, nombreBebe: it.nombreBebe, modelo: it.modelo, babero: it.babero, precioUnitario: b.precio, total: b.precio * it.cantidad,
+      lineas.push({ tipo: 'box', id: b.id, nombre: b.nombre, cantidad: it.cantidad, color: it.color, nombreBebe: it.nombreBebe, modelo: it.modelo, precioUnitario: b.precio, total: b.precio * it.cantidad,
         componentes: b.componentes.map(c => ({ id: c.id, cantidad: c.cantidad * it.cantidad })) });
       continue;
     }

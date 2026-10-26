@@ -160,11 +160,10 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
     })});
     document.head.appendChild(ld);
   }).catch(function(){});
-  var actual=null, colorSel='', baberoSel='', portaSel='';
+  var actual=null, colorSel='', portaSel='';
   function faltanBox(){
     var f=[];
     if(!document.getElementById('bmColorWrap').hidden&&!colorSel) f.push('El color de la box');
-    if(!document.getElementById('bmBabWrap').hidden&&!baberoSel) f.push('El color del babero');
     if(!document.getElementById('bmPortaWrap').hidden&&!portaSel) f.push('El modelo del portachupete');
     if(!document.getElementById('bmNameWrap').hidden&&!document.getElementById('bmName').value.trim()) f.push('El nombre del bebé para el portachupete');
     return f;
@@ -203,21 +202,12 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
       cs.appendChild(c);
     });
     document.getElementById('bmColorWrap').hidden=!vistos.length;
-    // Color del babero: los mismos que en "Armá tu box"
-    baberoSel=''; var cb=document.getElementById('bmBab'); cb.innerHTML='';
-    ['Rosa','Celeste','Verde'].forEach(function(cn){
-      var c=document.createElement('button'); c.type='button'; c.className='chip'; c.textContent=cn;
-      c.addEventListener('click',function(){baberoSel=cn;[].forEach.call(cb.children,function(x){x.classList.toggle('sel',x===c);});marcarListo();});
-      cb.appendChild(c);
-    });
-    document.getElementById('bmBabWrap').hidden=!/babero/i.test(card.querySelector('.box-items').textContent);
     portaSel=''; elegirPorta(document.getElementById('bmPorta'),'',function(v){portaSel=v;marcarListo();});
     document.getElementById('bmPortaWrap').hidden=!/portachupete/i.test(card.querySelector('.box-items').textContent);
     var agotada=card.classList.contains('agotada'), add=document.getElementById('bmAdd');
     add.disabled=agotada; add.textContent=agotada?'Sin stock por ahora':'Agregar al carrito';
     document.getElementById('bmNameWrap').hidden=document.getElementById('bmNameWrap').hidden||agotada;
     document.getElementById('bmColorWrap').hidden=document.getElementById('bmColorWrap').hidden||agotada;
-    document.getElementById('bmBabWrap').hidden=document.getElementById('bmBabWrap').hidden||agotada;
     document.getElementById('bmPortaWrap').hidden=document.getElementById('bmPortaWrap').hidden||agotada;
     marcarListo();
     ov.classList.add('open'); ov.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden';
@@ -233,7 +223,7 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
   document.getElementById('bmAdd').addEventListener('click',function(){
     var nombre=document.getElementById('bmName').value.trim(), faltan=faltanBox();
     if(faltan.length){ Carrito.aviso(faltan); return; }
-    Carrito.agregar({tipo:'box',id:actual.dataset.boxId,color:colorSel||undefined,babero:baberoSel||undefined,modelo:portaSel||undefined,nombreBebe:nombre||undefined});
+    Carrito.agregar({tipo:'box',id:actual.dataset.boxId,color:colorSel||undefined,modelo:portaSel||undefined,nombreBebe:nombre||undefined});
     close(); Carrito.abrir(); track('carrito_agregar',actual.dataset.boxId);
   });
   ov.addEventListener('click',function(e){if(e.target===ov)close();});

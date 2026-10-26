@@ -17,6 +17,10 @@ document.addEventListener('click',function(e){if(e.target.closest('a[href*="inst
   document.addEventListener('keydown',function(e){if(e.key==='Escape')abrir(false);});
 })();
 
+// Modelo de portachupete ("Silicona N° 4 — detalle"): el número es interno (admin); el cliente ve el material y la foto
+window.fotoModelo=function(m){var r=/^(Silicona|Madera) N° (\d+)/.exec(m||'');return r?'assets/img/portachupetes/modelos/'+r[1].toLowerCase()+'-'+r[2]+'.jpg':'';};
+window.modeloPublico=function(m){return String(m||'').replace(/ N° \d+/,'');};
+
 // Selector de modelo de portachupete: botones Silicona / Madera; cada uno abre una ventana con sus fotos.
 // Se toca una y "OK" la deja elegida ("Silicona N° 4")
 window.elegirPorta=function(cont,actual,alElegir){
@@ -25,7 +29,7 @@ window.elegirPorta=function(cont,actual,alElegir){
   var sel=cont.querySelector('.porta-sel');
   function mostrar(){
     [].forEach.call(cont.querySelectorAll('.chip'),function(b){b.classList.toggle('sel',!!actual&&actual.indexOf(b.textContent+' ')===0);});
-    sel.textContent=actual?'Elegiste: '+actual:''; sel.hidden=!actual;
+    sel.innerHTML=actual?'<img alt="Modelo elegido" src="'+fotoModelo(actual)+'"> Elegiste un modelo de '+modeloPublico(actual).toLowerCase()+' ✓':''; sel.hidden=!actual;
   }
   Object.keys(N).forEach(function(m){
     var b=document.createElement('button'); b.type='button'; b.className='chip'; b.textContent=m;
@@ -43,7 +47,7 @@ window.elegirPorta=function(cont,actual,alElegir){
       for(var n=1;n<=N[mat];n++){(function(n){
         var v=mat+' N° '+n, b=document.createElement('button'); b.type='button'; b.className='pm-img'+(v===elegido?' sel':'');
         b.setAttribute('aria-label','Modelo '+n);
-        b.innerHTML='<img alt="Portachupete de '+mat.toLowerCase()+', modelo '+n+'" loading="lazy" src="assets/img/portachupetes/modelos/'+mat.toLowerCase()+'-'+n+'.jpg"><span class="pm-tag">'+(v===elegido?'✓ ':'')+'N° '+n+'</span>';
+        b.innerHTML='<img alt="Portachupete de '+mat.toLowerCase()+', modelo '+n+'" loading="lazy" src="assets/img/portachupetes/modelos/'+mat.toLowerCase()+'-'+n+'.jpg">'+(v===elegido?'<span class="pm-tag">✓</span>':'');
         b.addEventListener('click',function(){elegido=v;pintar();});
         g.appendChild(b);
       })(n);}

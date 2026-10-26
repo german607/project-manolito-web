@@ -141,8 +141,17 @@ export const buscarPedido = (id: number, bloquear = false) =>
 // Los armados se numeran en el orden en que aparecen ("Armado 1", "Armado 2"): cada uno se empaca como una box
 export const numerarArmados = (items: Linea[]) => [...new Set(items.map(l => l.armado).filter(Boolean))] as string[];
 
-const resumen = (p: Pedido) => [
-  ...p.items.map(l => `- ${l.cantidad} x ${l.nombre}${l.color ? ` (${l.color}${l.estampado ? `: ${l.estampado}` : ''})` : ''}${l.nombreBebe ? ` "${l.nombreBebe}"` : ''}${l.modelo ? ` [Modelo: ${l.modelo}]` : ''}${l.babero ? ` [Babero: ${l.babero}]` : ''}${l.armado ? ` (Armado ${numerarArmados(p.items).indexOf(l.armado) + 1})` : ''}: $${l.total}`),
+// Modelo de portachupete: "Silicona N° 4 — detalle". El número es interno (admin y aviso a Manolito);
+// el cliente ve el material y la foto del modelo
+export const fotoModelo = (m?: string) => {
+  const r = /^(Silicona|Madera) N° (\d+)/.exec(m ?? '');
+  return r ? `assets/img/portachupetes/modelos/${r[1].toLowerCase()}-${r[2]}.jpg` : null;
+};
+const modeloPublico = (m: string) => m.replace(/ N° \d+/, '');
+
+// interno = con el número de modelo (aviso a Manolito)
+const resumen = (p: Pedido, interno = false) => [
+  ...p.items.map(l => `- ${l.cantidad} x ${l.nombre}${l.color ? ` (${l.color}${l.estampado ? `: ${l.estampado}` : ''})` : ''}${l.nombreBebe ? ` "${l.nombreBebe}"` : ''}${l.modelo ? ` [Modelo: ${interno ? l.modelo : modeloPublico(l.modelo)}]` : ''}${l.babero ? ` [Babero: ${l.babero}]` : ''}${l.armado ? ` (Armado ${numerarArmados(p.items).indexOf(l.armado) + 1})` : ''}: $${l.total}`),
   p.descuento ? `Descuento (${p.cupon}): -$${p.descuento}` : '',
   p.recargo ? `Recargo Mercado Pago: $${p.recargo}` : '',
   `Total: $${p.total}`,
@@ -157,10 +166,12 @@ const resumenHtml = (p: Pedido) => {
     `<tr><td style="padding:10px 0;border-bottom:1px solid #F3E6E0;font-size:14px;line-height:1.45;color:#3F3A34;${fuerte ? 'font-weight:700;font-size:16px;border-bottom:0' : ''}">${izq}</td>` +
     `<td align="right" valign="top" style="padding:10px 0 10px 12px;border-bottom:1px solid #F3E6E0;font-size:14px;white-space:nowrap;color:#3F3A34;font-weight:700;${fuerte ? 'font-size:16px;border-bottom:0' : ''}">${der}</td></tr>`;
   const detalle = (l: Linea) => [l.armado ? `Armado ${armados.indexOf(l.armado) + 1}` : '', l.color ? (l.estampado ? `Estampada: ${l.estampado}` : l.color) : '',
-    l.nombreBebe ? `“${l.nombreBebe}”` : '', l.modelo ? `Modelo: ${l.modelo}` : '', l.babero ? `Babero: ${l.babero}` : ''].filter(Boolean).join(' · ');
+    l.nombreBebe ? `“${l.nombreBebe}”` : '', l.modelo ? `Modelo: ${modeloPublico(l.modelo)}` : '', l.babero ? `Babero: ${l.babero}` : ''].filter(Boolean).join(' · ');
+  const web = process.env.FRONTEND_URL ?? process.env.BASE_URL ?? 'http://localhost:3000';
+  const foto = (l: Linea) => fotoModelo(l.modelo) ? `<br><img src="${esc(web)}/${fotoModelo(l.modelo)}" width="64" height="64" alt="Modelo elegido" style="display:block;margin-top:6px;border-radius:10px;object-fit:cover;border:0">` : '';
   return `<div style="font-family:'Baloo 2','Trebuchet MS',Helvetica,Arial,sans-serif;font-size:17px;font-weight:700;color:#3F3A34;margin:8px 0 2px">Tu pedido #${p.id}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px">
-${p.items.map(l => fila(`<b>${l.cantidad > 1 ? `${l.cantidad} × ` : ''}${esc(l.nombre)}</b>${detalle(l) ? `<br><span style="color:#7A6F62;font-size:13px">${esc(detalle(l))}</span>` : ''}`, `$${l.total}`)).join('')}
+${p.items.map(l => fila(`<b>${l.cantidad > 1 ? `${l.cantidad} × ` : ''}${esc(l.nombre)}</b>${detalle(l) ? `<br><span style="color:#7A6F62;font-size:13px">${esc(detalle(l))}</span>` : ''}${foto(l)}`, `$${l.total}`)).join('')}
 ${p.descuento ? fila(`Descuento (${esc(p.cupon)})`, `-$${p.descuento}`) : ''}
 ${p.recargo ? fila('Recargo Mercado Pago', `$${p.recargo}`) : ''}
 ${fila('Total', `$${p.total}`, true)}
@@ -303,7 +314,7 @@ pedidosRouter.post('/pedidos', async (req, res) => {
     }));
   if (process.env.ADMIN_EMAIL) {
     enviarMail(process.env.ADMIN_EMAIL, `Nuevo pedido #${id} — $${p.total}`,
-      `${p.nombre} · ${p.telefono} · ${p.email}\nPago: ${p.pago}\n\n${resumen(p)}`, p.email); // "Responder" le escribe al cliente
+      `${p.nombre} · ${p.telefono} · ${p.email}\nPago: ${p.pago}\n\n${resumen(p, true)}`, p.email); // "Responder" le escribe al cliente
   }
 
   res.status(201).json({ id, subtotal: p.subtotal, recargo: p.recargo, total: p.total, pagoUrl, instrucciones, token, datos });

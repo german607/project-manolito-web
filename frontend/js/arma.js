@@ -101,7 +101,7 @@
       for(var n=1;n<=LAM[mat];n++){(function(n){
         var f=el('button','pm-img'+(n===lam?' sel':'')); f.type='button'; f.setAttribute('aria-label','Elegir modelo '+n+' de '+mat);
         var im=document.createElement('img'); im.alt='Portachupete de '+mat.toLowerCase()+', modelo '+n; im.loading='lazy'; im.src='assets/img/portachupetes/modelos/'+mat.toLowerCase()+'-'+n+'.jpg'; f.appendChild(im);
-        f.appendChild(el('span','pm-tag',n===lam?'✓ N° '+n:'N° '+n));
+        if(n===lam) f.appendChild(el('span','pm-tag','✓'));
         f.onclick=function(){lam=n;pintar();}; g.appendChild(f);
       })(n);}
     }
@@ -115,11 +115,12 @@
     mod._cerrar=cerrar; pintar(); mod.classList.add('show'); document.body.style.overflow='hidden';
   }
 
-  function lineText(p){
+  // interno = con el número de modelo (mensaje para Manolito por Instagram)
+  function lineText(p,interno){
     var s=st[p.id]||{}, t=p.n;
     if(p.c) t+=' ('+(s.color?s.color.toLowerCase():(p.cl?'modelo':'color')+' a elegir')+(s.color==='Estampada'?': '+(s.estampado||'a definir'):'')+')';
     if(p.name) t+=' '+(s.name?'"'+s.name+'"':'(nombre a definir)');
-    if(p.modelo) t+=' — modelo: '+(s.modelo||'a definir');
+    if(p.modelo) t+=' — modelo: '+(s.modelo?(interno?s.modelo:modeloPublico(s.modelo).toLowerCase()):'a definir');
     return t;
   }
 
@@ -132,7 +133,7 @@
       var bt=card.querySelector('.ap-btn'); bt.disabled=!!p.agotado; bt.textContent=p.agotado?'Sin stock':(s.on?'Quitar':'Agregar');
       var eo=card.querySelector('.ap-est'); if(eo) eo.hidden=s.color!=='Estampada';
       card.querySelectorAll('.chip').forEach(function(b){b.classList.toggle('sel',!!(s.color&&b.textContent===s.color));});
-      if(p.modelo){var mbb=document.getElementById('apm-'+p.id); if(mbb) mbb.textContent=s.modelo?'Modelo: '+s.modelo+' (cambiar)':'Ver y elegir modelo';}
+      if(p.modelo){var mbb=document.getElementById('apm-'+p.id); if(mbb) mbb.textContent=s.modelo?'Modelo de '+modeloPublico(s.modelo).toLowerCase()+' elegido ✓ (cambiar)':'Ver y elegir modelo';}
       document.getElementById('apr-'+p.id).textContent='$'+price(p);
       if(s.on){
         count++; total+=price(p);
@@ -190,7 +191,7 @@
 
   document.getElementById('armaSend').addEventListener('click',function(){
     var lines=['¡Hola Manolito! Quiero armar mi box:'],total=0;
-    P.forEach(function(p){var s=st[p.id]; if(s&&s.on){lines.push('- '+lineText(p)+' — $'+price(p)); total+=price(p);}});
+    P.forEach(function(p){var s=st[p.id]; if(s&&s.on){lines.push('- '+lineText(p,true)+' — $'+price(p)); total+=price(p);}});
     lines.push('Total: $'+total);
     var msg=lines.join('\n'), ok=false;
     track('arma_enviar');

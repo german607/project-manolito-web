@@ -30,9 +30,9 @@
     c.avisos.forEach(function(a){avI[a.i]=a;});
     return items.map(function(it,i){
       var l=porI[i], av=avI[i];
-      var detalle=[it.armado?'Armado '+(armados.indexOf(it.armado)+1):'',it.color==='Estampada'&&it.estampado?'Estampada: '+it.estampado:it.color,it.nombreBebe?'“'+it.nombreBebe+'”':'',it.modelo,it.babero?'Babero '+it.babero.toLowerCase():''].filter(Boolean).join(' · ');
+      var detalle=[it.armado?'Armado '+(armados.indexOf(it.armado)+1):'',it.color==='Estampada'&&it.estampado?'Estampada: '+it.estampado:it.color,it.nombreBebe?'“'+it.nombreBebe+'”':'',it.modelo&&window.modeloPublico?modeloPublico(it.modelo):it.modelo,it.babero?'Babero '+it.babero.toLowerCase():''].filter(Boolean).join(' · ');
       return '<article class="cart-line'+(av?' bad':'')+(editable?'':' ro')+'" data-i="'+i+'">'+
-        (l&&l.foto?'<img src="'+esc(l.foto)+'" alt="">':'<div class="cart-ph"></div>')+
+        (it.tipo==='producto'&&window.fotoModelo&&fotoModelo(it.modelo)?'<img src="'+esc(fotoModelo(it.modelo))+'" alt="">':l&&l.foto?'<img src="'+esc(l.foto)+'" alt="">':'<div class="cart-ph"></div>')+ // portachupete: la foto del modelo elegido
         '<div class="cart-info"><h4>'+esc(l?l.nombre:(av&&av.nombre)||'Producto no disponible')+'</h4>'+
           (detalle?'<p class="cart-meta">'+esc(detalle)+'</p>':'')+
           (av?'<p class="cart-error">'+esc(av.error)+'</p>':

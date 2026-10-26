@@ -29,27 +29,44 @@ window.elegirBabero=function(cont,actual,alElegir){
   })(n);}
 };
 
-// Selector de modelo de portachupete (mismas fotos que la sección Portachupetes): "Silicona N° 4"
+// Selector de modelo de portachupete: botones Silicona / Madera; cada uno abre una ventana con sus fotos.
+// Se toca una y "OK" la deja elegida ("Silicona N° 4")
 window.elegirPorta=function(cont,actual,alElegir){
-  var N={Silicona:19,Madera:9}, mat=(actual||'').split(' ')[0]||'Silicona';
-  function pintar(){
-    cont.innerHTML='';
-    var tabs=document.createElement('div'); tabs.className='bm-colors';
-    Object.keys(N).forEach(function(m){
-      var b=document.createElement('button'); b.type='button'; b.className='chip'+(m===mat?' sel':''); b.textContent=m;
-      b.addEventListener('click',function(){mat=m;pintar();}); tabs.appendChild(b);
-    });
-    var g=document.createElement('div'); g.className='bab-grid porta-grid';
-    for(var n=1;n<=N[mat];n++){(function(n){
-      var v=mat+' N° '+n, b=document.createElement('button'); b.type='button'; b.className='pm-img'+(v===actual?' sel':'');
-      b.setAttribute('aria-label','Elegir portachupete de '+mat.toLowerCase()+', modelo '+n);
-      b.innerHTML='<img alt="Portachupete de '+mat.toLowerCase()+', modelo '+n+'" loading="lazy" src="assets/img/portachupetes/modelos/'+mat.toLowerCase()+'-'+n+'.jpg"><span class="pm-tag">'+(v===actual?'✓ ':'')+'N° '+n+'</span>';
-      b.addEventListener('click',function(){actual=v;alElegir(v);pintar();});
-      g.appendChild(b);
-    })(n);}
-    cont.appendChild(tabs); cont.appendChild(g);
+  var N={Silicona:19,Madera:9};
+  cont.innerHTML='<div class="bm-colors"></div><p class="porta-sel"></p>';
+  var sel=cont.querySelector('.porta-sel');
+  function mostrar(){
+    [].forEach.call(cont.querySelectorAll('.chip'),function(b){b.classList.toggle('sel',!!actual&&actual.indexOf(b.textContent+' ')===0);});
+    sel.textContent=actual?'Elegiste: '+actual:''; sel.hidden=!actual;
   }
-  pintar();
+  Object.keys(N).forEach(function(m){
+    var b=document.createElement('button'); b.type='button'; b.className='chip'; b.textContent=m;
+    b.addEventListener('click',function(){abrir(m);});
+    cont.firstChild.appendChild(b);
+  });
+  function abrir(mat){
+    var d=document.createElement('dialog'), elegido=actual&&actual.indexOf(mat+' ')===0?actual:'';
+    d.className='aviso porta-pick';
+    d.innerHTML='<h3>Portachupete de '+mat.toLowerCase()+'</h3><p>Tocá el modelo que más te guste.</p><div class="bab-grid porta-grid"></div>'+
+      '<div class="porta-pick-btns"><button type="button" class="btn btn-outline">Cancelar</button><button type="button" class="btn btn-green btn-add">OK</button></div>';
+    var g=d.querySelector('.porta-grid'), ok=d.querySelector('.btn-add');
+    function pintar(){
+      g.innerHTML='';
+      for(var n=1;n<=N[mat];n++){(function(n){
+        var v=mat+' N° '+n, b=document.createElement('button'); b.type='button'; b.className='pm-img'+(v===elegido?' sel':'');
+        b.setAttribute('aria-label','Modelo '+n);
+        b.innerHTML='<img alt="Portachupete de '+mat.toLowerCase()+', modelo '+n+'" loading="lazy" src="assets/img/portachupetes/modelos/'+mat.toLowerCase()+'-'+n+'.jpg"><span class="pm-tag">'+(v===elegido?'✓ ':'')+'N° '+n+'</span>';
+        b.addEventListener('click',function(){elegido=v;pintar();});
+        g.appendChild(b);
+      })(n);}
+      ok.classList.toggle('listo',!!elegido);
+    }
+    d.querySelector('.btn-outline').onclick=function(){d.close();};
+    ok.onclick=function(){if(!elegido){Carrito.aviso(['Tocá un modelo para elegirlo']);return;} actual=elegido; alElegir(actual); mostrar(); d.close();};
+    d.addEventListener('close',function(){d.remove();});
+    document.body.appendChild(d); pintar(); d.showModal();
+  }
+  mostrar();
 };
 
 // Ícono de cuenta del header: lleva a ingresar, o al panel / la cuenta si ya hay sesión

@@ -36,8 +36,9 @@
       <div class="nav-links" id="navLinks">
         <a class="navlink" href="#boxes">Boxes</a>
         <a class="navlink" href="#portachupetes">Portachupetes</a>
+        <a class="navlink solo-menu" href="arma-tu-box.html">Armá tu box</a>
       </div>
-      <a class="btn btn-green btn-sm" href="arma-tu-box.html">Armá tu box</a>
+      <a class="btn btn-green btn-sm arma-header" href="arma-tu-box.html">Armá tu box</a>
       <a class="cart-link" href="checkout.html" aria-label="Ver carrito"><svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h3l2.4 11.2a2 2 0 0 0 2 1.6h8.2a2 2 0 0 0 2-1.5L21 7H6.2" fill="currentColor" fill-opacity=".16"/><circle cx="9.5" cy="20" r="1.6" fill="currentColor"/><circle cx="17.5" cy="20" r="1.6" fill="currentColor"/></svg><span class="cart-count" hidden>0</span></a>
       <a class="cart-link cuenta-link" href="login.html" data-cuenta aria-label="Ingresar" title="Ingresar"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="currentColor" fill-opacity=".16"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" fill="currentColor" fill-opacity=".16"/></svg></a>
       <button class="menu-btn" type="button" aria-label="Abrir menú" aria-expanded="false" aria-controls="navLinks"><span></span><span></span><span></span></button>
@@ -66,11 +67,10 @@
       <h1>Un mundo <span class="hl">mágico</span> para los más chiquitos</h1>
       <p class="sub">Regalos especiales para momentos especiales</p>
       <div class="hero-ctas">
-        <a class="btn btn-green" href="#portachupetes">Comprar portachupete</a>
-        <a class="btn btn-green" href="#boxes">Comprar box</a>
+        <a class="btn btn-green" href="#portachupetes">Ver portachupetes</a>
+        <a class="btn btn-green" href="#boxes">Ver boxes</a>
         <a class="btn btn-outline" href="arma-tu-box.html">Armá tu box</a>
       </div>
-      <div class="ha-badge"><span>Incluye</span><b>sujetador</b><span>personalizado</span></div>
     </div>
   </div>
   <div class="wrap">
@@ -251,7 +251,7 @@
         <label class="pm-l">Colores o detalles (opcional)<input type="text" id="pbDet" maxlength="60" placeholder="Ej: arcoíris pastel, clip de madera"></label>
         <div class="pb-total"><span>Precio</span><b id="pbPrice">$790</b></div>
         <p class="pb-hint" id="pbHint"></p>
-        <button class="btn btn-green" id="pbAdd" type="button" style="width:100%">Agregar al carrito</button>
+        <button class="btn btn-green btn-add" id="pbAdd" type="button" style="width:100%">Agregar al carrito</button>
         <p class="pb-note">Silicona de grado alimenticio, libre de BPA · Colores a elección, sujeto a stock.</p>
       </div>
       <div class="arma-toast" id="pbToast" role="status"></div>
@@ -403,8 +403,9 @@
       <div id="bmBuy">
         <div class="bm-field" id="bmColorWrap">Color<div class="bm-colors" id="bmColors"></div></div>
         <div class="bm-field" id="bmBabWrap">Modelo de babero<div class="bab-grid" id="bmBab"></div></div>
+        <div class="bm-field" id="bmPortaWrap">Modelo del portachupete<div id="bmPorta" class="bm-porta"></div></div>
         <label class="bm-field" id="bmNameWrap">Nombre del bebé para el portachupete<input id="bmName" maxlength="20" placeholder="Ej: Lucas" autocomplete="off"></label>
-        <button class="btn btn-green" id="bmAdd" type="button" style="width:100%;">Agregar al carrito</button>
+        <button class="btn btn-green btn-add" id="bmAdd" type="button" style="width:100%;">Agregar al carrito</button>
       </div>
       <a class="btn btn-outline" style="width:100%;margin-top:10px;" href="https://instagram.com/manolito_uy" target="_blank" rel="noopener">¿Dudas? Escribinos por Instagram</a>
     </div>

@@ -2,8 +2,8 @@
 // Los precios siempre los calcula el servidor (/api/carrito).
 (function(){
   var KEY='manolito-carrito';
-  // Las boxes guardadas antes de que se eligiera color ya no se pueden comprar: se descartan solas
-  function leer(){try{return (JSON.parse(localStorage.getItem(KEY))||[]).filter(function(it){return it.tipo!=='box'||it.color;});}catch(e){return [];}}
+  // Las boxes guardadas antes de que se eligieran color y modelo de portachupete ya no se pueden comprar: se descartan solas
+  function leer(){try{return (JSON.parse(localStorage.getItem(KEY))||[]).filter(function(it){return it.tipo!=='box'||(it.color&&it.modelo);});}catch(e){return [];}}
   function guardar(items){
     try{localStorage.setItem(KEY,JSON.stringify(items));}catch(e){}
     contador(); window.dispatchEvent(new Event('carrito'));

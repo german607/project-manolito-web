@@ -29,6 +29,29 @@ window.elegirBabero=function(cont,actual,alElegir){
   })(n);}
 };
 
+// Selector de modelo de portachupete (mismas fotos que la sección Portachupetes): "Silicona N° 4"
+window.elegirPorta=function(cont,actual,alElegir){
+  var N={Silicona:19,Madera:9}, mat=(actual||'').split(' ')[0]||'Silicona';
+  function pintar(){
+    cont.innerHTML='';
+    var tabs=document.createElement('div'); tabs.className='bm-colors';
+    Object.keys(N).forEach(function(m){
+      var b=document.createElement('button'); b.type='button'; b.className='chip'+(m===mat?' sel':''); b.textContent=m;
+      b.addEventListener('click',function(){mat=m;pintar();}); tabs.appendChild(b);
+    });
+    var g=document.createElement('div'); g.className='bab-grid porta-grid';
+    for(var n=1;n<=N[mat];n++){(function(n){
+      var v=mat+' N° '+n, b=document.createElement('button'); b.type='button'; b.className='pm-img'+(v===actual?' sel':'');
+      b.setAttribute('aria-label','Elegir portachupete de '+mat.toLowerCase()+', modelo '+n);
+      b.innerHTML='<img alt="Portachupete de '+mat.toLowerCase()+', modelo '+n+'" loading="lazy" src="assets/img/portachupetes/modelos/'+mat.toLowerCase()+'-'+n+'.jpg"><span class="pm-tag">'+(v===actual?'✓ ':'')+'N° '+n+'</span>';
+      b.addEventListener('click',function(){actual=v;alElegir(v);pintar();});
+      g.appendChild(b);
+    })(n);}
+    cont.appendChild(tabs); cont.appendChild(g);
+  }
+  pintar();
+};
+
 // Ícono de cuenta del header: lleva a ingresar, o al panel / la cuenta si ya hay sesión
 (function(){
   var a=document.querySelector('[data-cuenta]'); if(!a) return;
@@ -74,7 +97,7 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
   function ico(p){return '<svg width="22" height="22" viewBox="0 0 24 24" '+S+'>'+p+'</svg>';}
   var P={
     babero:{i:ico('<path d="M5 4c1 4 3 6 7 6s6-2 7-6"/><path d="M5 4l-1 9a8 8 0 0 0 16 0l-1-9"/>'),d:'Babero de muselina de algodón, suave e hipoalergénico, con broche ajustable.'},
-    porta:{i:ico('<circle cx="12" cy="5" r="2.5"/><path d="M12 7.5V10"/><circle cx="7" cy="14" r="2"/><circle cx="12" cy="16" r="2"/><circle cx="17" cy="14" r="2"/>'),d:'Con el nombre de tu bebé, en silicona libre de BPA o madera natural.',n:'<a class="bm-link" href="#portachupetes">Ver modelos en la sección Portachupetes</a>'},
+    porta:{i:ico('<circle cx="12" cy="5" r="2.5"/><path d="M12 7.5V10"/><circle cx="7" cy="14" r="2"/><circle cx="12" cy="16" r="2"/><circle cx="17" cy="14" r="2"/>'),d:'Con el nombre de tu bebé, en silicona libre de BPA o madera natural.'},
     zapatitos:{i:ico('<path d="M4 6h7v6l7 2a2 2 0 0 1 2 2v2H4z"/><path d="M4 12h7"/>'),d:'Zapatitos tejidos con carita, suaves y abrigados para los primeros días.',n:'<span class="bm-note">Colores disponibles: rosa, celeste y beige.</span>'},
     sonajero:{i:ico('<circle cx="12" cy="8" r="4.5"/><path d="M12 12.5V16"/><circle cx="12" cy="19" r="2.5"/>'),d:'Sonajero de tela suave y seguro, ideal para estimular y calmar al bebé.'},
     trapito:{i:ico('<path d="M12 21s-7-4.35-9.5-8.5C.5 8.5 3 5 6.5 5c2 0 3.5 1 5.5 3 2-2 3.5-3 5.5-3C21 5 23.5 8.5 21.5 12.5 19 16.65 12 21 12 21z"/>'),d:'Trapito de apego de muselina, suave y abrazable, su compañero para dormir.',n:'<span class="bm-note">Colores disponibles: rosa, celeste y beige.</span>'},
@@ -128,7 +151,16 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
     })});
     document.head.appendChild(ld);
   }).catch(function(){});
-  var actual=null, colorSel='', baberoSel='';
+  var actual=null, colorSel='', baberoSel='', portaSel='';
+  function faltanBox(){
+    var f=[];
+    if(!document.getElementById('bmColorWrap').hidden&&!colorSel) f.push('El color de la box');
+    if(!document.getElementById('bmBabWrap').hidden&&!baberoSel) f.push('El modelo de babero');
+    if(!document.getElementById('bmPortaWrap').hidden&&!portaSel) f.push('El modelo del portachupete');
+    if(!document.getElementById('bmNameWrap').hidden&&!document.getElementById('bmName').value.trim()) f.push('El nombre del bebé para el portachupete');
+    return f;
+  }
+  function marcarListo(){var b=document.getElementById('bmAdd'); b.classList.toggle('listo',!b.disabled&&!faltanBox().length);}
   function open(card){
     actual=card;
     var img=card.querySelector('.box-photo img.cur')||card.querySelector('.box-photo img');
@@ -158,17 +190,21 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
       if(vistos.indexOf(b.title)>=0) return; vistos.push(b.title);
       var c=document.createElement('button'); c.type='button'; c.className='chip'+(b.title===colorSel?' sel':'');
       c.innerHTML='<i style="background:'+b.style.background+'"></i>'; c.appendChild(document.createTextNode(b.title));
-      c.addEventListener('click',function(){colorSel=b.title;[].forEach.call(cs.children,function(x){x.classList.toggle('sel',x===c);});});
+      c.addEventListener('click',function(){colorSel=b.title;[].forEach.call(cs.children,function(x){x.classList.toggle('sel',x===c);});marcarListo();});
       cs.appendChild(c);
     });
     document.getElementById('bmColorWrap').hidden=!vistos.length;
-    baberoSel=''; elegirBabero(document.getElementById('bmBab'),'',function(v){baberoSel=v;});
+    baberoSel=''; elegirBabero(document.getElementById('bmBab'),'',function(v){baberoSel=v;marcarListo();});
     document.getElementById('bmBabWrap').hidden=!/babero/i.test(card.querySelector('.box-items').textContent);
+    portaSel=''; elegirPorta(document.getElementById('bmPorta'),'',function(v){portaSel=v;marcarListo();});
+    document.getElementById('bmPortaWrap').hidden=!/portachupete/i.test(card.querySelector('.box-items').textContent);
     var agotada=card.classList.contains('agotada'), add=document.getElementById('bmAdd');
     add.disabled=agotada; add.textContent=agotada?'Sin stock por ahora':'Agregar al carrito';
     document.getElementById('bmNameWrap').hidden=document.getElementById('bmNameWrap').hidden||agotada;
     document.getElementById('bmColorWrap').hidden=document.getElementById('bmColorWrap').hidden||agotada;
     document.getElementById('bmBabWrap').hidden=document.getElementById('bmBabWrap').hidden||agotada;
+    document.getElementById('bmPortaWrap').hidden=document.getElementById('bmPortaWrap').hidden||agotada;
+    marcarListo();
     ov.classList.add('open'); ov.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden';
   }
   function close(){ov.classList.remove('open');ov.setAttribute('aria-hidden','true');document.body.style.overflow='';}
@@ -178,13 +214,11 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
     card.addEventListener('click',function(){ open(card); }); // "Comprar" también abre la ventana
   });
   document.getElementById('bmClose').addEventListener('click',close);
+  document.getElementById('bmName').addEventListener('input',marcarListo);
   document.getElementById('bmAdd').addEventListener('click',function(){
-    var nombre=document.getElementById('bmName').value.trim(), faltan=[];
-    if(!document.getElementById('bmColorWrap').hidden&&!colorSel) faltan.push('El color de la box');
-    if(!document.getElementById('bmBabWrap').hidden&&!baberoSel) faltan.push('El modelo de babero');
-    if(!document.getElementById('bmNameWrap').hidden&&!nombre) faltan.push('El nombre del bebé para el portachupete');
+    var nombre=document.getElementById('bmName').value.trim(), faltan=faltanBox();
     if(faltan.length){ Carrito.aviso(faltan); return; }
-    Carrito.agregar({tipo:'box',id:actual.dataset.boxId,color:colorSel||undefined,babero:baberoSel||undefined,nombreBebe:nombre||undefined});
+    Carrito.agregar({tipo:'box',id:actual.dataset.boxId,color:colorSel||undefined,babero:baberoSel||undefined,modelo:portaSel||undefined,nombreBebe:nombre||undefined});
     close(); Carrito.abrir(); track('carrito_agregar',actual.dataset.boxId);
   });
   ov.addEventListener('click',function(e){if(e.target===ov)close();});

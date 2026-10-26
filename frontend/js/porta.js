@@ -39,8 +39,11 @@
     })(n);}
     selE.textContent=lam?'Elegiste: '+mat+' N° '+lam:'Todavía no elegiste modelo';
     selE.classList.toggle('ok',!!lam);
+    listo();
   }
+  function listo(){add.classList.toggle('listo',!add.disabled&&!!lam&&!!nameI.value.trim());}
   function upd(){
+    listo();
     var l=letras(nameI.value), p=precio();
     priceE.textContent='$'+p;
     hintE.textContent=!l?'Hasta '+INC+' letras incluidas · $'+EXTRA+' por letra extra':

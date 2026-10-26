@@ -11,7 +11,7 @@ export const ESTADOS = ['pendiente', 'pagado', 'enviado', 'entregado', 'cancelad
 const LETRAS_INCLUIDAS = 5;
 const PRECIO_LETRA_EXTRA = 20;
 const RECARGO_MERCADOPAGO = 0.10; // "Mercado Pago (con 10% adicional)" según las preguntas frecuentes
-// Modelos de babero: una foto por modelo (frontend/assets/img/baberos/babero-N.jpg). Se elige en las boxes que traen babero y en "Armá tu box"
+// Modelos de babero: una foto por modelo (frontend/assets/img/baberos/babero-N.jpg). Se elige en las boxes que traen babero
 export const MODELOS_BABERO = Array.from({ length: 6 }, (_, i) => `N° ${i + 1}`);
 export const VENCE_HORAS = 2; // pedidos sin pagar se cancelan solos y liberan el stock
 const AVISO_VENCE = `Tenés ${VENCE_HORAS} horas para hacer el pago; si no, el pedido se cancela automáticamente.`;
@@ -91,11 +91,14 @@ export async function calcular(
       const conBabero = b.componentes.some(c => c.id === 'babero');
       if (conBabero && !it.babero) throw new HttpError(400, `Elegí el modelo de babero de ${b.nombre}`);
       if (it.babero && (!conBabero || !MODELOS_BABERO.includes(it.babero))) throw new HttpError(400, `Modelo de babero no disponible para ${b.nombre}`);
+      const conPorta = b.componentes.some(c => c.id === 'porta');
+      if (conPorta && !it.modelo) throw new HttpError(400, `Elegí el modelo del portachupete de ${b.nombre}`);
+      if (it.modelo && !conPorta) throw new HttpError(400, `${b.nombre} no trae portachupete`);
       // La box no cobra letras extra en el portachupete (confirmado con Manolito): solo el portachupete suelto
       for (const c of b.componentes) {
         if (c.stock !== null && c.stock < c.cantidad * it.cantidad) throw new HttpError(409, `${b.nombre}: no queda stock de ${c.nombre}`);
       }
-      lineas.push({ tipo: 'box', id: b.id, nombre: b.nombre, cantidad: it.cantidad, color: it.color, nombreBebe: it.nombreBebe, babero: it.babero, precioUnitario: b.precio, total: b.precio * it.cantidad,
+      lineas.push({ tipo: 'box', id: b.id, nombre: b.nombre, cantidad: it.cantidad, color: it.color, nombreBebe: it.nombreBebe, modelo: it.modelo, babero: it.babero, precioUnitario: b.precio, total: b.precio * it.cantidad,
         componentes: b.componentes.map(c => ({ id: c.id, cantidad: c.cantidad * it.cantidad })) });
       continue;
     }
@@ -108,11 +111,10 @@ export async function calcular(
     if (it.estampado && it.color !== 'Estampada') throw new HttpError(400, `El estampado solo va con el color Estampada`);
     if (it.nombreBebe && !p.personalizable) throw new HttpError(400, `${p.nombre} no lleva nombre`);
     if (!it.nombreBebe && p.personalizable) throw new HttpError(400, `Falta el nombre del bebé para ${p.nombre}`);
-    if (p.id === 'babero' && !MODELOS_BABERO.includes(it.modelo ?? '')) throw new HttpError(400, `Elegí el modelo de ${p.nombre}`);
     if (p.stock !== null && p.stock < it.cantidad) throw new HttpError(409, p.stock ? `Quedan solo ${p.stock} de ${p.nombre}` : `${p.nombre} está sin stock`);
     const extra = p.personalizable ? Math.max(0, letras(it.nombreBebe) - LETRAS_INCLUIDAS) * PRECIO_LETRA_EXTRA : 0;
     const unit = p.precio + extra;
-    lineas.push({ tipo: 'producto', id: p.id, nombre: p.nombre, cantidad: it.cantidad, color: it.color, estampado: it.estampado, nombreBebe: it.nombreBebe, modelo: p.personalizable || p.id === 'babero' ? it.modelo : undefined, armado: it.armado, precioUnitario: unit, total: unit * it.cantidad,
+    lineas.push({ tipo: 'producto', id: p.id, nombre: p.nombre, cantidad: it.cantidad, color: it.color, estampado: it.estampado, nombreBebe: it.nombreBebe, modelo: p.personalizable ? it.modelo : undefined, armado: it.armado, precioUnitario: unit, total: unit * it.cantidad,
       componentes: [{ id: p.id, cantidad: it.cantidad }] });
   }
   const subtotal = lineas.reduce((s, l) => s + l.total, 0);

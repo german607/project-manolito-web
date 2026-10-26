@@ -181,6 +181,9 @@ function tabla(sel, items, tipo) {
 const ESTADOS = ['pendiente', 'pagado', 'enviado', 'entregado', 'cancelado'];
 $('#filtroEstado').addEventListener('change', () => cargarPedidos().catch(err => toast(err.message)));
 
+// Foto del modelo de portachupete elegido ("Silicona N° 4 — detalle" → silicona-4.jpg)
+const fotoModelo = m => { const r = /^(Silicona|Madera) N° (\d+)/.exec(m || ''); return r ? `/assets/img/portachupetes/modelos/${r[1].toLowerCase()}-${r[2]}.jpg` : ''; };
+
 async function cargarPedidos() {
   const estado = $('#filtroEstado').value;
   const pedidos = await api('/pedidos' + (estado ? '?estado=' + estado : ''));
@@ -200,7 +203,7 @@ async function cargarPedidos() {
         <select class="estado" aria-label="Estado del pedido ${p.id}">${ESTADOS.map(e => `<option ${e === p.estado ? 'selected' : ''}>${e}</option>`).join('')}</select>
         ${p.estado === 'pendiente' && p.pago !== 'mercadopago' ? '<button class="btn sm confirmar" type="button">Confirmar pago</button>' : ''}
       </div>
-      <ul>${(armados => p.items.map(l => `<li>${l.armado ? `<b>Armado ${armados.indexOf(l.armado) + 1}:</b> ` : ''}${l.cantidad} × ${esc(l.nombre)}${l.color ? ` (${esc(l.color)})` : ''}${l.nombreBebe ? ` “${esc(l.nombreBebe)}”` : ''}${l.modelo ? ` · Modelo: ${esc(l.modelo)}` : ''}${l.babero ? ` · Babero: ${esc(l.babero)}` : ''} — ${plata(l.total)}</li>`).join(''))([...new Set(p.items.map(l => l.armado).filter(Boolean))])}</ul>
+      <ul>${(armados => p.items.map(l => `<li>${l.armado ? `<b>Armado ${armados.indexOf(l.armado) + 1}:</b> ` : ''}${l.cantidad} × ${esc(l.nombre)}${l.color ? ` (${esc(l.color)})` : ''}${l.nombreBebe ? ` “${esc(l.nombreBebe)}”` : ''}${l.modelo ? ` · Modelo: ${esc(l.modelo)}` : ''}${l.babero ? ` · Babero: ${esc(l.babero)}` : ''} — ${plata(l.total)}${fotoModelo(l.modelo) ? `<br><a href="${fotoModelo(l.modelo)}" target="_blank" rel="noopener" title="Ver el modelo ${esc(l.modelo)}"><img class="modelo-foto" src="${fotoModelo(l.modelo)}" alt="Modelo ${esc(l.modelo)}"></a>` : ''}</li>`).join(''))([...new Set(p.items.map(l => l.armado).filter(Boolean))])}</ul>
     </article>`).join('')
     : '<p class="empty card">No hay pedidos todavía. Van a aparecer acá cuando la web tenga checkout.</p>';
 

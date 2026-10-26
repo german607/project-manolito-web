@@ -20,8 +20,8 @@
       zoom.addEventListener('click',function(e){if(e.target===zoom)zoom.close();});
       document.body.appendChild(zoom);
     }
-    zoom.querySelector('img').src=src; zoom.querySelector('img').alt='Portachupete '+titulo;
-    zoom.querySelector('p').textContent='Elegiste: '+titulo;
+    zoom.querySelector('img').src=src; zoom.querySelector('img').alt='Portachupete de '+titulo.toLowerCase();
+    zoom.querySelector('p').textContent='Elegiste este modelo de '+titulo.toLowerCase()+' ✓';
     zoom.showModal();
   }
   function pintar(){
@@ -34,13 +34,16 @@
       var f=el('button','pm-img'+(n===lam?' sel':'')); f.type='button'; f.setAttribute('aria-label','Elegir modelo '+n+' de '+mat);
       var im=document.createElement('img'); im.loading='lazy'; im.alt='Portachupete de '+mat.toLowerCase()+', modelo '+n;
       im.src='assets/img/portachupetes/modelos/'+mat.toLowerCase()+'-'+n+'.jpg'; f.appendChild(im);
-      f.appendChild(el('span','pm-tag',(n===lam?'✓ ':'')+'N° '+n));
-      f.onclick=function(){lam=n;pintar();ver(im.src,mat+' N° '+n);}; grid.appendChild(f);
+      if(n===lam) f.appendChild(el('span','pm-tag','✓'));
+      f.onclick=function(){lam=n;pintar();ver(im.src,mat);}; grid.appendChild(f);
     })(n);}
-    selE.textContent=lam?'Elegiste: '+mat+' N° '+lam:'Todavía no elegiste modelo';
+    selE.textContent=lam?'Elegiste un modelo de '+mat.toLowerCase()+' ✓':'Todavía no elegiste modelo';
     selE.classList.toggle('ok',!!lam);
+    listo();
   }
+  function listo(){add.classList.toggle('listo',!add.disabled&&!!lam&&!!nameI.value.trim());}
   function upd(){
+    listo();
     var l=letras(nameI.value), p=precio();
     priceE.textContent='$'+p;
     hintE.textContent=!l?'Hasta '+INC+' letras incluidas · $'+EXTRA+' por letra extra':

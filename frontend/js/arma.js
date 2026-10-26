@@ -5,10 +5,10 @@
   var P=[
     {id:'trapito',n:'Trapito de apego',p:890,c:COL,img:IM.trapito,i:'<path d="M12 21s-7-4.35-9.5-8.5C.5 8.5 3 5 6.5 5c2 0 3.5 1 5.5 3 2-2 3.5-3 5.5-3C21 5 23.5 8.5 21.5 12.5 19 16.65 12 21 12 21z"/>'},
     {id:'zapatitos',n:'Zapatitos tejidos',p:490,c:COL,img:IM.zapatitos,i:'<path d="M4 6h7v6l7 2a2 2 0 0 1 2 2v2H4z"/><path d="M4 12h7"/>'},
-    {id:'babero',n:'Babero de algodón',p:190,c:COL4,est:1,bab:1,img:IM.babero,i:'<path d="M5 4c1 4 3 6 7 6s6-2 7-6"/><path d="M5 4l-1 9a8 8 0 0 0 16 0l-1-9"/>'},
+    {id:'babero',n:'Babero de algodón',p:190,c:['Rosa','Celeste','Verde'],img:IM.babero,i:'<path d="M5 4c1 4 3 6 7 6s6-2 7-6"/><path d="M5 4l-1 9a8 8 0 0 0 16 0l-1-9"/>'},
     {id:'manta',n:'Manta de muselina',p:890,c:COL4,est:1,img:IM.manta,i:'<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 10h16M4 14h16"/>'},
     {id:'peine',n:'Set de peine bamboo',p:690,img:IM.peine,i:'<rect x="6" y="3" width="6" height="12" rx="3"/><path d="M9 15v6"/><path d="M16 4v17M14 5h4M14 9h4M14 13h4"/>'},
-    {id:'sonajero',n:'Sonajero de tela',p:690,img:IM.sonajero,i:'<circle cx="12" cy="7" r="4"/><path d="M12 11v4"/><rect x="9" y="15" width="6" height="6" rx="3"/>'},
+    {id:'sonajero',n:'Sonajero de tela',p:690,c:['Conejito aro','Conejito bastón'],cl:'Modelo',img:IM.sonajero,i:'<circle cx="12" cy="7" r="4"/><path d="M12 11v4"/><rect x="9" y="15" width="6" height="6" rx="3"/>'},
     {id:'guarda',n:'Guardachupete de silicona',p:390,c:COL,img:IM.guarda,i:'<circle cx="12" cy="13" r="7"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="6.5" r="2.5"/>'},
     {id:'mordillo',n:'Mordillo de silicona',p:490,c:COL,img:IM.mordillo,i:'<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="3"/>'},
     {id:'porta',n:'Portachupete personalizado',p:790,name:1,modelo:1,img:IM.porta,i:'<circle cx="12" cy="5" r="2.5"/><path d="M12 7.5V10"/><circle cx="7" cy="14" r="2"/><circle cx="12" cy="16" r="2"/><circle cx="17" cy="14" r="2"/>'}
@@ -31,7 +31,7 @@
     var tx=el('div'); tx.appendChild(el('h4',null,p.n)); var pr=el('div','ap-price','$'+p.p); pr.id='apr-'+p.id; tx.appendChild(pr);
     if(!p.img) top.appendChild(ic); top.appendChild(tx); card.appendChild(top);
     if(p.c){
-      var o=el('div','ap-opt'); o.appendChild(el('small',null,'Color'));
+      var o=el('div','ap-opt'); o.appendChild(el('small',null,p.cl||'Color'));
       var ch=el('div','ap-chips');
       p.c.forEach(function(cn){
         var b=el('button','chip',cn); b.type='button';
@@ -49,11 +49,6 @@
       var ie=document.createElement('input'); ie.type='text'; ie.maxLength=60; ie.placeholder='Ej: ositos, florcitas, arcoíris';
       ie.addEventListener('input',function(){st[p.id]=st[p.id]||{}; st[p.id].estampado=ie.value.trim(); render();});
       oe.appendChild(ie); card.appendChild(oe);
-    }
-    if(p.bab){
-      var ob=el('div','ap-opt'); ob.appendChild(el('small',null,'Modelo'));
-      var gb=el('div','bab-grid'); ob.appendChild(gb); card.appendChild(ob);
-      elegirBabero(gb,'',function(v){st[p.id]=st[p.id]||{}; st[p.id].modelo=v; st[p.id].on=true; render();});
     }
     if(p.modelo){
       var o3=el('div','ap-opt'); o3.appendChild(el('small',null,'Modelo'));
@@ -106,7 +101,7 @@
       for(var n=1;n<=LAM[mat];n++){(function(n){
         var f=el('button','pm-img'+(n===lam?' sel':'')); f.type='button'; f.setAttribute('aria-label','Elegir modelo '+n+' de '+mat);
         var im=document.createElement('img'); im.alt='Portachupete de '+mat.toLowerCase()+', modelo '+n; im.loading='lazy'; im.src='assets/img/portachupetes/modelos/'+mat.toLowerCase()+'-'+n+'.jpg'; f.appendChild(im);
-        f.appendChild(el('span','pm-tag',n===lam?'✓ N° '+n:'N° '+n));
+        if(n===lam) f.appendChild(el('span','pm-tag','✓'));
         f.onclick=function(){lam=n;pintar();}; g.appendChild(f);
       })(n);}
     }
@@ -120,11 +115,12 @@
     mod._cerrar=cerrar; pintar(); mod.classList.add('show'); document.body.style.overflow='hidden';
   }
 
-  function lineText(p){
+  // interno = con el número de modelo (mensaje para Manolito por Instagram)
+  function lineText(p,interno){
     var s=st[p.id]||{}, t=p.n;
-    if(p.c) t+=' ('+(s.color?s.color.toLowerCase():'color a elegir')+(s.color==='Estampada'?': '+(s.estampado||'a definir'):'')+')';
+    if(p.c) t+=' ('+(s.color?s.color.toLowerCase():(p.cl?'modelo':'color')+' a elegir')+(s.color==='Estampada'?': '+(s.estampado||'a definir'):'')+')';
     if(p.name) t+=' '+(s.name?'"'+s.name+'"':'(nombre a definir)');
-    if(p.modelo||p.bab) t+=' — modelo: '+(s.modelo||'a definir');
+    if(p.modelo) t+=' — modelo: '+(s.modelo?(interno?s.modelo:modeloPublico(s.modelo).toLowerCase()):'a definir');
     return t;
   }
 
@@ -137,7 +133,7 @@
       var bt=card.querySelector('.ap-btn'); bt.disabled=!!p.agotado; bt.textContent=p.agotado?'Sin stock':(s.on?'Quitar':'Agregar');
       var eo=card.querySelector('.ap-est'); if(eo) eo.hidden=s.color!=='Estampada';
       card.querySelectorAll('.chip').forEach(function(b){b.classList.toggle('sel',!!(s.color&&b.textContent===s.color));});
-      if(p.modelo){var mbb=document.getElementById('apm-'+p.id); if(mbb) mbb.textContent=s.modelo?'Modelo: '+s.modelo+' (cambiar)':'Ver y elegir modelo';}
+      if(p.modelo){var mbb=document.getElementById('apm-'+p.id); if(mbb) mbb.textContent=s.modelo?'Modelo de '+modeloPublico(s.modelo).toLowerCase()+' elegido ✓ (cambiar)':'Ver y elegir modelo';}
       document.getElementById('apr-'+p.id).textContent='$'+price(p);
       if(s.on){
         count++; total+=price(p);
@@ -152,6 +148,7 @@
     document.getElementById('armaTotalRow').style.display=count?'flex':'none';
     document.getElementById('armaSend').style.display=count?'block':'none';
     document.getElementById('armaCart').style.display=count?'block':'none';
+    document.getElementById('armaCart').classList.toggle('listo',!faltanArmado().length);
     document.getElementById('armaNote').textContent=count>=2?'Agregalo al carrito para pedirlo online, o mandanos tu armado por Instagram.':count?'Elegí al menos 2 productos para armar tu box.':'Todavía no agregaste nada. Elegí al menos 2 productos tocando "Agregar".';
     document.getElementById('armaBarN').textContent=count;
     document.getElementById('armaBarT').textContent='$'+total;
@@ -166,23 +163,26 @@
 
   function toast(m){var t=document.getElementById('armaToast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},4500);}
 
-  document.getElementById('armaCart').addEventListener('click',function(){
+  // Lo que falta para poder agregar el armado (popup al tocar "Agregar al carrito"; el servidor también lo controla)
+  function faltanArmado(){
     var elegidos=P.filter(function(p){return st[p.id]&&st[p.id].on;});
-    // Todo lo que falta en un popup; el servidor también lo controla
     var faltan=elegidos.length<2?['Elegir al menos 2 productos para armar tu box']:[];
     elegidos.forEach(function(p){
       var s=st[p.id];
-      if(p.c&&!s.color) faltan.push('El color de '+p.n);
+      if(p.c&&!s.color) faltan.push((p.cl?'El modelo':'El color')+' de '+p.n);
       if(p.est&&s.color==='Estampada'&&!s.estampado) faltan.push('Qué estampado querés para '+p.n);
       if(p.name&&!s.name) faltan.push('El nombre del bebé para el portachupete');
       if(p.modelo&&!s.modelo) faltan.push('El modelo del portachupete');
-      if(p.bab&&!s.modelo) faltan.push('El modelo del babero');
     });
+    return faltan;
+  }
+  document.getElementById('armaCart').addEventListener('click',function(){
+    var elegidos=P.filter(function(p){return st[p.id]&&st[p.id].on;}), faltan=faltanArmado();
     if(faltan.length){Carrito.aviso(faltan);return;}
     var armado='a'+Date.now().toString(36); // agrupa los productos de este armado (el servidor exige 2 distintos por armado)
     elegidos.forEach(function(p){
       var s=st[p.id];
-      Carrito.agregar({tipo:'producto',id:p.id,color:s.color||undefined,estampado:(p.est&&s.color==='Estampada')?s.estampado:undefined,nombreBebe:p.name?s.name:undefined,modelo:(p.modelo||p.bab)?s.modelo:undefined,armado:armado});
+      Carrito.agregar({tipo:'producto',id:p.id,color:s.color||undefined,estampado:(p.est&&s.color==='Estampada')?s.estampado:undefined,nombreBebe:p.name?s.name:undefined,modelo:p.modelo?s.modelo:undefined,armado:armado});
       s.on=false;
     });
     render();
@@ -191,7 +191,7 @@
 
   document.getElementById('armaSend').addEventListener('click',function(){
     var lines=['¡Hola Manolito! Quiero armar mi box:'],total=0;
-    P.forEach(function(p){var s=st[p.id]; if(s&&s.on){lines.push('- '+lineText(p)+' — $'+price(p)); total+=price(p);}});
+    P.forEach(function(p){var s=st[p.id]; if(s&&s.on){lines.push('- '+lineText(p,true)+' — $'+price(p)); total+=price(p);}});
     lines.push('Total: $'+total);
     var msg=lines.join('\n'), ok=false;
     track('arma_enviar');

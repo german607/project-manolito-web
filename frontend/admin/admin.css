@@ -118,3 +118,6 @@ td input[type=number]{width:96px;}
   .top{padding:10px 16px;gap:10px;}
   .tabs{order:3;flex-basis:100%;}
 }
+
+/* Foto del modelo de portachupete en cada pedido */
+.modelo-foto{width:72px;height:72px;object-fit:cover;border-radius:10px;margin:6px 0 4px;border:1px solid var(--line);}

@@ -201,6 +201,14 @@ const MIGRACIONES: (() => Promise<void>)[] = [
   async () => {
     await q('ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS cupon text, ADD COLUMN IF NOT EXISTS descuento integer NOT NULL DEFAULT 0');
   },
+  // 5: el babero suelto ("Armá tu box") viene en rosa, celeste o verde (sin beige ni estampado)
+  async () => {
+    await q(`UPDATE productos SET colores = '["Rosa", "Celeste", "Verde"]' WHERE id = 'babero'`);
+  },
+  // 6: el sonajero se elige entre los dos de la foto (va en el campo color, como opción)
+  async () => {
+    await q(`UPDATE productos SET colores = '["Conejito aro", "Conejito bastón"]' WHERE id = 'sonajero'`);
+  },
 ];
 
 // Crea las tablas, aplica migraciones y carga el catálogo inicial si la base está vacía.

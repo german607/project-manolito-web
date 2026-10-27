@@ -5,12 +5,12 @@ const foto = (id: string) => `assets/img/arma-tu-box/producto-${id}.jpg`;
 
 export const PRODUCTOS = [
   { id: 'trapito', nombre: 'Trapito de apego', precio: 890, colores: COL, descripcion: 'Trapito de apego de muselina, suave y abrazable, su compañero para dormir.' },
-  { id: 'zapatitos', nombre: 'Zapatitos tejidos', precio: 490, colores: COL, descripcion: 'Zapatitos tejidos con carita, suaves y abrigados para los primeros días.' },
+  { id: 'zapatitos', nombre: 'Zapatitos tejidos', precio: 490, colores: COL, descripcion: 'Zapatitos tejidos, suaves y abrigados para los primeros días.' },
   { id: 'babero', nombre: 'Babero de algodón', precio: 190, colores: ['Rosa', 'Celeste', 'Verde'], descripcion: 'Babero de muselina de algodón, suave e hipoalergénico, con broche ajustable.' },
-  { id: 'manta', nombre: 'Manta de muselina', precio: 890, colores: [...COL, 'Estampada'], descripcion: 'Manta de muselina, liviana y suave, ideal para abrigar al bebé.' },
-  { id: 'peine', nombre: 'Set de peine bamboo', precio: 690, colores: null, descripcion: 'Set de cepillo de cerdas suaves y peine de madera natural para cuidar el pelito del bebé.' },
+  { id: 'manta', nombre: 'Manta de muselina', precio: 890, colores: [...COL, 'Estampada'], descripcion: 'Manta de muselina de algodón, liviana y suave. Para múltiples usos.' },
+  { id: 'peine', nombre: 'Set de peine bamboo', precio: 690, colores: null, descripcion: 'Set de cepillo de cerdas suaves y peine de bamboo para cuidar el pelito del bebé.' },
   { id: 'sonajero', nombre: 'Sonajero de tela', precio: 690, colores: ['Conejito aro', 'Conejito bastón'], descripcion: 'Sonajero de tela suave y seguro, ideal para estimular y calmar al bebé.' },
-  { id: 'guarda', nombre: 'Guardachupete de silicona', precio: 390, colores: COL, descripcion: 'Estuche de silicona suave para guardar y llevar el chupete siempre limpio.' },
+  { id: 'guarda', nombre: 'Guardachupete de silicona', precio: 390, colores: COL, descripcion: 'Estuche de silicona libre de BPA, suave para guardar y llevar el chupete siempre limpio.' },
   { id: 'mordillo', nombre: 'Mordillo de silicona', precio: 490, colores: COL, descripcion: 'Mordillo de silicona y madera natural, seguro y libre de BPA para aliviar las encías.' },
   { id: 'porta', nombre: 'Portachupete personalizado', precio: 790, colores: null, personalizable: true, descripcion: 'Con el nombre de tu bebé (hasta 5 letras), en silicona libre de BPA o madera natural.' },
 ].map(p => ({ personalizable: false, ...p, foto: foto(p.id) }));

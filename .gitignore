@@ -5,3 +5,6 @@ dist/
 backend/data/
 # Script local para subir imágenes al bucket
 scripts/subir-imagenes.sh
+
+# Estado local del aviso de garbage collector (Claude Code)
+.claude/.gc-estado.json

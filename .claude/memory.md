@@ -4,6 +4,11 @@ Resumen de los cambios importantes, un bloque por día (`## AAAA-MM-DD`, el más
 Los días con más de 4 días de antigüedad se borran solos al empezar cada sesión (`.claude/hooks/podar-memoria.mjs`).
 Lo que tiene que durar más va en `CLAUDE.md`, no acá. Lo actualiza el skill `gc`.
 
+## 2026-10-27
+- Admin: campanita de notificaciones en el header (`/api/admin/notificaciones`, cada 30 s). Muestra cambios en pedidos que no hizo ese admin (salen del historial); "vistas" por admin en `usuarios.notif_vistas` (migración 7). Tocar una lleva al pedido en la pestaña Pedidos.
+- Vercel Web Analytics agregado a las 4 páginas públicas (falta activarlo en Vercel → Analytics). El bounce rate da alto porque casi todo pasa en una sola página.
+- Memoria del proyecto: `CLAUDE.md` + `.claude/memory.md` (4 días) + skill `gc` + hooks (`podar-memoria`, `gc-aviso`).
+
 ## 2026-10-26
 - Botón "Agregar al carrito" (`.btn-add`): rosado claro mientras falta elegir algo; se oscurece (`.listo`) cuando ya se puede agregar. En la box, la sección Portachupetes y "Armá tu box".
 - Boxes: se elige color de la box y **modelo del portachupete** (botones Silicona / Madera → ventana con fotos → OK). El babero de la box va **del mismo color que la box** (sin opción aparte). El servidor exige `modelo` en boxes con portachupete.

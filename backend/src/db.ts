@@ -86,7 +86,8 @@ const ESQUEMA = `
     nombre text NOT NULL,
     hash   text NOT NULL,                -- scrypt (nunca la contraseña)
     rol    text NOT NULL DEFAULT 'cliente' CHECK (rol IN ('cliente', 'admin')),
-    creado timestamptz NOT NULL DEFAULT now()
+    creado timestamptz NOT NULL DEFAULT now(),
+    notif_vistas timestamptz             -- admin: última vez que abrió las notificaciones
   );
   CREATE UNIQUE INDEX IF NOT EXISTS usuarios_email ON usuarios (lower(email));
 
@@ -208,6 +209,10 @@ const MIGRACIONES: (() => Promise<void>)[] = [
   // 6: el sonajero se elige entre los dos de la foto (va en el campo color, como opción)
   async () => {
     await q(`UPDATE productos SET colores = '["Conejito aro", "Conejito bastón"]' WHERE id = 'sonajero'`);
+  },
+  // 7: notificaciones del admin (qué ya vio)
+  async () => {
+    await q('ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS notif_vistas timestamptz');
   },
 ];
 

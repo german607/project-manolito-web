@@ -1,0 +1,15 @@
+{
+  "env": {
+    "GC_PROMPTS": "15",
+    "GC_PORCENTAJE": "50",
+    "GC_CONTEXTO_MAX": "1000000"
+  },
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [{ "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/podar-memoria.mjs\"" }] }
+    ],
+    "UserPromptSubmit": [
+      { "hooks": [{ "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/gc-aviso.mjs\"" }] }
+    ]
+  }
+}

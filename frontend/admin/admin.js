@@ -232,7 +232,74 @@ fetch('/api/auth/yo').then(r => r.json()).then(({ usuario }) => {
   if (usuario?.rol !== 'admin') return irAlLogin();
   $('#app').hidden = false;
   abrirTab(tabActual());
+  cargarNotificaciones();
+  setInterval(cargarNotificaciones, 30_000);
+  window.addEventListener('focus', cargarNotificaciones);
 }).catch(irAlLogin);
+
+// ---------- Notificaciones (campanita) ----------
+// Cambios en pedidos que no hiciste vos. Se actualizan cada 30 s; al abrir el panel quedan como vistas
+
+let notifs = [];
+const hace = s => {
+  const min = Math.round((Date.now() - new Date(s)) / 60_000);
+  return min < 1 ? 'recién' : min < 60 ? `hace ${min} min` : min < 1440 ? `hace ${Math.round(min / 60)} h`
+    : new Date(s).toLocaleDateString('es-UY', { timeZone: 'America/Montevideo', day: 'numeric', month: 'short' });
+};
+function textoNotif(n) {
+  const quien = `#${n.pedido}${n.nombre ? ' · ' + esc(n.nombre) : ''}`;
+  if (n.accion === 'crear') return `<b>Nuevo pedido ${quien}</b> — ${plata(n.total)} · ${esc(PAGOS[n.pago] || n.pago || '')}`;
+  if (n.accion === 'comprobante') return `<b>Comprobante recibido</b> en el pedido ${quien}`;
+  if (n.accion === 'estado') {
+    const [antes, despues] = n.cambios.estado || [];
+    if (n.autor === 'mercadopago' && despues === 'pagado') return `<b>Pago confirmado</b> por Mercado Pago · pedido ${quien}`;
+    if (n.autor === 'mercadopago' && despues === 'cancelado') return `<b>Devolución o contracargo</b> en Mercado Pago · pedido ${quien}`;
+    if (n.autor.startsWith('sistema') && despues === 'cancelado') return `<b>Venció sin pago</b> el pedido ${quien}`;
+    return `Pedido ${quien}: ${esc(antes)} → <b>${esc(despues)}</b>${n.autor.includes('@') ? ` (por ${esc(n.autor)})` : ''}`;
+  }
+  return `Pedido ${quien}: ${esc(n.accion)}`;
+}
+async function cargarNotificaciones() {
+  try {
+    const r = await api('/notificaciones');
+    notifs = r.items;
+    const badge = $('#notifN');
+    badge.textContent = r.noLeidas > 99 ? '99+' : r.noLeidas; badge.hidden = !r.noLeidas;
+    document.title = (r.noLeidas ? `(${r.noLeidas}) ` : '') + 'Admin — Manolito';
+    if (!$('#notifPanel').hidden) pintarNotificaciones();
+  } catch { /* sin conexión: se reintenta en 30 s */ }
+}
+function pintarNotificaciones() {
+  $('#notifLista').innerHTML = notifs.length ? notifs.map(n => `
+    <li><button type="button" class="${n.nueva ? 'nueva' : ''}" data-pedido="${esc(n.pedido)}">
+      <span>${textoNotif(n)}</span><small>${hace(n.cuando)}</small></button></li>`).join('')
+    : '<li class="empty">Todavía no hay novedades.</li>';
+}
+function abrirNotificaciones(si) {
+  $('#notifPanel').hidden = !si; $('#notifBtn').setAttribute('aria-expanded', si);
+  if (!si) return;
+  pintarNotificaciones();
+  // Abrir = vistas: el número se apaga; las nuevas siguen resaltadas mientras el panel está abierto
+  $('#notifN').hidden = true; document.title = 'Admin — Manolito';
+  api('/notificaciones/vistas', { method: 'POST' }).catch(() => {});
+}
+$('#notifBtn').addEventListener('click', e => { e.stopPropagation(); abrirNotificaciones($('#notifPanel').hidden); });
+$('#notifPanel').addEventListener('click', e => {
+  const b = e.target.closest('button[data-pedido]'); if (!b) return;
+  abrirNotificaciones(false);
+  $('#filtroEstado').value = '';
+  abrirTab('pedidos');
+  // Lleva al pedido y lo resalta cuando la lista termina de cargar
+  let intentos = 0;
+  const buscar = () => {
+    const art = document.querySelector(`.pedido[data-id="${CSS.escape(b.dataset.pedido)}"]`);
+    if (art) { art.scrollIntoView({ behavior: 'smooth', block: 'center' }); art.classList.add('resaltado'); setTimeout(() => art.classList.remove('resaltado'), 2500); }
+    else if (++intentos < 20) setTimeout(buscar, 150);
+  };
+  buscar();
+});
+document.addEventListener('click', e => { if (!e.target.closest('.notif')) abrirNotificaciones(false); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') abrirNotificaciones(false); });
 
 // ---------- Historial ----------
 

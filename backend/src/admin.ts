@@ -205,6 +205,29 @@ adminRouter.patch('/cupones/:codigo', async (req, res) => {
   res.json({ ok: true });
 });
 
+// ---------- Notificaciones (campanita) ----------
+// Cambios en pedidos que no hizo este admin: pedidos nuevos, comprobantes, pagos de Mercado Pago, vencimientos,
+// cambios de otro admin. Salen del historial; "nueva" = posterior a la última vez que abrió la campanita.
+
+export async function notificaciones(usuario: { id: number; email: string }) {
+  const vistas = (await q1<{ v: Date | null }>('SELECT notif_vistas AS v FROM usuarios WHERE id = $1', [usuario.id]))?.v ?? new Date(0);
+  const items = await q(`SELECT h.id, h.cuando, h.autor, h.accion, h.entidad_id AS pedido, h.cambios, h.cuando > $2 AS nueva,
+      p.nombre, p.total, p.pago, p.estado
+    FROM historial h LEFT JOIN pedidos p ON p.id::text = h.entidad_id
+    WHERE h.entidad = 'pedido' AND h.autor <> $1 ORDER BY h.cuando DESC, h.id DESC LIMIT 30`, [usuario.email, vistas]);
+  const { n } = (await q1<{ n: number }>(`SELECT COUNT(*)::int AS n FROM historial
+    WHERE entidad = 'pedido' AND autor <> $1 AND cuando > $2`, [usuario.email, vistas]))!;
+  return { noLeidas: n, items };
+}
+
+adminRouter.get('/notificaciones', async (_req, res) => {
+  res.json(await notificaciones(res.locals.usuario));
+});
+adminRouter.post('/notificaciones/vistas', async (_req, res) => {
+  await q('UPDATE usuarios SET notif_vistas = now() WHERE id = $1', [res.locals.usuario.id]);
+  res.json({ ok: true });
+});
+
 // ---------- Historial ----------
 
 adminRouter.get('/historial', async (req, res) => {

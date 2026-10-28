@@ -68,7 +68,8 @@
     var btn=$('confirmar'); btn.disabled=true; btn.textContent='Enviando…';
     var body={
       cliente:{nombre:form.nombre.value,telefono:form.telefono.value,email:form.email.value,direccion:entrega()==='pickup'?undefined:form.direccion.value},
-      entrega:entrega(), pago:pago(), items:Carrito.items(), cupon:cupon||undefined
+      entrega:entrega(), pago:pago(), items:Carrito.items(), cupon:cupon||undefined,
+      origen:window.origenVisita?origenVisita():undefined
     };
     fetch('/api/pedidos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
       .then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error(d.detalles?d.detalles.join(' · '):d.error);return d;});})

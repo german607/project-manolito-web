@@ -119,7 +119,9 @@ const ESQUEMA = `
     comprobante_tipo   text,
     comprobante_subido timestamptz,      -- con comprobante, el pedido no vence: queda en revisión
     cupon         text,                  -- código de descuento usado (ver cupones)
-    descuento     integer NOT NULL DEFAULT 0
+    descuento     integer NOT NULL DEFAULT 0,
+    origen        text,                  -- de dónde llegó: utm_source del link (instagram, …) o el sitio de referencia (google)
+    campana       text                   -- utm_campaign del link (qué publicación o promo)
   );
 
   -- Códigos de descuento (admin → Cupones)
@@ -213,6 +215,10 @@ const MIGRACIONES: (() => Promise<void>)[] = [
   // 7: notificaciones del admin (qué ya vio)
   async () => {
     await q('ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS notif_vistas timestamptz');
+  },
+  // 8: de dónde llegó cada pedido (métricas "De dónde vienen las ventas")
+  async () => {
+    await q('ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS origen text, ADD COLUMN IF NOT EXISTS campana text');
   },
 ];
 

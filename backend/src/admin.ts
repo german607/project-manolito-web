@@ -66,8 +66,43 @@ adminRouter.get('/resumen', async (req, res) => {
     { paso: 'Pagaron', n: ventas.resumen!.pedidos },
   ];
 
+  // ---- Para vender más ----
+  // Período anterior, del mismo largo, para comparar
+  const anterior = await q1(`SELECT COUNT(*)::int AS pedidos, COALESCE(SUM(total), 0)::int AS total, COALESCE(ROUND(AVG(total)), 0)::int AS ticket,
+      (SELECT COALESCE(SUM(n), 0)::int FROM eventos WHERE tipo = 'visita' AND dia >= $1::date - $2::int AND dia < $1::date) AS visitas
+    FROM pedidos WHERE estado IN ('pagado', 'enviado', 'entregado')
+      AND (creado AT TIME ZONE '${ZONA_UY}')::date >= $1::date - $2::int AND (creado AT TIME ZONE '${ZONA_UY}')::date < $1::date`, [desde, dias]);
+
+  // Cuántas veces se vio cada box y cuántas se vendieron
+  const conversionBoxes = await q(`SELECT b.nombre AS ref, COALESCE(v.vistas, 0)::int AS vistas, COALESCE(c.vendidas, 0)::int AS vendidas
+    FROM boxes b
+    LEFT JOIN (SELECT ref, SUM(n) AS vistas FROM eventos WHERE tipo = 'box_ver' AND dia >= $1 GROUP BY ref) v ON v.ref = b.nombre
+    LEFT JOIN (SELECT l->>'id' AS id, SUM((l->>'cantidad')::int) AS vendidas FROM pedidos, jsonb_array_elements(items) l
+      WHERE ${VENDIDO} AND l->>'tipo' = 'box' GROUP BY 1) c ON c.id = b.id
+    WHERE b.activo ORDER BY vistas DESC, b.nombre`, [desde]);
+
+  // Cuándo se hacen los pedidos (todos los creados: muestra cuándo compra la gente, pague o no)
+  const CREADO = `(creado AT TIME ZONE '${ZONA_UY}')`;
+  const porDiaSemana = await q(`SELECT EXTRACT(ISODOW FROM ${CREADO})::int AS dia, COUNT(*)::int AS n FROM pedidos WHERE ${CREADO}::date >= $1 GROUP BY 1`, [desde]);
+  const porHora = await q(`SELECT EXTRACT(HOUR FROM ${CREADO})::int AS hora, COUNT(*)::int AS n FROM pedidos WHERE ${CREADO}::date >= $1 GROUP BY 1`, [desde]);
+
+  const cupones = await q(`SELECT cupon AS ref, COUNT(*)::int AS pedidos, SUM(descuento)::int AS descuento, SUM(total)::int AS n
+    FROM pedidos WHERE ${VENDIDO} AND cupon IS NOT NULL GROUP BY 1 ORDER BY n DESC`, [desde]);
+  const porOrigen = await q(`SELECT COALESCE(origen, 'sin dato') AS ref, campana, COUNT(*)::int AS pedidos, SUM(total)::int AS n
+    FROM pedidos WHERE ${VENDIDO} GROUP BY 1, 2 ORDER BY n DESC LIMIT 15`, [desde]);
+
+  // ---- Clientes (por email, pedidos pagados) ----
+  const clientes = await q1(`WITH c AS (SELECT lower(email) AS email, MIN(creado) AS primera FROM pedidos
+      WHERE estado IN ('pagado', 'enviado', 'entregado') GROUP BY 1)
+    SELECT COUNT(*) FILTER (WHERE (primera AT TIME ZONE '${ZONA_UY}')::date >= $1)::int AS nuevos,
+      COUNT(*) FILTER (WHERE (primera AT TIME ZONE '${ZONA_UY}')::date < $1 AND email IN (SELECT lower(email) FROM pedidos WHERE ${VENDIDO}))::int AS vuelven
+    FROM c`, [desde]);
+  const mejoresClientes = await q(`SELECT MAX(nombre) AS nombre, lower(email) AS email, COUNT(*)::int AS pedidos, SUM(total)::int AS n
+    FROM pedidos WHERE estado IN ('pagado', 'enviado', 'entregado') GROUP BY 2 ORDER BY n DESC LIMIT 10`);
+
   res.json({
     dias, desde, visitasPorDia, totales, pedidos, ventas, embudo,
+    anterior, conversionBoxes, porDiaSemana, porHora, cupones, porOrigen, clientes, mejoresClientes,
     paginas: await suma('visita'),
     boxesVistas: await suma('box_ver'),
     productosAgregados: await suma('arma_agregar'),

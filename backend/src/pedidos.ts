@@ -38,6 +38,11 @@ export const PedidoInput = z.object({
   pago: Pago,
   items: z.array(Item).min(1).max(30),
   cupon: Codigo.optional(),
+  // De dónde llegó (lo arma la web con los utm del link o el sitio de referencia). Solo para métricas
+  origen: z.object({
+    fuente: z.string().trim().toLowerCase().max(40),
+    campana: z.string().trim().toLowerCase().max(60).optional(),
+  }).optional().catch(undefined),
 }).refine(p => p.entrega === 'pickup' || !!p.cliente.direccion, {
   message: 'La dirección es obligatoria salvo para pick-up', path: ['cliente', 'direccion'],
 });
@@ -223,10 +228,11 @@ export const insertar = (input: PedidoInput, c: Awaited<ReturnType<typeof calcul
   await descontarStock(c.lineas);
   if (c.cupon) await usarCupon(c.cupon);
   const { cliente } = input;
-  const r = await q1<{ id: number }>(`INSERT INTO pedidos (nombre, telefono, email, direccion, entrega, pago, items, subtotal, descuento, cupon, recargo, total, usuario_id)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id`, [
+  const r = await q1<{ id: number }>(`INSERT INTO pedidos (nombre, telefono, email, direccion, entrega, pago, items, subtotal, descuento, cupon, recargo, total, usuario_id, origen, campana)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING id`, [
     cliente.nombre, cliente.telefono, cliente.email, cliente.direccion ?? null, input.entrega, input.pago,
-    JSON.stringify(c.lineas), c.subtotal, c.descuento, c.cupon ?? null, c.recargo, c.total, usuarioId]);
+    JSON.stringify(c.lineas), c.subtotal, c.descuento, c.cupon ?? null, c.recargo, c.total, usuarioId,
+    input.origen?.fuente || null, input.origen?.campana || null]);
   await registrar(autor, 'pedido', r!.id, 'crear', { total: [null, c.total], pago: [null, input.pago], ...(c.cupon ? { cupon: [null, c.cupon] } : {}) });
   return r!.id;
 });

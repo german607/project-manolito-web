@@ -6,6 +6,7 @@ Lo que tiene que durar más va en `CLAUDE.md`, no acá. Lo actualiza el skill `g
 
 ## 2026-10-27
 - Admin: campanita de notificaciones en el header (`/api/admin/notificaciones`, cada 30 s). Muestra cambios en pedidos que no hizo ese admin (salen del historial); "vistas" por admin en `usuarios.notif_vistas` (migración 7). Tocar una lleva al pedido en la pestaña Pedidos.
+- Admin → Resumen: nuevas métricas "Para vender más" (comparación con el período anterior, conversión por box, días y horas de los pedidos, cupones, de dónde vienen las ventas) y "Clientes" (nuevos, que vuelven, mejores clientes). El origen sale de `?utm_source=…&utm_campaign=…` o del sitio de referencia (`main.js → origenVisita`, 30 días) y se guarda en `pedidos.origen/campana` (migración 8).
 - Vercel Web Analytics agregado a las 4 páginas públicas (falta activarlo en Vercel → Analytics). El bounce rate da alto porque casi todo pasa en una sola página.
 - Memoria del proyecto: `CLAUDE.md` + `.claude/memory.md` (4 días) + skill `gc` + hooks (`podar-memoria`, `gc-aviso`).
 

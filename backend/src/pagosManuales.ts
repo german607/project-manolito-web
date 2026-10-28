@@ -7,7 +7,7 @@ import { q, q1, tx, registrar } from './db.js';
 import { HttpError } from './errores.js';
 import { guardarPrivado } from './imagenes.js';
 import { enviarMail } from './mail.js';
-import { buscarPedido, VENCE_HORAS, type Pedido } from './pedidos.js';
+import { buscarPedido, vencimiento, type Pedido } from './pedidos.js';
 
 // ---------- Datos para pagar (se editan en el admin → Ajustes) ----------
 
@@ -146,7 +146,7 @@ pagosManualesRouter.get('/pedidos/:id/pago', async (req, res) => {
   const p = await pedidoConToken(id, t);
   res.json({
     id: p.id, total: p.total, pago: p.pago, estado: p.estado, comprobante: !!p.comprobante,
-    vence: new Date(new Date(p.creado).getTime() + VENCE_HORAS * 3600_000), datos: await datosDePago(p),
+    vence: vencimiento(p), datos: await datosDePago(p),
     // Mercado Pago: la página muestra el formulario de tarjeta (Card Payment Brick) con esta clave pública
     mpPublicKey: p.pago === 'mercadopago' ? process.env.MP_PUBLIC_KEY ?? null : undefined,
   });

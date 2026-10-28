@@ -150,3 +150,7 @@ td input[type=number]{width:96px;}
 .card .hint{font-size:.8rem;color:var(--ink-soft);margin:-4px 0 10px;}
 .card .hint code{font-size:.75rem;word-break:break-all;}
 .form-ajustes label.switch{flex-direction:row;align-items:center;gap:8px;font-size:.95rem;font-weight:700;}
+
+.btn.outline{background:var(--white);color:var(--pink-deep);border:1.5px solid var(--pink-deep);}
+.btn:disabled{opacity:.6;cursor:default;}
+.pedido .btn.sm{display:block;width:100%;margin-top:6px;}

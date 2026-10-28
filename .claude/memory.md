@@ -6,6 +6,11 @@ Lo que tiene que durar más va en `CLAUDE.md`, no acá. Lo actualiza el skill `g
 
 ## 2026-10-28
 - Recargo de Mercado Pago configurable en admin → Ajustes (prender/apagar y porcentaje, 0–50%; ajuste `recargo_mp`, por defecto 10%). Queda en el Historial. El checkout muestra el % real. Los textos de la web (preguntas frecuentes) no mencionan el recargo: solo se ve en el checkout.
+- Vencimiento de pedidos sin pagar: **transferencia 4 h**, el resto (Abitab, Prex, Mercado Pago) 2 h (`venceHoras(pago)` en `pedidos.ts`; admin y checkout usan el mismo dato). **Pendiente:** la pregunta frecuente "¿Cómo compro?" sigue diciendo "2 horas" (no tocar sin que lo pidan).
+- Admin → Pedidos: botón **"Reclamar pago"** (pendientes de transferencia/Abitab/Prex sin comprobante). Mail "Todavía no recibimos tu pago": datos para pagar + link nuevo (el anterior deja de valer), "necesitamos el comprobante antes de las HH:MM" y cierra con "Envianos el comprobante de pago para que podamos comenzar a preparar tu compra". **Da 4 h desde el mail** (`pedidos.vence`, migración 9; `vencimiento(p)` en `pedidos.ts`). Historial: `recordatorio`.
+- Horas de vencimiento en 24 h y hora de Uruguay (mail, pantalla de pago, admin). El mail de cancelación ahora dice "Venció el plazo sin que recibiéramos el pago".
+- Redirecciones 3xx revisadas: 308 http→https, www→sin www y /admin→/admin/ (Vercel); 301 dominio de Railway→manolitouy.com (`FRONTEND_URL`); 304 de imágenes. Sin cadenas.
+- Análisis de seguridad (OWASP + pérdida de datos) hecho; no se aplicó ningún arreglo todavía. **Pendiente, por prioridad:** backups de Postgres (riesgo 8); `npm audit fix` por body-parser (7); aviso por mail al cambiar datos bancarios/recargo y login del admin; 2FA del admin (6); backup del bucket e imágenes desde Vercel (6); Cloudflare + verificar `TRUST_PROXY` (la API responde directo en Railway) (5); CSP y Permissions-Policy (4); no poner el nombre libre en los mails al cliente (5); reserva de stock con pedidos falsos / captcha (5).
 
 ## 2026-10-27
 - Admin: campanita de notificaciones en el header (`/api/admin/notificaciones`, cada 30 s). Muestra cambios en pedidos que no hizo ese admin (salen del historial); "vistas" por admin en `usuarios.notif_vistas` (migración 7). Tocar una lleva al pedido en la pestaña Pedidos.
@@ -23,9 +28,3 @@ Lo que tiene que durar más va en `CLAUDE.md`, no acá. Lo actualiza el skill `g
 - Las boxes no cobran letras extra: se sacó "hasta 5 letras" de la ventana de la box. **No tocar las preguntas frecuentes sin que lo pidan.**
 - Textos: manta "Manta de muselina de algodón, liviana y suave. Para múltiples usos."; peine "de bamboo"; zapatitos sin "con carita"; estuche "libre de BPA".
 
-## 2026-10-22
-- Favicon: pestaña = logo con nombre (`favicon.ico`); Google/Android = arcoíris solo (`icon-192.png`); iPhone = `apple-touch-icon.png`. En la raíz del frontend (Vercel), no en `/assets/img` (Railway).
-- Caída de Railway (21–22/10): revocó las credenciales de los buckets y pausó los deploys → imágenes 502. Se arregla con redeploy. Pendiente: plan de resiliencia en `backend/TODO.md`.
-- `backend/TODO.md` actualizado al estado real (secciones Resiliencia y Configuración pendiente).
-- Search Console: página indexada; falta cargar `sitemap.xml` en una propiedad que coincida con `https://manolitouy.com/` (o de tipo Dominio).
-- Mercado Pago en producción activo. Rotar credenciales: Tus integraciones → Credenciales de producción → ⋮ → Renovar; cargar `MP_ACCESS_TOKEN` + `MP_PUBLIC_KEY` juntas y redeploy.

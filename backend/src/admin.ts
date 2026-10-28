@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 import { q, q1, tx, productos, boxes, registrar, diferencias } from './db.js';
 import { HttpError } from './errores.js';
-import { ESTADOS, cambiarEstado, RecargoMp, leerRecargoMp, guardarRecargoMp } from './pedidos.js';
+import { ESTADOS, cambiarEstado, reclamarComprobante, RecargoMp, leerRecargoMp, guardarRecargoMp } from './pedidos.js';
 import { HOY_UY, ZONA_UY } from './publico.js';
 import { soloAdmin } from './auth.js';
 import { guardarImagen, leerPrivado } from './imagenes.js';
@@ -293,6 +293,11 @@ adminRouter.get('/pedidos', async (req, res) => {
   const estado = z.enum(ESTADOS).optional().catch(undefined).parse(req.query.estado);
   const filas = await q(`SELECT * FROM pedidos ${estado ? 'WHERE estado = $1' : ''} ORDER BY id DESC LIMIT 200`, estado ? [estado] : []);
   res.json(filas.map(({ token_pago: _t, ...p }) => p));
+});
+
+adminRouter.post('/pedidos/:id/reclamar-comprobante', async (req, res) => {
+  await reclamarComprobante(Number(req.params.id), res.locals.usuario.email);
+  res.json({ ok: true });
 });
 
 adminRouter.patch('/pedidos/:id', async (req, res) => {

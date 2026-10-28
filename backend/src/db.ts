@@ -121,7 +121,8 @@ const ESQUEMA = `
     cupon         text,                  -- código de descuento usado (ver cupones)
     descuento     integer NOT NULL DEFAULT 0,
     origen        text,                  -- de dónde llegó: utm_source del link (instagram, …) o el sitio de referencia (google)
-    campana       text                   -- utm_campaign del link (qué publicación o promo)
+    campana       text,                  -- utm_campaign del link (qué publicación o promo)
+    vence         timestamptz            -- plazo para pagar fijado a mano (ej. al reclamar el pago); NULL = el normal según el medio
   );
 
   -- Códigos de descuento (admin → Cupones)
@@ -219,6 +220,10 @@ const MIGRACIONES: (() => Promise<void>)[] = [
   // 8: de dónde llegó cada pedido (métricas "De dónde vienen las ventas")
   async () => {
     await q('ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS origen text, ADD COLUMN IF NOT EXISTS campana text');
+  },
+  // 9: plazo de pago propio por pedido (al reclamar el pago se dan 4 h más desde el mail)
+  async () => {
+    await q('ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS vence timestamptz');
   },
 ];
 

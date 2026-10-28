@@ -95,6 +95,13 @@
   </section>
 
   <section class="panel" id="tab-ajustes" hidden>
+    <div class="row-head"><h2>Recargo de Mercado Pago</h2><p class="hint">Se suma al total cuando el cliente elige pagar con Mercado Pago (sobre el monto ya descontado). Los pedidos ya hechos no cambian.</p></div>
+    <form class="card form-ajustes" id="formRecargo">
+      <label class="switch"><input type="checkbox" name="activo"> <span>Cobrar recargo</span></label>
+      <label>Porcentaje del recargo<input name="porcentaje" type="number" min="0" max="50" step="0.5" required style="max-width:140px"></label>
+      <button class="btn" type="submit">Guardar</button>
+    </form>
+
     <div class="row-head"><h2>Datos para pagar</h2><p class="hint">Es lo que ve el cliente al elegir transferencia, Abitab o Prex. Si no cargás la cuenta, se le dice que le vas a escribir.</p></div>
     <form class="card form-ajustes" id="formPagos">
       <h3>Transferencia bancaria</h3>

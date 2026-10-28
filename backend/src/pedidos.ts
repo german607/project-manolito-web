@@ -10,7 +10,22 @@ import { crearToken, datosDePago, datosEnTexto, linkComprobante, MANUALES, pedid
 export const ESTADOS = ['pendiente', 'pagado', 'enviado', 'entregado', 'cancelado'] as const;
 const LETRAS_INCLUIDAS = 5;
 const PRECIO_LETRA_EXTRA = 20;
-const RECARGO_MERCADOPAGO = 0.10; // "Mercado Pago (con 10% adicional)" según las preguntas frecuentes
+// Recargo por pagar con Mercado Pago: se prende/apaga y se elige el porcentaje en admin → Ajustes (por defecto 10%)
+export const RecargoMp = z.object({ activo: z.boolean(), porcentaje: z.number().min(0).max(50) });
+export type RecargoMp = z.infer<typeof RecargoMp>;
+export async function leerRecargoMp(): Promise<RecargoMp> {
+  const r = await q1<{ valor: RecargoMp }>("SELECT valor FROM ajustes WHERE clave = 'recargo_mp'");
+  return r?.valor ?? { activo: true, porcentaje: 10 };
+}
+export async function guardarRecargoMp(valor: RecargoMp, autor: Autor) {
+  const antes = await leerRecargoMp();
+  await tx(async () => {
+    await q(`INSERT INTO ajustes (clave, valor) VALUES ('recargo_mp', $1) ON CONFLICT (clave) DO UPDATE SET valor = $1`, [JSON.stringify(valor)]);
+    await registrar(autor, 'ajustes', 'recargo_mp', 'editar', { recargoMp: [textoRecargo(antes), textoRecargo(valor)] });
+  });
+}
+const textoRecargo = (r: RecargoMp) => (r.activo ? `${r.porcentaje}%` : 'apagado');
+const porcentajeMp = (r: RecargoMp) => (r.activo ? r.porcentaje / 100 : 0);
 export const VENCE_HORAS = 2; // pedidos sin pagar se cancelan solos y liberan el stock
 const AVISO_VENCE = `Tenés ${VENCE_HORAS} horas para hacer el pago; si no, el pedido se cancela automáticamente.`;
 
@@ -119,12 +134,12 @@ export async function calcular(
   }
   const subtotal = lineas.reduce((s, l) => s + l.total, 0);
   const { cupon, descuento } = input.cupon ? await aplicarCupon(input.cupon, subtotal) : { cupon: undefined, descuento: 0 };
-  return { lineas, cupon, ...totales(subtotal, descuento, input.pago) };
+  return { lineas, cupon, ...totales(subtotal, descuento, input.pago, porcentajeMp(await leerRecargoMp())) };
 }
 
 // El recargo de Mercado Pago va sobre lo que se paga, ya con el descuento
-function totales(subtotal: number, descuento: number, pago: z.infer<typeof Pago>) {
-  const recargo = pago === 'mercadopago' ? Math.round((subtotal - descuento) * RECARGO_MERCADOPAGO) : 0;
+function totales(subtotal: number, descuento: number, pago: z.infer<typeof Pago>, recargoMp: number) {
+  const recargo = pago === 'mercadopago' ? Math.round((subtotal - descuento) * recargoMp) : 0;
   return { subtotal, descuento, recargo, total: subtotal - descuento + recargo };
 }
 
@@ -276,7 +291,8 @@ pedidosRouter.post('/carrito', async (req, res) => {
   if (cupon) {
     try { ({ descuento } = await aplicarCupon(cupon, subtotal)); } catch (e) { if (!(e instanceof HttpError)) throw e; cuponError = e.message; }
   }
-  res.json({ lineas, avisos, ...totales(subtotal, descuento, pago), cupon: cupon && !cuponError ? cupon.trim().toUpperCase() : undefined, cuponError, mercadopago: !!process.env.MP_ACCESS_TOKEN, mpPublicKey: process.env.MP_PUBLIC_KEY ?? null });
+  const rmp = await leerRecargoMp();
+  res.json({ lineas, avisos, ...totales(subtotal, descuento, pago, porcentajeMp(rmp)), recargoMp: rmp.activo ? rmp.porcentaje : 0, cupon: cupon && !cuponError ? cupon.trim().toUpperCase() : undefined, cuponError, mercadopago: !!process.env.MP_ACCESS_TOKEN, mpPublicKey: process.env.MP_PUBLIC_KEY ?? null });
 });
 
 pedidosRouter.post('/pedidos', async (req, res) => {

@@ -218,13 +218,13 @@ async function cargarPedidos() {
   const estado = $('#filtroEstado').value;
   const pedidos = await api('/pedidos' + (estado ? '?estado=' + estado : ''));
   const fecha = s => new Date(s).toLocaleString('es-UY', { timeZone: 'America/Montevideo', dateStyle: 'short', timeStyle: 'short' });
-  // Sin pagar se cancela solo a las 2 h (VENCE_HORAS en backend/src/pedidos.ts)
-  const vence = s => new Date(new Date(s).getTime() + 2 * 3600_000).toLocaleTimeString('es-UY', { timeZone: 'America/Montevideo', hour: '2-digit', minute: '2-digit' });
+  // Sin pagar se cancela solo: transferencia a las 4 h, el resto a las 2 h (venceHoras en backend/src/pedidos.ts)
+  const vence = p => new Date(p.vence || new Date(p.creado).getTime() + (p.pago === 'transferencia' ? 4 : 2) * 3600_000).toLocaleTimeString('es-UY', { timeZone: 'America/Montevideo', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
   $('#listaPedidos').innerHTML = pedidos.length ? pedidos.map(p => `
     <article class="card pedido" data-id="${p.id}">
       <div>
         <h3>#${p.id} · ${esc(p.nombre)}</h3>
-        <p class="meta">${fecha(p.creado)}${p.estado === 'pendiente' ? (p.comprobante ? ' · <b>en revisión (no vence)</b>' : ` · <b>vence ${vence(p.creado)}</b>`) : ''} · ${esc(p.telefono)} · ${esc(p.email)}</p>
+        <p class="meta">${fecha(p.creado)}${p.estado === 'pendiente' ? (p.comprobante ? ' · <b>en revisión (no vence)</b>' : ` · <b>vence ${vence(p)}</b>`) : ''} · ${esc(p.telefono)} · ${esc(p.email)}</p>
         <p class="meta">${ENTREGA[p.entrega] || esc(p.entrega)}${p.direccion ? ' — ' + esc(p.direccion) : ''} · Pago: ${esc(PAGOS[p.pago] || p.pago)} · Ref. MANOLITO-${p.id}</p>
         ${p.comprobante ? `<p class="comprobante">📎 Comprobante recibido ${fecha(p.comprobante_subido)} · <a href="/api/admin/pedidos/${p.id}/comprobante" target="_blank" rel="noopener">Ver comprobante</a></p>` : ''}
       </div>
@@ -232,6 +232,7 @@ async function cargarPedidos() {
         <p class="tot">${plata(p.total)}</p>${p.descuento ? `<p class="meta">Descuento ${esc(p.cupon)}: -${plata(p.descuento)}</p>` : ''}
         <select class="estado" aria-label="Estado del pedido ${p.id}">${ESTADOS.map(e => `<option ${e === p.estado ? 'selected' : ''}>${e}</option>`).join('')}</select>
         ${p.estado === 'pendiente' && p.pago !== 'mercadopago' ? '<button class="btn sm confirmar" type="button">Confirmar pago</button>' : ''}
+        ${p.estado === 'pendiente' && p.pago !== 'mercadopago' && !p.comprobante ? '<button class="btn sm outline reclamar" type="button" title="Le avisa al cliente que no llegó el pago y le reenvía los datos para pagar y el link para mandar el comprobante">Reclamar pago</button>' : ''}
       </div>
       <ul>${(armados => p.items.map(l => `<li>${l.armado ? `<b>Armado ${armados.indexOf(l.armado) + 1}:</b> ` : ''}${l.cantidad} × ${esc(l.nombre)}${l.color ? ` (${esc(l.color)})` : ''}${l.nombreBebe ? ` “${esc(l.nombreBebe)}”` : ''}${l.modelo ? ` · Modelo: ${esc(l.modelo)}` : ''}${l.babero ? ` · Babero: ${esc(l.babero)}` : ''} — ${plata(l.total)}${fotoModelo(l.modelo) ? `<br><a href="${fotoModelo(l.modelo)}" target="_blank" rel="noopener" title="Ver el modelo ${esc(l.modelo)}"><img class="modelo-foto" src="${fotoModelo(l.modelo)}" alt="Modelo ${esc(l.modelo)}"></a>` : ''}</li>`).join(''))([...new Set(p.items.map(l => l.armado).filter(Boolean))])}</ul>
     </article>`).join('')
@@ -246,6 +247,17 @@ async function cargarPedidos() {
       toast('Pago confirmado, se avisó al cliente ✓');
       cargarPedidos();
     } catch (err) { toast(err.message); }
+  }));
+
+  // Sin pago: se le avisa al cliente por mail (datos para pagar + link para el comprobante); si no lo manda, se cancela
+  document.querySelectorAll('.pedido .reclamar').forEach(b => b.addEventListener('click', async () => {
+    const id = b.closest('.pedido').dataset.id;
+    if (!confirm(`¿Le mandamos un mail al cliente del pedido #${id} avisando que no llegó el pago y que, si no envía el comprobante, se cancela?`)) return;
+    b.disabled = true;
+    try {
+      await api(`/pedidos/${id}/reclamar-comprobante`, { method: 'POST' });
+      toast('Mail enviado al cliente ✓'); b.textContent = 'Reclamado ✓';
+    } catch (err) { toast(err.message); b.disabled = false; }
   }));
 
   document.querySelectorAll('.pedido select').forEach(sel => sel.addEventListener('change', async () => {
@@ -280,6 +292,7 @@ function textoNotif(n) {
   const quien = `#${n.pedido}${n.nombre ? ' · ' + esc(n.nombre) : ''}`;
   if (n.accion === 'crear') return `<b>Nuevo pedido ${quien}</b> — ${plata(n.total)} · ${esc(PAGOS[n.pago] || n.pago || '')}`;
   if (n.accion === 'comprobante') return `<b>Comprobante recibido</b> en el pedido ${quien}`;
+  if (n.accion === 'recordatorio') return `Se reclamó el pago del pedido ${quien}${n.autor.includes('@') ? ` (por ${esc(n.autor)})` : ''}`;
   if (n.accion === 'estado') {
     const [antes, despues] = n.cambios.estado || [];
     if (n.autor === 'mercadopago' && despues === 'pagado') return `<b>Pago confirmado</b> por Mercado Pago · pedido ${quien}`;
@@ -334,8 +347,9 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') abrirNotific
 // ---------- Historial ----------
 
 const CAMPOS = { recargoMp: 'Recargo de Mercado Pago', cupon: 'Código de descuento', descuento: 'Descuento', minimo: 'Compra mínima', usosMax: 'Usos máximos', vence: 'Vence', comprobante: 'Comprobante', datosDePago: 'Datos para pagar', precio: 'Precio', stockCargado: 'Stock', controlaStock: 'Controla stock', activo: 'Activo', estado: 'Estado', foto: 'Foto', total: 'Total', pago: 'Pago' };
-const ACCIONES = { comprobante: 'Subió el comprobante de', crear: 'Creó', editar: 'Editó', foto: 'Cambió la foto de', estado: 'Cambió el estado de' };
+const ACCIONES = { recordatorio: 'Reclamó el pago de', comprobante: 'Subió el comprobante de', crear: 'Creó', editar: 'Editó', foto: 'Cambió la foto de', estado: 'Cambió el estado de' };
 const valor = (campo, x) => x === null || x === undefined ? '—' : typeof x === 'boolean' ? (x ? 'sí' : 'no')
+  : campo === 'vence' && String(x).length > 10 ? new Date(x).toLocaleString('es-UY', { timeZone: 'America/Montevideo', dateStyle: 'short', timeStyle: 'short', hourCycle: 'h23' })
   : campo === 'precio' || campo === 'total' || campo === 'minimo' ? plata(x) : campo === 'pago' ? PAGOS[x] || x : campo === 'foto' ? 'imagen' : String(x);
 $('#filtroHistorial').addEventListener('change', () => cargarHistorial().catch(err => toast(err.message)));
 

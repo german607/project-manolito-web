@@ -26,8 +26,15 @@ export async function guardarRecargoMp(valor: RecargoMp, autor: Autor) {
 }
 const textoRecargo = (r: RecargoMp) => (r.activo ? `${r.porcentaje}%` : 'apagado');
 const porcentajeMp = (r: RecargoMp) => (r.activo ? r.porcentaje / 100 : 0);
-export const VENCE_HORAS = 2; // pedidos sin pagar se cancelan solos y liberan el stock
-const AVISO_VENCE = `Tenés ${VENCE_HORAS} horas para hacer el pago; si no, el pedido se cancela automáticamente.`;
+// Pedidos sin pagar se cancelan solos y liberan el stock. La transferencia tiene más tiempo (el banco puede demorar)
+export const VENCE_HORAS = 2;
+export const VENCE_HORAS_TRANSFERENCIA = 4;
+export const venceHoras = (pago: string) => (pago === 'transferencia' ? VENCE_HORAS_TRANSFERENCIA : VENCE_HORAS);
+export const RECLAMO_HORAS = 4; // al reclamar el pago, el cliente tiene 4 h desde ese mail para mandar el comprobante
+// Hasta cuándo puede pagar: el plazo fijado a mano (reclamo) o el normal desde que hizo el pedido
+export const vencimiento = (p: Pick<Pedido, 'creado' | 'pago' | 'vence'>) =>
+  p.vence ? new Date(p.vence) : new Date(new Date(p.creado).getTime() + venceHoras(p.pago) * 3600_000);
+const avisoVence = (pago: string) => `Tenés ${venceHoras(pago)} horas para hacer el pago; si no, el pedido se cancela automáticamente.`;
 
 export const Item = z.object({
   tipo: z.enum(['producto', 'box']),
@@ -148,6 +155,7 @@ export type Pedido = {
   email: string; direccion: string | null; entrega: string; pago: string; items: Linea[];
   subtotal: number; descuento: number; cupon: string | null; recargo: number; total: number; mp_payment_id: string | null; usuario_id: number | null;
   token_pago: string | null; comprobante: string | null; comprobante_tipo: string | null; comprobante_subido: Date | null;
+  vence: Date | null;
 };
 
 // bloquear = trabar la fila hasta el fin de la transacción (para cambios de estado simultáneos)
@@ -252,15 +260,42 @@ export const insertar = (input: PedidoInput, c: Awaited<ReturnType<typeof calcul
   return r!.id;
 });
 
-// Cancela los pedidos pendientes de pago con más de VENCE_HORAS y avisa al cliente. Corre cada 5 min (server.ts)
+// Admin → Pedidos → "Reclamar pago": avisa al cliente que no llegó el pago, le reenvía los datos para pagar y el link para
+// mandar el comprobante (necesario para mantener la compra; si no llega, el pedido se cancela). Genera un link nuevo (el token anterior deja de valer)
+export async function reclamarComprobante(id: number, autor: Autor) {
+  const p = await buscarPedido(id);
+  if (!p) throw new HttpError(404, 'Pedido no encontrado');
+  if (p.estado !== 'pendiente') throw new HttpError(409, 'Solo se reclama en pedidos pendientes de pago');
+  if (!(MANUALES as readonly string[]).includes(p.pago)) throw new HttpError(409, 'Los pedidos de Mercado Pago no llevan comprobante');
+  if (p.comprobante) throw new HttpError(409, 'Este pedido ya tiene comprobante: revisalo y confirmá el pago');
+
+  const link = linkComprobante(id, await crearToken(id));
+  const datos = await datosDePago(p);
+  const { vence } = (await q1<{ vence: Date }>(`UPDATE pedidos SET vence = now() + make_interval(hours => $1) WHERE id = $2 RETURNING vence`, [RECLAMO_HORAS, id]))!;
+  const hora = new Date(vence)
+    .toLocaleTimeString('es-UY', { timeZone: 'America/Montevideo', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }); // ej. 19:07
+  const aviso = `Para mantener tu compra, necesitamos el comprobante de pago antes de las ${hora}; si no, el pedido se cancela automáticamente.`;
+  const cierre = 'Envianos el comprobante de pago para que podamos comenzar a preparar tu compra.';
+  await enviarMail(p.email, `Todavía no recibimos el pago de tu pedido Manolito #${id}`, mailCliente(p, {
+    titulo: 'Todavía no recibimos tu pago',
+    intro: `¡Hola ${p.nombre}! Todavía no nos llegó el pago de tu pedido.`,
+    textoExtra: `${datosEnTexto(datos)}\n\n${aviso}\n\n${cierre}`,
+    despues: (datos ? caja(datos.titulo, datos.campos, datos.texto) : parrafo(datosEnTexto(null))) + parrafo(aviso) + parrafo(cierre),
+    boton: { texto: 'Enviar comprobante de pago', url: link },
+  }));
+  await registrar(autor, 'pedido', id, 'recordatorio', { pago: [null, 'reclamado por mail'], vence: [vencimiento(p).toISOString(), new Date(vence).toISOString()] });
+}
+
+// Cancela los pedidos pendientes de pago vencidos (venceHoras) y avisa al cliente. Corre cada 5 min (server.ts)
 export async function vencerPedidos() {
   // Con comprobante subido no vence: queda en revisión hasta que el admin confirme (o cancele) el pago
-  const vencidos = await q<{ id: number }>("SELECT id FROM pedidos WHERE estado = 'pendiente' AND comprobante IS NULL AND creado <= now() - make_interval(hours => $1)", [VENCE_HORAS]);
+  const vencidos = await q<{ id: number }>(`SELECT id FROM pedidos WHERE estado = 'pendiente' AND comprobante IS NULL
+    AND COALESCE(vence, creado + make_interval(hours => CASE WHEN pago = 'transferencia' THEN $1::int ELSE $2::int END)) <= now()`, [VENCE_HORAS_TRANSFERENCIA, VENCE_HORAS]);
   for (const { id } of vencidos) {
     const p = await cambiarEstado(id, 'cancelado', undefined, 'sistema (venció sin pago)');
     const fin = 'Si todavía lo querés, podés hacerlo de nuevo en la web o escribirnos por Instagram.';
     enviarMail(p.email, `Tu pedido Manolito #${id} se canceló`, mailCliente(p, {
-      titulo: 'Tu pedido se canceló', intro: `¡Hola ${p.nombre}! Pasaron ${VENCE_HORAS} horas sin que recibiéramos el pago, así que el pedido se canceló.`,
+      titulo: 'Tu pedido se canceló', intro: `¡Hola ${p.nombre}! Venció el plazo sin que recibiéramos el pago, así que el pedido se canceló.`,
       textoExtra: fin, despues: parrafo(fin), boton: { texto: 'Volver a la tienda', url: process.env.FRONTEND_URL ?? process.env.BASE_URL ?? 'http://localhost:3000' },
     }));
   }
@@ -307,7 +342,7 @@ pedidosRouter.post('/pedidos', async (req, res) => {
   if (p.pago === 'mercadopago') {
     // El pedido ya está guardado: si Mercado Pago falla no se pierde, queda pendiente para coordinar a mano.
     // Mercado Pago deja de aceptar el pago al mismo tiempo que vence el pedido
-    const vence = new Date(Date.now() + VENCE_HORAS * 3600_000);
+    const vence = new Date(Date.now() + venceHoras(p.pago) * 3600_000);
     pagoUrl = await crearPreferencia({ id, total: p.total, email: p.email, nombre: p.nombre, vence }).catch(e => { console.error(e); return undefined; });
   }
   // Pago manual (transferencia, Abitab, Prex): datos para pagar y token para subir el comprobante
@@ -315,6 +350,7 @@ pedidosRouter.post('/pedidos', async (req, res) => {
   // Token del pedido: para ver los datos de pago y subir el comprobante (manual) o pagar con tarjeta acá mismo (Mercado Pago)
   const token = await crearToken(id);
   const datos = manual ? await datosDePago(p) : null;
+  const AVISO_VENCE = avisoVence(p.pago);
   const instrucciones = pagoUrl ? undefined : `${datosEnTexto(datos)}\n\n${AVISO_VENCE}`;
 
   const link = linkComprobante(id, token);
@@ -335,7 +371,8 @@ pedidosRouter.post('/pedidos', async (req, res) => {
       `${p.nombre} · ${p.telefono} · ${p.email}\nPago: ${p.pago}\n\n${resumen(p, true)}`, p.email); // "Responder" le escribe al cliente
   }
 
-  res.status(201).json({ id, subtotal: p.subtotal, recargo: p.recargo, total: p.total, pagoUrl, instrucciones, token, datos });
+  res.status(201).json({ id, subtotal: p.subtotal, recargo: p.recargo, total: p.total, pagoUrl, instrucciones, token, datos,
+    vence: vencimiento(p) });
 });
 
 // ---------- Mercado Pago ----------

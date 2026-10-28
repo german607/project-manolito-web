@@ -3,7 +3,7 @@ import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { calcular, insertar, buscarPedido, cambiarEstado, vencerPedidos, PedidoInput } from './pedidos.js';
+import { calcular, insertar, buscarPedido, cambiarEstado, vencerPedidos, reclamarComprobante, PedidoInput } from './pedidos.js';
 import { crearToken, datosDePago, guardarAjustesPagos, leerAjustesPagos, pedidoConToken, subirComprobante } from './pagosManuales.js';
 import { leerPrivado } from './imagenes.js';
 import { productos, boxes, q } from './db.js';
@@ -88,4 +88,46 @@ test('ajustes guardados antes del campo "otro banco" siguen funcionando', async 
   assert.ok(d.campos.some(c => c.etiqueta === 'Cuenta para transferir desde Itaú' && c.valor === '1234567'));
   assert.ok(!d.campos.some(c => c.etiqueta.includes('otro banco')), 'vacío: no se muestra');
   assert.ok(!d.campos.some(c => c.etiqueta === 'Sucursal'), 'sin sucursal cargada: no se muestra');
+});
+
+test('reclamar pago: manda el mail con un link nuevo; no aplica con comprobante, pagados ni Mercado Pago', async () => {
+  const enviados: any[] = [];
+  const real = globalThis.fetch;
+  globalThis.fetch = (async (_u: string, init: RequestInit) => { enviados.push(JSON.parse(String(init.body))); return new Response('{}'); }) as typeof fetch;
+  process.env.RESEND_API_KEY = 're_test';
+  try {
+    const { id, token } = await pedido();
+    await reclamarComprobante(id, 'admin@test.com');
+    const m = enviados.at(-1);
+    assert.equal(m.to, 'ana@test.com');
+    assert.match(m.subject, /Todavía no recibimos el pago/);
+    assert.match(m.text, /comprobante de pago antes de las .*se cancela automáticamente/);
+    assert.match(m.text, /Envianos el comprobante de pago para que podamos comenzar a preparar tu compra\./);
+    await assert.rejects(pedidoConToken(id, token), /no encontrado/, 'el link viejo deja de valer: va uno nuevo en el mail');
+    const h = await q("SELECT autor, accion FROM historial WHERE entidad = 'pedido' AND entidad_id = $1 AND accion = 'recordatorio'", [String(id)]);
+    assert.equal(h[0].autor, 'admin@test.com');
+
+    const nuevo = (m.text.match(/t=([a-f0-9]{48})/) ?? [])[1];
+    await subirComprobante(id, nuevo, PNG);
+    await assert.rejects(reclamarComprobante(id, 'admin@test.com'), /ya tiene comprobante/);
+    const mp = await pedido('mercadopago');
+    await assert.rejects(reclamarComprobante(mp.id, 'admin@test.com'), /Mercado Pago/);
+  } finally {
+    globalThis.fetch = real; delete process.env.RESEND_API_KEY;
+  }
+});
+
+test('reclamar pago: el cliente tiene 4 h desde el mail, aunque el pedido ya estuviera por vencer', async () => {
+  const { id } = await pedido(); // transferencia: vence a las 4 h de creado
+  await q("UPDATE pedidos SET creado = now() - interval '3 hours 55 minutes' WHERE id = $1", [id]);
+  await reclamarComprobante(id, 'admin@test.com');
+  const p = (await buscarPedido(id))!;
+  const horas = (new Date(p.vence!).getTime() - Date.now()) / 3600_000;
+  assert.ok(horas > 3.9 && horas <= 4, `vence en ~4 h desde ahora (${horas.toFixed(2)})`);
+  await q("UPDATE pedidos SET creado = now() - interval '6 hours' WHERE id = $1", [id]);
+  await vencerPedidos();
+  assert.equal((await buscarPedido(id))!.estado, 'pendiente', 'pasaron 6 h desde el pedido, pero el plazo nuevo sigue corriendo');
+  await q("UPDATE pedidos SET vence = now() - interval '1 minute' WHERE id = $1", [id]);
+  await vencerPedidos();
+  assert.equal((await buscarPedido(id))!.estado, 'cancelado', 'vencido el plazo del reclamo, se cancela');
 });

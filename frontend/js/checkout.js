@@ -83,7 +83,7 @@
           else{gracias(d.id,'Último paso: el pago','Total: '+plata(d.total)+'.');pagoTarjeta(d.id,d.token,d.total,cot.mpPublicKey,d.pagoUrl);return;}
         }
         gracias(d.id,'¡Gracias! Recibimos tu pedido.','Total: '+plata(d.total)+'. Te mandamos el detalle a '+body.cliente.email+'.',d.datos?'':d.instrucciones);
-        if(d.token) pagoManual(d.id,d.token,{total:d.total,estado:'pendiente',comprobante:false,datos:d.datos,vence:new Date(Date.now()+2*3600e3)});
+        if(d.token) pagoManual(d.id,d.token,{total:d.total,estado:'pendiente',comprobante:false,datos:d.datos,vence:d.vence?new Date(d.vence):new Date(Date.now()+2*3600e3)});
       })
       .catch(function(err){$('cartError').textContent=err.message||'No pudimos enviar el pedido. Probá de nuevo.';})
       .then(function(){btn.disabled=false;btn.textContent='Confirmar pedido';});
@@ -102,7 +102,7 @@
 
   // ---- Pago manual (transferencia, Abitab, Prex): datos para pagar y comprobante ----
   function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e;}
-  function hora(f){return new Date(f).toLocaleTimeString('es-UY',{hour:'2-digit',minute:'2-digit'});}
+  function hora(f){return new Date(f).toLocaleTimeString('es-UY',{timeZone:'America/Montevideo',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});} // hora de Uruguay, ej. 19:07
   function pagoManual(id,token,info){
     var box=$('gPago'); box.innerHTML=''; box.hidden=false;
     if(info.estado==='pagado'||info.estado==='enviado'||info.estado==='entregado'){box.appendChild(el('p','pm-ok','✓ El pago de este pedido ya está confirmado.'));return;}

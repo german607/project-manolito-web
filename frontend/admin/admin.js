@@ -333,7 +333,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') abrirNotific
 
 // ---------- Historial ----------
 
-const CAMPOS = { cupon: 'Código de descuento', descuento: 'Descuento', minimo: 'Compra mínima', usosMax: 'Usos máximos', vence: 'Vence', comprobante: 'Comprobante', datosDePago: 'Datos para pagar', precio: 'Precio', stockCargado: 'Stock', controlaStock: 'Controla stock', activo: 'Activo', estado: 'Estado', foto: 'Foto', total: 'Total', pago: 'Pago' };
+const CAMPOS = { recargoMp: 'Recargo de Mercado Pago', cupon: 'Código de descuento', descuento: 'Descuento', minimo: 'Compra mínima', usosMax: 'Usos máximos', vence: 'Vence', comprobante: 'Comprobante', datosDePago: 'Datos para pagar', precio: 'Precio', stockCargado: 'Stock', controlaStock: 'Controla stock', activo: 'Activo', estado: 'Estado', foto: 'Foto', total: 'Total', pago: 'Pago' };
 const ACCIONES = { comprobante: 'Subió el comprobante de', crear: 'Creó', editar: 'Editó', foto: 'Cambió la foto de', estado: 'Cambió el estado de' };
 const valor = (campo, x) => x === null || x === undefined ? '—' : typeof x === 'boolean' ? (x ? 'sí' : 'no')
   : campo === 'precio' || campo === 'total' || campo === 'minimo' ? plata(x) : campo === 'pago' ? PAGOS[x] || x : campo === 'foto' ? 'imagen' : String(x);
@@ -344,7 +344,7 @@ async function cargarHistorial() {
   const [filas, prods, bxs] = await Promise.all([api('/historial' + (entidad ? '?entidad=' + entidad : '')), api('/productos'), api('/boxes')]);
   const nombres = Object.fromEntries([...prods, ...bxs].map(x => [x.id, x.nombre]));
   const fecha = s => new Date(s).toLocaleString('es-UY', { timeZone: 'America/Montevideo', dateStyle: 'short', timeStyle: 'short' });
-  const que = h => h.entidad === 'pedido' ? `pedido #${h.entidad_id}` : h.entidad === 'cupon' ? `el código ${h.entidad_id}` : nombres[h.entidad_id] || h.entidad_id; // los nombres de las boxes ya dicen "Box ..."
+  const que = h => h.entidad === 'pedido' ? `pedido #${h.entidad_id}` : h.entidad === 'ajustes' ? (h.entidad_id === 'recargo_mp' ? 'el recargo de Mercado Pago' : 'los datos para pagar') : h.entidad === 'cupon' ? `el código ${h.entidad_id}` : nombres[h.entidad_id] || h.entidad_id; // los nombres de las boxes ya dicen "Box ..."
   $('#tablaHistorial').innerHTML = filas.length ? `<thead><tr><th>Cuándo</th><th>Quién</th><th>Qué</th><th>Cambio</th></tr></thead><tbody>${filas.map(h => `
     <tr><td>${fecha(h.cuando)}</td><td class="quien">${esc(h.autor)}</td><td>${esc(ACCIONES[h.accion] || h.accion)} ${esc(que(h))}</td>
       <td class="cambio">${Object.entries(h.cambios).map(([c, [a, b]]) => `${esc(CAMPOS[c] || c)}: ${a === null ? '' : `<s>${esc(valor(c, a))}</s> → `}<b>${esc(valor(c, b))}</b>`).join('<br>')}</td></tr>`).join('')}</tbody>`
@@ -382,9 +382,24 @@ $('#formCupon').addEventListener('submit', async e => {
   } catch (err) { toast(err.message); }
 });
 
+// ---------- Ajustes: recargo de Mercado Pago ----------
+
+$('#formRecargo').elements.activo.addEventListener('change', e => { $('#formRecargo').elements.porcentaje.disabled = !e.target.checked; });
+$('#formRecargo').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target.elements;
+  try {
+    await api('/ajustes/recargo-mp', { method: 'PUT', body: { activo: f.activo.checked, porcentaje: Number(f.porcentaje.value) } });
+    toast(f.activo.checked ? `Recargo de ${f.porcentaje.value}% guardado ✓` : 'Recargo apagado ✓');
+  } catch (err) { toast(err.message); }
+});
+
 // ---------- Ajustes: datos para pagar ----------
 
 async function cargarAjustes() {
+  const r = await api('/ajustes/recargo-mp');
+  const fr = $('#formRecargo');
+  fr.elements.activo.checked = r.activo; fr.elements.porcentaje.value = r.porcentaje; fr.elements.porcentaje.disabled = !r.activo;
   const a = await api('/ajustes/pagos');
   const f = $('#formPagos');
   for (const [k, v] of Object.entries(a.transferencia)) f.elements['t_' + k].value = v;

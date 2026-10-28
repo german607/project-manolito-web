@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 import { q, q1, tx, productos, boxes, registrar, diferencias } from './db.js';
 import { HttpError } from './errores.js';
-import { ESTADOS, cambiarEstado } from './pedidos.js';
+import { ESTADOS, cambiarEstado, RecargoMp, leerRecargoMp, guardarRecargoMp } from './pedidos.js';
 import { HOY_UY, ZONA_UY } from './publico.js';
 import { soloAdmin } from './auth.js';
 import { guardarImagen, leerPrivado } from './imagenes.js';
@@ -261,6 +261,17 @@ adminRouter.get('/notificaciones', async (_req, res) => {
 adminRouter.post('/notificaciones/vistas', async (_req, res) => {
   await q('UPDATE usuarios SET notif_vistas = now() WHERE id = $1', [res.locals.usuario.id]);
   res.json({ ok: true });
+});
+
+// ---------- Ajustes: recargo de Mercado Pago ----------
+
+adminRouter.get('/ajustes/recargo-mp', async (_req, res) => {
+  res.json(await leerRecargoMp());
+});
+adminRouter.put('/ajustes/recargo-mp', async (req, res) => {
+  const valor = RecargoMp.parse(req.body);
+  await guardarRecargoMp(valor, res.locals.usuario.email);
+  res.json(valor);
 });
 
 // ---------- Historial ----------

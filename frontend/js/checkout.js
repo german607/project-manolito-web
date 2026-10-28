@@ -29,6 +29,7 @@
       $('rowDescuento').hidden=!c.descuento; $('lblDescuento').textContent='Descuento'+(c.cupon?' ('+c.cupon+')':''); $('totDescuento').textContent='-'+plata(c.descuento);
       $('resumenLineas').innerHTML=Carrito.lineasHTML(items,c,false);
       $('payMP').hidden=!c.mercadopago;
+      $('mpRecargoTxt').textContent=c.recargoMp?'(+'+c.recargoMp+'%)':''; // se configura en admin → Ajustes
       if(!c.mercadopago&&pago()==='mercadopago'){form.querySelector('input[name=pago][value=transferencia]').checked=true;cotizar();return;}
       $('totSub').textContent=plata(c.subtotal);
       $('rowRecargo').hidden=!c.recargo; $('totRecargo').textContent=plata(c.recargo);

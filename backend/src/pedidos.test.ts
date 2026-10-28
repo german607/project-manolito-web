@@ -1,7 +1,7 @@
 import './test-setup.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { armadosIncompletos, calcular, cambiarEstado, buscarPedido, insertar, vencerPedidos, PedidoInput } from './pedidos.js';
+import { armadosIncompletos, guardarRecargoMp, calcular, cambiarEstado, buscarPedido, insertar, vencerPedidos, PedidoInput } from './pedidos.js';
 import { productos, boxes, q, q1 } from './db.js';
 
 const pedido = (items: unknown[], pago = 'transferencia') => PedidoInput.parse({
@@ -201,4 +201,19 @@ test('boxes: hay que elegir el modelo del portachupete que traen', async () => {
   await assert.rejects(cotizar([{ tipo: 'box', id: 'esencial', color: 'Rosa', nombreBebe: 'Ema' }]), /modelo del portachupete de Box Esencial/);
   const c = await cotizar([{ tipo: 'box', id: 'esencial', color: 'Rosa', nombreBebe: 'Ema', modelo: 'Madera N° 3' }]);
   assert.equal(c.lineas[0].modelo, 'Madera N° 3');
+});
+
+test('recargo de Mercado Pago: se apaga o se cambia el porcentaje desde Ajustes', async () => {
+  const porta = [{ tipo: 'producto', id: 'porta', nombreBebe: 'Ema' }]; // $790
+  try {
+    await guardarRecargoMp({ activo: false, porcentaje: 10 }, 'admin@test.com');
+    assert.deepEqual([(await cotizar(porta, 'mercadopago')).recargo], [0], 'apagado: sin recargo');
+    await guardarRecargoMp({ activo: true, porcentaje: 5 }, 'admin@test.com');
+    assert.equal((await cotizar(porta, 'mercadopago')).recargo, 40, '5% de 790, redondeado');
+    assert.equal((await cotizar(porta, 'transferencia')).recargo, 0, 'otros medios nunca llevan recargo');
+    const h = await q1<{ cambios: any }>("SELECT cambios FROM historial WHERE entidad = 'ajustes' AND entidad_id = 'recargo_mp' ORDER BY id DESC LIMIT 1");
+    assert.deepEqual(h!.cambios.recargoMp, ['apagado', '5%']);
+  } finally {
+    await q("DELETE FROM ajustes WHERE clave = 'recargo_mp'"); // vuelve al 10% por defecto para los demás tests
+  }
 });

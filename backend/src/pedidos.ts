@@ -265,13 +265,16 @@ export const insertar = (input: PedidoInput, c: Awaited<ReturnType<typeof calcul
 export async function reclamarComprobante(id: number, autor: Autor) {
   const p = await buscarPedido(id);
   if (!p) throw new HttpError(404, 'Pedido no encontrado');
-  if (p.estado !== 'pendiente') throw new HttpError(409, 'Solo se reclama en pedidos pendientes de pago');
+  if (p.estado !== 'pendiente' && p.estado !== 'pagado') throw new HttpError(409, 'Solo se reclama en pedidos pendientes o pagados');
   if (!(MANUALES as readonly string[]).includes(p.pago)) throw new HttpError(409, 'Los pedidos de Mercado Pago no llevan comprobante');
-  if (p.comprobante) throw new HttpError(409, 'Este pedido ya tiene comprobante: revisalo y confirmá el pago');
+  if (p.estado === 'pendiente' && p.comprobante) throw new HttpError(409, 'Este pedido ya tiene comprobante: revisalo y confirmá el pago');
 
   const link = linkComprobante(id, await crearToken(id));
   const datos = await datosDePago(p);
-  const { vence } = (await q1<{ vence: Date }>(`UPDATE pedidos SET vence = now() + make_interval(hours => $1) WHERE id = $2 RETURNING vence`, [RECLAMO_HORAS, id]))!;
+  // Marcado como pagado pero la plata no entró: vuelve a pendiente y sin comprobante, así puede subir otro y vence si no llega
+  // (el archivo anterior queda guardado; su clave va al historial)
+  const { vence } = (await q1<{ vence: Date }>(`UPDATE pedidos SET vence = now() + make_interval(hours => $1), estado = 'pendiente',
+    comprobante = CASE WHEN estado = 'pagado' THEN NULL ELSE comprobante END WHERE id = $2 RETURNING vence`, [RECLAMO_HORAS, id]))!;
   const hora = new Date(vence)
     .toLocaleTimeString('es-UY', { timeZone: 'America/Montevideo', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }); // ej. 19:07
   const aviso = `Para mantener tu compra, necesitamos el comprobante de pago antes de las ${hora}; si no, el pedido se cancela automáticamente.`;
@@ -283,7 +286,8 @@ export async function reclamarComprobante(id: number, autor: Autor) {
     despues: (datos ? caja(datos.titulo, datos.campos, datos.texto) : parrafo(datosEnTexto(null))) + parrafo(aviso) + parrafo(cierre),
     boton: { texto: 'Enviar comprobante de pago', url: link },
   }));
-  await registrar(autor, 'pedido', id, 'recordatorio', { pago: [null, 'reclamado por mail'], vence: [vencimiento(p).toISOString(), new Date(vence).toISOString()] });
+  await registrar(autor, 'pedido', id, 'recordatorio', { pago: [null, 'reclamado por mail'], vence: [vencimiento(p).toISOString(), new Date(vence).toISOString()],
+    ...(p.estado === 'pagado' ? { estado: ['pagado', 'pendiente'], comprobante: [p.comprobante, null] } : {}) });
 }
 
 // Cancela los pedidos pendientes de pago vencidos (venceHoras) y avisa al cliente. Corre cada 5 min (server.ts)

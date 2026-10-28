@@ -60,10 +60,17 @@ async function cargarResumen() {
   const pedidos = d.pedidos.reduce((s, p) => s + p.cantidad, 0);
   const facturado = d.pedidos.filter(p => ['pagado', 'enviado', 'entregado'].includes(p.estado)).reduce((s, p) => s + p.total, 0);
 
+  // Flecha contra el período anterior del mismo largo
+  const delta = (actual, antes) => {
+    if (!antes) return actual ? `<em class="delta up">nuevo vs ${dias} días anteriores</em>` : '';
+    const p = Math.round(((actual - antes) / antes) * 100);
+    return `<em class="delta ${p > 0 ? 'up' : p < 0 ? 'down' : ''}">${p > 0 ? '↑' : p < 0 ? '↓' : '='} ${Math.abs(p)}% vs ${dias} días anteriores</em>`;
+  };
+  const a = d.anterior;
   $('#kpis').innerHTML = [
-    ['Visitas', t.visita], ['Clicks a Instagram', t.instagram], ['Boxes vistas', t.box_ver],
+    ['Visitas', t.visita, delta(t.visita || 0, a.visitas)], ['Clicks a Instagram', t.instagram], ['Boxes vistas', t.box_ver],
     ['Armados enviados', t.arma_enviar], ['Pedidos', pedidos], ['Facturado', plata(facturado)],
-  ].map(([k, v]) => `<div class="kpi"><small>${k}</small><b>${typeof v === 'string' ? v : (v || 0).toLocaleString('es-UY')}</b></div>`).join('');
+  ].map(([k, v, extra = '']) => `<div class="kpi"><small>${k}</small><b>${typeof v === 'string' ? v : (v || 0).toLocaleString('es-UY')}</b>${extra}</div>`).join('');
 
   grafico(d.visitasPorDia);
   ranking('#topPaginas', d.paginas, r => (r.ref === '/' || r.ref === '/index.html' ? 'Inicio' : r.ref.replace(/^\//, '').replace('.html', '')));
@@ -73,9 +80,32 @@ async function cargarResumen() {
   // ---- Ventas ----
   const v = d.ventas, abandonos = Math.max(0, (t.checkout || 0) - d.embudo[3].n);
   $('#kpisVentas').innerHTML = [
-    ['Vendido', plata(v.resumen.total)], ['Pedidos pagados', v.resumen.pedidos], ['Ticket promedio', plata(v.resumen.ticket)],
-    ['Carritos abandonados', abandonos],
-  ].map(([k, x]) => `<div class="kpi"><small>${k}</small><b>${typeof x === 'string' ? x : (x || 0).toLocaleString('es-UY')}</b></div>`).join('');
+    ['Vendido', plata(v.resumen.total), delta(v.resumen.total, a.total)], ['Pedidos pagados', v.resumen.pedidos, delta(v.resumen.pedidos, a.pedidos)],
+    ['Ticket promedio', plata(v.resumen.ticket), delta(v.resumen.ticket, a.ticket)], ['Carritos abandonados', abandonos],
+  ].map(([k, x, extra = '']) => `<div class="kpi"><small>${k}</small><b>${typeof x === 'string' ? x : (x || 0).toLocaleString('es-UY')}</b>${extra}</div>`).join('');
+
+  // ---- Para vender más ----
+  $('#conversionBoxes').innerHTML = `<thead><tr><th>Box</th><th>Vistas</th><th>Vendidas</th><th>Conversión</th></tr></thead><tbody>${d.conversionBoxes.map(b =>
+    `<tr><td>${esc(b.ref)}</td><td>${b.vistas}</td><td>${b.vendidas}</td><td>${b.vistas ? Math.round((b.vendidas / b.vistas) * 100) + '%' : '—'}</td></tr>`).join('')}</tbody>`;
+  const DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+  const semana = DIAS.map((x, i) => ({ x, n: d.porDiaSemana.find(r => r.dia === i + 1)?.n || 0 }));
+  const horas = Array.from({ length: 24 }, (_, h) => ({ x: h, n: d.porHora.find(r => r.hora === h)?.n || 0 }));
+  const barras = (filas, etiqueta) => { const max = Math.max(1, ...filas.map(f => f.n));
+    return `<div class="barritas">${filas.map(f => `<div title="${esc(etiqueta(f))}: ${f.n} pedido(s)"><i style="height:${(f.n / max) * 100}%"></i><small>${esc(String(f.x))}</small></div>`).join('')}</div>`; };
+  const pico = horas.reduce((m, h) => (h.n > m.n ? h : m), { n: 0 });
+  $('#cuandoCompran').innerHTML = horas.some(h => h.n)
+    ? `<p class="meta">Por día de la semana</p>${barras(semana, f => f.x)}<p class="meta">Por hora${pico.n ? ` · pico a las ${pico.x} h` : ''}</p>${barras(horas, f => f.x + ' h')}`
+    : '<p class="empty">Sin pedidos en este período.</p>';
+  ranking('#porOrigen', d.porOrigen, r => `${r.ref === 'directo' ? 'Directo (escribieron la dirección o sin dato)' : r.ref}${r.campana ? ' · ' + r.campana : ''} (${r.pedidos})`, plata);
+  ranking('#cuponesUso', d.cupones, r => `${r.ref} · ${r.pedidos} pedido(s) · -${plata(r.descuento)} de descuento`, plata);
+
+  // ---- Clientes ----
+  $('#kpisClientes').innerHTML = [['Clientes nuevos', d.clientes.nuevos], ['Volvieron a comprar', d.clientes.vuelven]]
+    .map(([k, x]) => `<div class="kpi"><small>${k}</small><b>${(x || 0).toLocaleString('es-UY')}</b></div>`).join('');
+  $('#mejoresClientes').innerHTML = d.mejoresClientes.length
+    ? `<thead><tr><th>Cliente</th><th>Email</th><th>Pedidos</th><th>Total</th></tr></thead><tbody>${d.mejoresClientes.map(c =>
+      `<tr><td>${esc(c.nombre)}</td><td>${esc(c.email)}</td><td>${c.pedidos}</td><td>${plata(c.n)}</td></tr>`).join('')}</tbody>`
+    : '<tbody><tr><td class="empty">Todavía no hay compras pagadas.</td></tr></tbody>';
   const base = Math.max(1, d.embudo[0].n);
   $('#embudo').innerHTML = `<div class="rank">${d.embudo.map((p, i) => {
     const previo = i ? d.embudo[i - 1].n : 0;

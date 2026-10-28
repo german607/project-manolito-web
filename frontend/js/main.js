@@ -5,6 +5,25 @@ window.track=function(tipo,ref){
   try{fetch('/api/eventos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tipo:tipo,ref:ref||''}),keepalive:true}).catch(function(){});}catch(e){}
 };
 track('visita',location.pathname);
+
+// De dónde llegó la visita (para "De dónde vienen las ventas" en el admin): utm_source/utm_campaign del link
+// (ej. ?utm_source=instagram&utm_campaign=dia-del-padre) o el sitio de referencia (google, instagram…). Dura 30 días
+(function(){
+  var KEY='manolito-origen';
+  try{
+    var p=new URLSearchParams(location.search), o=null;
+    if(p.get('utm_source')) o={fuente:p.get('utm_source'),campana:p.get('utm_campaign')||undefined};
+    else if(document.referrer){
+      var h=new URL(document.referrer).hostname.replace(/^(www|l|m|lm)\./,'');
+      if(h&&h!==location.hostname&&!/manolitouy\.com$/.test(h)) o={fuente:h.split('.')[0]};
+    }
+    if(o){o.t=Date.now();localStorage.setItem(KEY,JSON.stringify(o));}
+  }catch(e){}
+  window.origenVisita=function(){
+    try{var o=JSON.parse(localStorage.getItem(KEY));if(o&&Date.now()-o.t<30*864e5)return {fuente:o.fuente,campana:o.campana};}catch(e){}
+    return {fuente:'directo'};
+  };
+})();
 document.addEventListener('click',function(e){if(e.target.closest('a[href*="instagram.com"]'))track('instagram',location.pathname);});
 
 // Menú del celular (☰)

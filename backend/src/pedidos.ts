@@ -57,6 +57,7 @@ export const PedidoInput = z.object({
     direccion: z.string().trim().max(200).optional(),
   }),
   entrega: z.enum(['cadeteria', 'pickup', 'interior']),
+  envio: z.enum(['agencia', 'domicilio']).optional(), // solo interior: retira en la agencia o se lo llevan a la casa
   pago: Pago,
   items: z.array(Item).min(1).max(30),
   cupon: Codigo.optional(),
@@ -67,6 +68,8 @@ export const PedidoInput = z.object({
   }).optional().catch(undefined),
 }).refine(p => p.entrega === 'pickup' || !!p.cliente.direccion, {
   message: 'La dirección es obligatoria salvo para pick-up', path: ['cliente', 'direccion'],
+}).refine(p => p.entrega !== 'interior' || !!p.envio, {
+  message: 'Elegí si el envío al interior va a agencia o a domicilio', path: ['envio'],
 });
 export type PedidoInput = z.infer<typeof PedidoInput>;
 
@@ -251,9 +254,11 @@ export const insertar = (input: PedidoInput, c: Awaited<ReturnType<typeof calcul
   await descontarStock(c.lineas);
   if (c.cupon) await usarCupon(c.cupon);
   const { cliente } = input;
+  // Interior: "Agencia DAC: …" o "Domicilio: …", así se ve en el admin y en los mails sin otra columna
+  const direccion = input.entrega === 'interior' && input.envio ? `${input.envio === 'agencia' ? 'Agencia DAC' : 'Domicilio'}: ${cliente.direccion}` : cliente.direccion;
   const r = await q1<{ id: number }>(`INSERT INTO pedidos (nombre, telefono, email, direccion, entrega, pago, items, subtotal, descuento, cupon, recargo, total, usuario_id, origen, campana)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING id`, [
-    cliente.nombre, cliente.telefono, cliente.email, cliente.direccion ?? null, input.entrega, input.pago,
+    cliente.nombre, cliente.telefono, cliente.email, direccion ?? null, input.entrega, input.pago,
     JSON.stringify(c.lineas), c.subtotal, c.descuento, c.cupon ?? null, c.recargo, c.total, usuarioId,
     input.origen?.fuente || null, input.origen?.campana || null]);
   await registrar(autor, 'pedido', r!.id, 'crear', { total: [null, c.total], pago: [null, input.pago], ...(c.cupon ? { cupon: [null, c.cupon] } : {}) });
@@ -265,13 +270,16 @@ export const insertar = (input: PedidoInput, c: Awaited<ReturnType<typeof calcul
 export async function reclamarComprobante(id: number, autor: Autor) {
   const p = await buscarPedido(id);
   if (!p) throw new HttpError(404, 'Pedido no encontrado');
-  if (p.estado !== 'pendiente') throw new HttpError(409, 'Solo se reclama en pedidos pendientes de pago');
+  if (p.estado !== 'pendiente' && p.estado !== 'pagado') throw new HttpError(409, 'Solo se reclama en pedidos pendientes o pagados');
   if (!(MANUALES as readonly string[]).includes(p.pago)) throw new HttpError(409, 'Los pedidos de Mercado Pago no llevan comprobante');
-  if (p.comprobante) throw new HttpError(409, 'Este pedido ya tiene comprobante: revisalo y confirmá el pago');
+  if (p.estado === 'pendiente' && p.comprobante) throw new HttpError(409, 'Este pedido ya tiene comprobante: revisalo y confirmá el pago');
 
   const link = linkComprobante(id, await crearToken(id));
   const datos = await datosDePago(p);
-  const { vence } = (await q1<{ vence: Date }>(`UPDATE pedidos SET vence = now() + make_interval(hours => $1) WHERE id = $2 RETURNING vence`, [RECLAMO_HORAS, id]))!;
+  // Marcado como pagado pero la plata no entró: vuelve a pendiente y sin comprobante, así puede subir otro y vence si no llega
+  // (el archivo anterior queda guardado; su clave va al historial)
+  const { vence } = (await q1<{ vence: Date }>(`UPDATE pedidos SET vence = now() + make_interval(hours => $1), estado = 'pendiente',
+    comprobante = CASE WHEN estado = 'pagado' THEN NULL ELSE comprobante END WHERE id = $2 RETURNING vence`, [RECLAMO_HORAS, id]))!;
   const hora = new Date(vence)
     .toLocaleTimeString('es-UY', { timeZone: 'America/Montevideo', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }); // ej. 19:07
   const aviso = `Para mantener tu compra, necesitamos el comprobante de pago antes de las ${hora}; si no, el pedido se cancela automáticamente.`;
@@ -283,7 +291,8 @@ export async function reclamarComprobante(id: number, autor: Autor) {
     despues: (datos ? caja(datos.titulo, datos.campos, datos.texto) : parrafo(datosEnTexto(null))) + parrafo(aviso) + parrafo(cierre),
     boton: { texto: 'Enviar comprobante de pago', url: link },
   }));
-  await registrar(autor, 'pedido', id, 'recordatorio', { pago: [null, 'reclamado por mail'], vence: [vencimiento(p).toISOString(), new Date(vence).toISOString()] });
+  await registrar(autor, 'pedido', id, 'recordatorio', { pago: [null, 'reclamado por mail'], vence: [vencimiento(p).toISOString(), new Date(vence).toISOString()],
+    ...(p.estado === 'pagado' ? { estado: ['pagado', 'pendiente'], comprobante: [p.comprobante, null] } : {}) });
 }
 
 // Cancela los pedidos pendientes de pago vencidos (venceHoras) y avisa al cliente. Corre cada 5 min (server.ts)

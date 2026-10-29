@@ -17,7 +17,7 @@ export const ZONA_UY = 'America/Montevideo';
 export const HOY_UY = `(now() AT TIME ZONE '${ZONA_UY}')::date`;
 
 const Evento = z.object({
-  tipo: z.enum(['visita', 'instagram', 'box_ver', 'arma_agregar', 'arma_enviar', 'carrito_agregar', 'checkout']),
+  tipo: z.enum(['visita', 'instagram', 'box_ver', 'arma_agregar', 'arma_enviar', 'carrito_agregar', 'checkout', 'checkout_datos']),
   ref: z.string().max(80).default(''),
 });
 

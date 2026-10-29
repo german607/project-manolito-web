@@ -62,6 +62,7 @@ adminRouter.get('/resumen', async (req, res) => {
     { paso: 'Visitas', n: totales.visita ?? 0 },
     { paso: 'Agregaron al carrito', n: totales.carrito_agregar ?? 0 },
     { paso: 'Llegaron al checkout', n: totales.checkout ?? 0 },
+    { paso: 'Empezaron a llenar sus datos', n: totales.checkout_datos ?? 0 },
     { paso: 'Hicieron el pedido', n: creados!.n },
     { paso: 'Pagaron', n: ventas.resumen!.pedidos },
   ];

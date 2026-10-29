@@ -59,7 +59,7 @@
         <h3>Tus datos</h3>
         <label>Nombre y apellido<input name="nombre" required minlength="2" maxlength="80" autocomplete="name"></label>
         <label>Teléfono<input name="telefono" type="tel" required minlength="6" maxlength="30" autocomplete="tel"></label>
-        <label>Email<input name="email" type="email" required maxlength="120" autocomplete="email"></label>
+        <label>Email<input name="email" type="email" required maxlength="120" autocomplete="email"><small class="nota">Si no llegás a terminar, te mandamos tu carrito a este mail para que lo retomes.</small></label>
 
         <fieldset>
           <legend>Entrega</legend>
@@ -67,7 +67,12 @@
           <label class="opt"><input type="radio" name="entrega" value="cadeteria"> Cadetería en Montevideo</label>
           <label class="opt"><input type="radio" name="entrega" value="interior"> Envío al interior</label>
         </fieldset>
-        <label id="dirWrap">Dirección<input name="direccion" maxlength="200" autocomplete="street-address"></label>
+        <fieldset id="envioWrap" hidden>
+          <legend>¿Dónde lo recibís?</legend>
+          <label class="opt"><input type="radio" name="envio" value="agencia"> Agencia DAC</label>
+          <label class="opt"><input type="radio" name="envio" value="domicilio"> A domicilio</label>
+        </fieldset>
+        <label id="dirWrap"><span id="dirLabel">Dirección</span><input name="direccion" maxlength="200" autocomplete="street-address"></label>
 
         <fieldset>
           <legend>Pago</legend>
@@ -92,8 +97,8 @@
           <div class="cupon-row"><input id="cuponInput" maxlength="30" autocomplete="off" autocapitalize="characters" placeholder="Ej: BIENVENIDA10"><button type="button" class="btn btn-outline btn-sm" id="cuponAplicar">Aplicar</button></div>
           <p class="cupon-msg" id="cuponMsg" role="status"></p>
         </div>
-        <p class="cart-note">El envío se coordina aparte: la cadetería la paga quien recibe.</p>
         <button class="btn btn-green" id="confirmar" type="submit" form="checkout" style="width:100%;">Confirmar pedido</button>
+        <p class="nota" style="text-align:center;margin-top:8px">Todavía no pagás nada: al confirmar te mostramos cómo pagar.</p>
         <p class="cart-error" id="cartError" role="alert"></p>
       </aside>
     </div>

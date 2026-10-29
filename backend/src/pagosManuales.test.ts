@@ -110,6 +110,15 @@ test('reclamar pago: manda el mail con un link nuevo; no aplica con comprobante,
     const nuevo = (m.text.match(/t=([a-f0-9]{48})/) ?? [])[1];
     await subirComprobante(id, nuevo, PNG);
     await assert.rejects(reclamarComprobante(id, 'admin@test.com'), /ya tiene comprobante/);
+    // Marcado como pagado pero la plata no entró: se puede reclamar igual; vuelve a pendiente, sin comprobante, y puede subir otro
+    await cambiarEstado(id, 'pagado');
+    await reclamarComprobante(id, 'admin@test.com');
+    const p = (await buscarPedido(id))!;
+    assert.equal(p.estado, 'pendiente');
+    assert.equal(p.comprobante, null);
+    await subirComprobante(id, (enviados.at(-1).text.match(/t=([a-f0-9]{48})/) ?? [])[1], PNG);
+    await cambiarEstado(id, 'cancelado');
+    await assert.rejects(reclamarComprobante(id, 'admin@test.com'), /pendientes o pagados/);
     const mp = await pedido('mercadopago');
     await assert.rejects(reclamarComprobante(mp.id, 'admin@test.com'), /Mercado Pago/);
   } finally {

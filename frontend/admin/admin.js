@@ -78,7 +78,7 @@ async function cargarResumen() {
   ranking('#topProductos', d.productosAgregados, r => nombre[r.ref] || r.ref);
 
   // ---- Ventas ----
-  const v = d.ventas, abandonos = Math.max(0, (t.checkout || 0) - d.embudo[3].n);
+  const v = d.ventas, abandonos = Math.max(0, (t.checkout || 0) - d.embudo.find(p => p.paso === 'Hicieron el pedido').n);
   $('#kpisVentas').innerHTML = [
     ['Vendido', plata(v.resumen.total), delta(v.resumen.total, a.total)], ['Pedidos pagados', v.resumen.pedidos, delta(v.resumen.pedidos, a.pedidos)],
     ['Ticket promedio', plata(v.resumen.ticket), delta(v.resumen.ticket, a.ticket)], ['Carritos abandonados', abandonos],
@@ -232,7 +232,7 @@ async function cargarPedidos() {
         <p class="tot">${plata(p.total)}</p>${p.descuento ? `<p class="meta">Descuento ${esc(p.cupon)}: -${plata(p.descuento)}</p>` : ''}
         <select class="estado" aria-label="Estado del pedido ${p.id}">${ESTADOS.map(e => `<option ${e === p.estado ? 'selected' : ''}>${e}</option>`).join('')}</select>
         ${p.estado === 'pendiente' && p.pago !== 'mercadopago' ? '<button class="btn sm confirmar" type="button">Confirmar pago</button>' : ''}
-        ${p.estado === 'pendiente' && p.pago !== 'mercadopago' && !p.comprobante ? '<button class="btn sm outline reclamar" type="button" title="Le avisa al cliente que no llegó el pago y le reenvía los datos para pagar y el link para mandar el comprobante">Reclamar pago</button>' : ''}
+        ${(p.estado === 'pendiente' && !p.comprobante || p.estado === 'pagado') && p.pago !== 'mercadopago' ? `<button class="btn sm outline reclamar" type="button"${p.estado === 'pagado' ? ' data-pagado="1"' : ''} title="Le avisa al cliente que no llegó el pago y le reenvía los datos para pagar y el link para mandar el comprobante">Reclamar pago</button>` : ''}
       </div>
       <ul>${(armados => p.items.map(l => `<li>${l.armado ? `<b>Armado ${armados.indexOf(l.armado) + 1}:</b> ` : ''}${l.cantidad} × ${esc(l.nombre)}${l.color ? ` (${esc(l.color)})` : ''}${l.nombreBebe ? ` “${esc(l.nombreBebe)}”` : ''}${l.modelo ? ` · Modelo: ${esc(l.modelo)}` : ''}${l.babero ? ` · Babero: ${esc(l.babero)}` : ''} — ${plata(l.total)}${fotoModelo(l.modelo) ? `<br><a href="${fotoModelo(l.modelo)}" target="_blank" rel="noopener" title="Ver el modelo ${esc(l.modelo)}"><img class="modelo-foto" src="${fotoModelo(l.modelo)}" alt="Modelo ${esc(l.modelo)}"></a>` : ''}</li>`).join(''))([...new Set(p.items.map(l => l.armado).filter(Boolean))])}</ul>
     </article>`).join('')
@@ -252,7 +252,7 @@ async function cargarPedidos() {
   // Sin pago: se le avisa al cliente por mail (datos para pagar + link para el comprobante); si no lo manda, se cancela
   document.querySelectorAll('.pedido .reclamar').forEach(b => b.addEventListener('click', async () => {
     const id = b.closest('.pedido').dataset.id;
-    if (!confirm(`¿Le mandamos un mail al cliente del pedido #${id} avisando que no llegó el pago y que, si no envía el comprobante, se cancela?`)) return;
+    if (!confirm(`¿Le mandamos un mail al cliente del pedido #${id} avisando que no llegó el pago y que, si no envía el comprobante, se cancela?${b.dataset.pagado ? '\n\nEl pedido vuelve a "pendiente".' : ''}`)) return;
     b.disabled = true;
     try {
       await api(`/pedidos/${id}/reclamar-comprobante`, { method: 'POST' });

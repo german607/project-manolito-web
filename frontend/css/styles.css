@@ -42,9 +42,10 @@
   button.btn:not(.btn-outline){border:none;}
   .btn-green{background:var(--green);color:var(--white);box-shadow:0 8px 20px rgba(201,125,141,0.32);}
   .btn-green:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(201,125,141,0.4);background:var(--green-deep);}
-  /* Agregar al carrito: rosado claro mientras falta elegir algo; más oscuro cuando ya se puede agregar */
-  .btn-add:hover{background:var(--green);}
-  .btn-add.listo,.btn-add.listo:hover{background:var(--green-deep);}
+  /* Botones de compra (agregar al carrito, finalizar compra, confirmar pedido): rosado claro mientras falta algo;
+     rosa oscuro (.listo) cuando ya se puede pasar al siguiente paso */
+  .btn-add:hover,#drawerGo:hover,#confirmar:hover{background:var(--green);}
+  .btn-add.listo,.btn-add.listo:hover,#drawerGo.listo,#drawerGo.listo:hover,#confirmar.listo,#confirmar.listo:hover{background:var(--green-deep);}
   .btn-outline{background:var(--white);color:var(--ink);border:1.6px solid rgba(63,58,52,0.16);}
   .btn-outline:hover{border-color:var(--green);color:var(--green-deep);}
   .btn-sm{padding:11px 22px;font-size:.82rem;}

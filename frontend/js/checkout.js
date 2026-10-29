@@ -35,6 +35,7 @@
       $('rowRecargo').hidden=!c.recargo; $('totRecargo').textContent=plata(c.recargo);
       $('totTotal').textContent=plata(c.total);
       $('cartError').textContent=c.avisos.length?'Hay productos con problemas: tocá "Editar" y quitalos.':'';
+      marcarListo();
     }).catch(function(err){$('resumenLineas').innerHTML='<p class="cart-error">'+err.message+'</p>';});
   }
   window.addEventListener('carrito',cotizar);
@@ -48,6 +49,7 @@
     var u=d.usuario; if(!u) return;
     if(!form.nombre.value) form.nombre.value=u.nombre;
     if(!form.email.value){form.email.value=u.email;guardarAbandono();}
+    marcarListo();
   }).catch(function(){});
 
   // Carrito abandonado: con el email escrito se guarda el carrito; si en 1 h no hace el pedido, le llega un mail para retomarlo
@@ -70,8 +72,12 @@
     $('dirLabel').textContent=interior&&envio&&envio.value==='agencia'?'Sucursal de DAC':'Dirección';
     form.direccion.placeholder=!interior?'':envio&&envio.value==='agencia'?'Departamento, Localidad':'Dirección';
   }
+  // "Confirmar pedido" en rosa oscuro cuando los datos están completos y el carrito no tiene problemas
+  function marcarListo(){$('confirmar').classList.toggle('listo',!!cot&&!cot.avisos.length&&form.checkValidity());}
+  form.addEventListener('input',marcarListo);
   form.addEventListener('change',function(e){
     if(e.target.name==='entrega'||e.target.name==='envio') actualizarDireccion();
+    marcarListo();
     if(e.target.name==='pago') cotizar();
   });
   actualizarDireccion();

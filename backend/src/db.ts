@@ -101,7 +101,7 @@ const ESQUEMA = `
     id            integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     creado        timestamptz NOT NULL DEFAULT now(),
     estado        text NOT NULL DEFAULT 'pendiente'
-                  CHECK (estado IN ('pendiente','pagado','enviado','entregado','cancelado')),
+                  CHECK (estado IN ('pendiente','pagado','pronto','enviado','entregado','cancelado')),
     nombre        text NOT NULL,
     telefono      text NOT NULL,
     email         text NOT NULL,
@@ -234,6 +234,12 @@ const MIGRACIONES: (() => Promise<void>)[] = [
       actualizado timestamptz NOT NULL DEFAULT now(),
       enviado     timestamptz                  -- cuándo se mandó el mail; NULL = todavía no
     )`);
+  },
+  // 11: estado "pronto" (pronto para retirar, solo retiro) y código de rastreo de DAC (envío al interior)
+  async () => {
+    await q(`ALTER TABLE pedidos DROP CONSTRAINT IF EXISTS pedidos_estado_check,
+      ADD CONSTRAINT pedidos_estado_check CHECK (estado IN ('pendiente','pagado','pronto','enviado','entregado','cancelado')),
+      ADD COLUMN IF NOT EXISTS rastreo text`);
   },
 ];
 

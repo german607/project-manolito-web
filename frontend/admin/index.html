@@ -102,6 +102,12 @@
       <button class="btn" type="submit">Guardar</button>
     </form>
 
+    <div class="row-head"><h2>Dirección de retiro</h2><p class="hint">Va en el mail que le llega al cliente cuando su pedido de retiro pasa a "pronto para retirar". Podés sumar horarios o indicaciones.</p></div>
+    <form class="card form-ajustes" id="formRetiro">
+      <label>Dirección<textarea name="direccion" rows="3" maxlength="300" placeholder="Ej: Gaboto 1234, Cordón (Montevideo). Lunes a viernes de 10 a 18 h."></textarea></label>
+      <button class="btn" type="submit">Guardar</button>
+    </form>
+
     <div class="row-head"><h2>Datos para pagar</h2><p class="hint">Es lo que ve el cliente al elegir transferencia, Abitab o Prex. Si no cargás la cuenta, se le dice que le vas a escribir.</p></div>
     <form class="card form-ajustes" id="formPagos">
       <h3>Transferencia bancaria</h3>
@@ -153,7 +159,7 @@
     <div class="row-head">
       <h2>Pedidos</h2>
       <select id="filtroEstado" aria-label="Filtrar por estado">
-        <option value="">Todos</option><option>pendiente</option><option>pagado</option><option>enviado</option><option>entregado</option><option>cancelado</option>
+        <option value="">Todos</option><option>pendiente</option><option>pagado</option><option value="pronto">pronto para retirar</option><option>enviado</option><option>entregado</option><option>cancelado</option>
       </select>
     </div>
     <div id="listaPedidos"></div>

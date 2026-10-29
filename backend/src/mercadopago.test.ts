@@ -100,9 +100,9 @@ test('devolución de un pedido pagado y no enviado: se cancela y vuelve el stock
   const enviado = await pedidoMP();
   pago('4002', { status: 'approved', external_reference: String(enviado.id), transaction_amount: enviado.total });
   await procesarPago('4002');
-  await cambiarEstado(enviado.id, 'enviado');
+  await cambiarEstado(enviado.id, 'entregado');
   pago('4002', { status: 'charged_back', external_reference: String(enviado.id), transaction_amount: enviado.total });
-  assert.equal((await procesarPago('4002')).pedido!.estado, 'enviado', 'ya enviado: solo se avisa al admin');
+  assert.equal((await procesarPago('4002')).pedido!.estado, 'entregado', 'ya entregado: solo se avisa al admin');
   await q("UPDATE productos SET controla_stock = false WHERE id = 'porta'");
 });
 

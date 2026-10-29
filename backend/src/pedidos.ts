@@ -7,7 +7,9 @@ import { enviarMail, plantilla, parrafo, caja, esc } from './mail.js';
 import { crearPreferencia, firmaValida, MOTIVOS_RECHAZO, obtenerPago, pagarConTarjeta, type PagoMP } from './mercadopago.js';
 import { crearToken, datosDePago, datosEnTexto, linkComprobante, MANUALES, pedidoConToken } from './pagosManuales.js';
 
-export const ESTADOS = ['pendiente', 'pagado', 'enviado', 'entregado', 'cancelado'] as const;
+// pronto = pronto para retirar (solo retiro; los envíos pasan a enviado)
+export const ESTADOS = ['pendiente', 'pagado', 'pronto', 'enviado', 'entregado', 'cancelado'] as const;
+export const VENDIDOS = `('pagado', 'pronto', 'enviado', 'entregado')`; // estados de un pedido ya pagado, para SQL
 const LETRAS_INCLUIDAS = 5;
 const PRECIO_LETRA_EXTRA = 20;
 // Recargo por pagar con Mercado Pago: se prende/apaga y se elige el porcentaje en admin → Ajustes (por defecto 10%)
@@ -22,6 +24,18 @@ export async function guardarRecargoMp(valor: RecargoMp, autor: Autor) {
   await tx(async () => {
     await q(`INSERT INTO ajustes (clave, valor) VALUES ('recargo_mp', $1) ON CONFLICT (clave) DO UPDATE SET valor = $1`, [JSON.stringify(valor)]);
     await registrar(autor, 'ajustes', 'recargo_mp', 'editar', { recargoMp: [textoRecargo(antes), textoRecargo(valor)] });
+  });
+}
+// Dónde se retiran los pedidos (admin → Ajustes): va en el mail de "pronto para retirar"
+export const Retiro = z.object({ direccion: z.string().trim().max(300) });
+export async function leerRetiro(): Promise<z.infer<typeof Retiro>> {
+  return (await q1<{ valor: z.infer<typeof Retiro> }>("SELECT valor FROM ajustes WHERE clave = 'retiro'"))?.valor ?? { direccion: '' };
+}
+export async function guardarRetiro(valor: z.infer<typeof Retiro>, autor: Autor) {
+  const antes = await leerRetiro();
+  await tx(async () => {
+    await q(`INSERT INTO ajustes (clave, valor) VALUES ('retiro', $1) ON CONFLICT (clave) DO UPDATE SET valor = $1`, [JSON.stringify(valor)]);
+    await registrar(autor, 'ajustes', 'retiro', 'editar', { direccionRetiro: [antes.direccion || null, valor.direccion] });
   });
 }
 const textoRecargo = (r: RecargoMp) => (r.activo ? `${r.porcentaje}%` : 'apagado');
@@ -158,7 +172,7 @@ export type Pedido = {
   email: string; direccion: string | null; entrega: string; pago: string; items: Linea[];
   subtotal: number; descuento: number; cupon: string | null; recargo: number; total: number; mp_payment_id: string | null; usuario_id: number | null;
   token_pago: string | null; comprobante: string | null; comprobante_tipo: string | null; comprobante_subido: Date | null;
-  vence: Date | null;
+  vence: Date | null; rastreo: string | null;
 };
 
 // bloquear = trabar la fila hasta el fin de la transacción (para cambios de estado simultáneos)
@@ -176,17 +190,17 @@ export const fotoModelo = (m?: string) => {
 };
 const modeloPublico = (m: string) => m.replace(/ N° \d+/, '');
 
+const ENTREGA: Record<string, string> = { pickup: 'Retiro', cadeteria: 'Cadetería', interior: 'Interior' };
 // interno = con el número de modelo (aviso a Manolito)
 const resumen = (p: Pedido, interno = false) => [
   ...p.items.map(l => `- ${l.cantidad} x ${l.nombre}${l.color ? ` (${l.color}${l.estampado ? `: ${l.estampado}` : ''})` : ''}${l.nombreBebe ? ` "${l.nombreBebe}"` : ''}${l.modelo ? ` [Modelo: ${interno ? l.modelo : modeloPublico(l.modelo)}]` : ''}${l.babero ? ` [Babero: ${l.babero}]` : ''}${l.armado ? ` (Armado ${numerarArmados(p.items).indexOf(l.armado) + 1})` : ''}: $${l.total}`),
   p.descuento ? `Descuento (${p.cupon}): -$${p.descuento}` : '',
   p.recargo ? `Recargo Mercado Pago: $${p.recargo}` : '',
   `Total: $${p.total}`,
-  `Entrega: ${p.entrega}${p.direccion ? ` — ${p.direccion}` : ''} (el envío se coordina aparte)`,
+  `Entrega: ${ENTREGA[p.entrega] ?? p.entrega}${p.direccion ? ` — ${p.direccion}` : ''} (el envío se coordina aparte)`,
 ].filter(Boolean).join('\n');
 
 // El mismo resumen, como tabla para los mails HTML
-const ENTREGA: Record<string, string> = { pickup: 'Retiro', envio: 'Envío' };
 const resumenHtml = (p: Pedido) => {
   const armados = numerarArmados(p.items);
   const fila = (izq: string, der: string, fuerte = false) =>
@@ -232,18 +246,44 @@ async function devolverStock(lineas: Linea[]) {
 
 // Cancelar devuelve el stock; reactivar un cancelado lo vuelve a descontar (409 si ya no hay)
 // autor: quién lo cambia (queda en el historial): email del admin, 'mercadopago' o 'sistema' (vencimiento)
-export async function cambiarEstado(id: number, estado: Pedido['estado'], mpPaymentId?: string, autor: Autor = 'sistema') {
+// rastreo: código de DAC, obligatorio al pasar a enviado un pedido al interior (va en el mail)
+export async function cambiarEstado(id: number, estado: Pedido['estado'], mpPaymentId?: string, autor: Autor = 'sistema', rastreo?: string) {
+  let previo: Pedido['estado'] | undefined;
   const p = await tx(async () => {
     const antes = await buscarPedido(id, true);
     if (!antes) throw new HttpError(404, 'Pedido no encontrado');
+    previo = antes.estado;
+    const retiro = antes.entrega === 'pickup';
+    if (estado === 'pronto' && !retiro) throw new HttpError(400, '"Pronto para retirar" es solo para pedidos de retiro');
+    if (estado === 'enviado' && retiro) throw new HttpError(400, 'Los pedidos de retiro pasan a "pronto para retirar", no a enviado');
+    rastreo = rastreo?.trim() || undefined;
+    if (estado === 'enviado' && antes.entrega === 'interior' && antes.estado !== 'enviado' && !rastreo) throw new HttpError(400, 'Falta el código de rastreo de DAC');
+    if (rastreo) {
+      await q('UPDATE pedidos SET rastreo = $1 WHERE id = $2', [rastreo, id]);
+      await registrar(autor, 'pedido', id, 'rastreo', { rastreo: [antes.rastreo, rastreo] });
+    }
     if (estado === 'cancelado' && antes.estado !== 'cancelado') { await devolverStock(antes.items); if (antes.cupon) await sumarUso(antes.cupon, -1); }
     if (antes.estado === 'cancelado' && estado !== 'cancelado') { await descontarStock(antes.items); if (antes.cupon) await sumarUso(antes.cupon, 1); }
     if (antes.estado !== estado) await registrar(autor, 'pedido', id, 'estado', { estado: [antes.estado, estado] });
     return (await q1<Pedido>('UPDATE pedidos SET estado = $1, mp_payment_id = COALESCE($2, mp_payment_id) WHERE id = $3 RETURNING *',
       [estado, mpPaymentId ?? null, id]))!;
   });
-  if (estado === 'enviado') enviarMail(p.email, `Tu pedido Manolito #${p.id} está en camino`,
-    mailCliente(p, { titulo: '¡Tu pedido está en camino!', intro: `¡Hola ${p.nombre}! Tu pedido ya salió. Esperamos que lo disfruten mucho.` }));
+  // Solo al cambiar de estado: elegir el mismo estado otra vez no repite el mail
+  const cambio = previo !== estado;
+  if (cambio && estado === 'enviado') enviarMail(p.email, `Tu pedido Manolito #${p.id} está en camino`,
+    mailCliente(p, { titulo: '¡Tu pedido está en camino!', intro: `¡Hola ${p.nombre}! Tu pedido ya salió. Esperamos que lo disfruten mucho.`,
+      ...(p.rastreo ? {
+        antes: caja('Código de rastreo DAC', [{ etiqueta: 'Código', valor: p.rastreo }], 'Con este código podés seguir tu envío en la web de DAC.'),
+        textoExtra: `Código de rastreo DAC: ${p.rastreo}\nCon este código podés seguir tu envío en la web de DAC.`,
+      } : {}) }));
+  if (cambio && estado === 'pronto') {
+    const { direccion } = await leerRetiro();
+    const donde = direccion ? `Podés retirarlo en:\n${direccion}` : 'Te escribimos para coordinar el retiro.';
+    enviarMail(p.email, `Tu pedido Manolito #${p.id} está pronto para retirar`, mailCliente(p, {
+      titulo: '¡Tu pedido está pronto!', intro: `¡Hola ${p.nombre}! Tu pedido ya está pronto para retirar.`,
+      antes: direccion ? caja('Dónde retirarlo', [], direccion) : parrafo(donde), textoExtra: donde,
+    }));
+  }
   // Pago confirmado: por Mercado Pago o marcado a mano por el admin (transferencia, Abitab, Prex)
   if (estado === 'pagado') enviarMail(p.email, `Recibimos el pago de tu pedido Manolito #${p.id}`,
     mailCliente(p, { titulo: '¡Pago confirmado!', intro: `¡Hola ${p.nombre}! Ya está confirmado el pago. Ahora preparamos tu pedido con mucho cariño y te avisamos cuando lo enviemos.` }));
@@ -416,7 +456,7 @@ export async function procesarPago(paymentId: string): Promise<{ pago: PagoMP; p
   } else if ((pago.status === 'refunded' || pago.status === 'charged_back') && p.mp_payment_id === paymentId && p.estado !== 'cancelado') {
     // Devolución o contracargo: si no se envió, se cancela (y vuelve el stock); si ya se envió, solo se avisa
     const motivo = pago.status === 'refunded' ? 'devolución' : 'contracargo';
-    if (p.estado === 'pagado' || p.estado === 'pendiente') await cambiarEstado(p.id, 'cancelado', undefined, `mercadopago (${motivo})`);
+    if (p.estado === 'pagado' || p.estado === 'pronto' || p.estado === 'pendiente') await cambiarEstado(p.id, 'cancelado', undefined, `mercadopago (${motivo})`);
     avisarAdmin(`⚠ ${motivo === 'devolución' ? 'Devolución' : 'Contracargo'} en el pedido #${p.id}`,
       `Mercado Pago informa ${motivo} del pago ${paymentId} del pedido #${p.id} (${p.nombre}, ${p.telefono}, $${p.total}). ` +
       (p.estado === 'enviado' || p.estado === 'entregado' ? 'El pedido ya estaba enviado: revisalo.' : 'El pedido se canceló y el stock volvió.'));

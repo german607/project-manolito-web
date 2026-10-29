@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 import { q, q1, tx, productos, boxes, registrar, diferencias } from './db.js';
 import { HttpError } from './errores.js';
-import { ESTADOS, cambiarEstado, reclamarComprobante, RecargoMp, leerRecargoMp, guardarRecargoMp } from './pedidos.js';
+import { ESTADOS, VENDIDOS, cambiarEstado, reclamarComprobante, RecargoMp, leerRecargoMp, guardarRecargoMp, Retiro, leerRetiro, guardarRetiro } from './pedidos.js';
 import { HOY_UY, ZONA_UY } from './publico.js';
 import { soloAdmin } from './auth.js';
 import { guardarImagen, leerPrivado } from './imagenes.js';
@@ -45,7 +45,7 @@ adminRouter.get('/resumen', async (req, res) => {
     WHERE (creado AT TIME ZONE '${ZONA_UY}')::date >= $1 GROUP BY estado`, [desde]);
 
   // ---- Ventas: pedidos pagados (o ya enviados/entregados) del período ----
-  const VENDIDO = `estado IN ('pagado', 'enviado', 'entregado') AND (creado AT TIME ZONE '${ZONA_UY}')::date >= $1`;
+  const VENDIDO = `estado IN ${VENDIDOS} AND (creado AT TIME ZONE '${ZONA_UY}')::date >= $1`;
   const ventas = {
     resumen: await q1(`SELECT COUNT(*)::int AS pedidos, COALESCE(SUM(total), 0)::int AS total,
       COALESCE(ROUND(AVG(total)), 0)::int AS ticket FROM pedidos WHERE ${VENDIDO}`, [desde]),
@@ -71,7 +71,7 @@ adminRouter.get('/resumen', async (req, res) => {
   // Período anterior, del mismo largo, para comparar
   const anterior = await q1(`SELECT COUNT(*)::int AS pedidos, COALESCE(SUM(total), 0)::int AS total, COALESCE(ROUND(AVG(total)), 0)::int AS ticket,
       (SELECT COALESCE(SUM(n), 0)::int FROM eventos WHERE tipo = 'visita' AND dia >= $1::date - $2::int AND dia < $1::date) AS visitas
-    FROM pedidos WHERE estado IN ('pagado', 'enviado', 'entregado')
+    FROM pedidos WHERE estado IN ${VENDIDOS}
       AND (creado AT TIME ZONE '${ZONA_UY}')::date >= $1::date - $2::int AND (creado AT TIME ZONE '${ZONA_UY}')::date < $1::date`, [desde, dias]);
 
   // Cuántas veces se vio cada box y cuántas se vendieron
@@ -94,12 +94,12 @@ adminRouter.get('/resumen', async (req, res) => {
 
   // ---- Clientes (por email, pedidos pagados) ----
   const clientes = await q1(`WITH c AS (SELECT lower(email) AS email, MIN(creado) AS primera FROM pedidos
-      WHERE estado IN ('pagado', 'enviado', 'entregado') GROUP BY 1)
+      WHERE estado IN ${VENDIDOS} GROUP BY 1)
     SELECT COUNT(*) FILTER (WHERE (primera AT TIME ZONE '${ZONA_UY}')::date >= $1)::int AS nuevos,
       COUNT(*) FILTER (WHERE (primera AT TIME ZONE '${ZONA_UY}')::date < $1 AND email IN (SELECT lower(email) FROM pedidos WHERE ${VENDIDO}))::int AS vuelven
     FROM c`, [desde]);
   const mejoresClientes = await q(`SELECT MAX(nombre) AS nombre, lower(email) AS email, COUNT(*)::int AS pedidos, SUM(total)::int AS n
-    FROM pedidos WHERE estado IN ('pagado', 'enviado', 'entregado') GROUP BY 2 ORDER BY n DESC LIMIT 10`);
+    FROM pedidos WHERE estado IN ${VENDIDOS} GROUP BY 2 ORDER BY n DESC LIMIT 10`);
 
   res.json({
     dias, desde, visitasPorDia, totales, pedidos, ventas, embudo,
@@ -264,6 +264,17 @@ adminRouter.post('/notificaciones/vistas', async (_req, res) => {
   res.json({ ok: true });
 });
 
+// ---------- Ajustes: dirección de retiro ----------
+
+adminRouter.get('/ajustes/retiro', async (_req, res) => {
+  res.json(await leerRetiro());
+});
+adminRouter.put('/ajustes/retiro', async (req, res) => {
+  const valor = Retiro.parse(req.body);
+  await guardarRetiro(valor, res.locals.usuario.email);
+  res.json(valor);
+});
+
 // ---------- Ajustes: recargo de Mercado Pago ----------
 
 adminRouter.get('/ajustes/recargo-mp', async (_req, res) => {
@@ -302,6 +313,6 @@ adminRouter.post('/pedidos/:id/reclamar-comprobante', async (req, res) => {
 });
 
 adminRouter.patch('/pedidos/:id', async (req, res) => {
-  const { estado } = z.object({ estado: z.enum(ESTADOS) }).parse(req.body);
-  res.json(await cambiarEstado(Number(req.params.id), estado, undefined, res.locals.usuario.email));
+  const { estado, rastreo } = z.object({ estado: z.enum(ESTADOS), rastreo: z.string().trim().max(60).optional() }).parse(req.body);
+  res.json(await cambiarEstado(Number(req.params.id), estado, undefined, res.locals.usuario.email, rastreo));
 });

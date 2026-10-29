@@ -154,3 +154,6 @@ td input[type=number]{width:96px;}
 .btn.outline{background:var(--white);color:var(--pink-deep);border:1.5px solid var(--pink-deep);}
 .btn:disabled{opacity:.6;cursor:default;}
 .pedido .btn.sm{display:block;width:100%;margin-top:6px;}
+.pedido .rastreo{margin-top:6px;}
+.pedido .rastreo[hidden]{display:none;}
+.pedido .rastreo input{width:100%;}

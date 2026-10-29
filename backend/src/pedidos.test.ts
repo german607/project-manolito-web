@@ -228,3 +228,13 @@ test('los demás medios de pago (Abitab, Prex, Mercado Pago) vencen a las 2 hora
   await vencerPedidos();
   assert.equal((await buscarPedido(id))!.estado, 'cancelado');
 });
+
+test('envío al interior: pide agencia o domicilio y lo guarda adelante de la dirección', async () => {
+  const base = { cliente: { nombre: 'Ana', telefono: '099123456', email: 'ana@test.com', direccion: 'Salto centro' }, entrega: 'interior', pago: 'transferencia',
+    items: [{ tipo: 'producto', id: 'porta', nombreBebe: 'Ema' }] };
+  assert.throws(() => PedidoInput.parse(base), /agencia o a domicilio/);
+  await setStock(['porta'], 0, false);
+  const input = PedidoInput.parse({ ...base, envio: 'agencia' });
+  const id = await insertar(input, await calcular(input, productos.uno, boxes.una));
+  assert.equal((await buscarPedido(id))!.direccion, 'Agencia DAC: Salto centro');
+});

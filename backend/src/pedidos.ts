@@ -57,6 +57,7 @@ export const PedidoInput = z.object({
     direccion: z.string().trim().max(200).optional(),
   }),
   entrega: z.enum(['cadeteria', 'pickup', 'interior']),
+  envio: z.enum(['agencia', 'domicilio']).optional(), // solo interior: retira en la agencia o se lo llevan a la casa
   pago: Pago,
   items: z.array(Item).min(1).max(30),
   cupon: Codigo.optional(),
@@ -67,6 +68,8 @@ export const PedidoInput = z.object({
   }).optional().catch(undefined),
 }).refine(p => p.entrega === 'pickup' || !!p.cliente.direccion, {
   message: 'La dirección es obligatoria salvo para pick-up', path: ['cliente', 'direccion'],
+}).refine(p => p.entrega !== 'interior' || !!p.envio, {
+  message: 'Elegí si el envío al interior va a agencia o a domicilio', path: ['envio'],
 });
 export type PedidoInput = z.infer<typeof PedidoInput>;
 
@@ -251,9 +254,11 @@ export const insertar = (input: PedidoInput, c: Awaited<ReturnType<typeof calcul
   await descontarStock(c.lineas);
   if (c.cupon) await usarCupon(c.cupon);
   const { cliente } = input;
+  // Interior: "Agencia DAC: …" o "Domicilio: …", así se ve en el admin y en los mails sin otra columna
+  const direccion = input.entrega === 'interior' && input.envio ? `${input.envio === 'agencia' ? 'Agencia DAC' : 'Domicilio'}: ${cliente.direccion}` : cliente.direccion;
   const r = await q1<{ id: number }>(`INSERT INTO pedidos (nombre, telefono, email, direccion, entrega, pago, items, subtotal, descuento, cupon, recargo, total, usuario_id, origen, campana)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING id`, [
-    cliente.nombre, cliente.telefono, cliente.email, cliente.direccion ?? null, input.entrega, input.pago,
+    cliente.nombre, cliente.telefono, cliente.email, direccion ?? null, input.entrega, input.pago,
     JSON.stringify(c.lineas), c.subtotal, c.descuento, c.cupon ?? null, c.recargo, c.total, usuarioId,
     input.origen?.fuente || null, input.origen?.campana || null]);
   await registrar(autor, 'pedido', r!.id, 'crear', { total: [null, c.total], pago: [null, input.pago], ...(c.cupon ? { cupon: [null, c.cupon] } : {}) });

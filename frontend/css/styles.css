@@ -568,7 +568,7 @@
   .cart-line.ro img,.cart-line.ro .cart-ph{width:56px;height:56px;}
   .cart-sum h3{font-family:'Fraunces',serif;font-size:1.3rem;font-weight:600;}
   .cart-sum label{display:flex;flex-direction:column;gap:6px;font-size:.85rem;font-weight:700;}
-  .cart-sum label[hidden]{display:none;}
+  .cart-sum label[hidden],.cart-sum fieldset[hidden]{display:none;}
   .cart-sum fieldset{border:0;display:flex;flex-direction:column;gap:6px;}
   .cart-sum legend{font-size:.85rem;font-weight:800;margin-bottom:6px;}
   .cart-sum label.opt{flex-direction:row;align-items:center;gap:10px;font-weight:600;cursor:pointer;}

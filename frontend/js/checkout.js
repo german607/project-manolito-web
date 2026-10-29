@@ -62,12 +62,16 @@
   form.addEventListener('input',function llenando(){track('checkout_datos');form.removeEventListener('input',llenando);});
 
   // ---- Formulario ----
+  // Interior: primero elige agencia o domicilio, después escribe cuál
   function actualizarDireccion(){
-    var pick=entrega()==='pickup';
+    var pick=entrega()==='pickup', interior=entrega()==='interior', envio=form.querySelector('input[name=envio]:checked');
+    $('envioWrap').hidden=!interior; form.envio[0].required=interior;
     $('dirWrap').hidden=pick; form.direccion.required=!pick;
+    $('dirLabel').textContent=interior&&envio&&envio.value==='agencia'?'Sucursal de DAC':'Dirección';
+    form.direccion.placeholder=!interior?'':envio&&envio.value==='agencia'?'Departamento, Localidad':'Dirección';
   }
   form.addEventListener('change',function(e){
-    if(e.target.name==='entrega') actualizarDireccion();
+    if(e.target.name==='entrega'||e.target.name==='envio') actualizarDireccion();
     if(e.target.name==='pago') cotizar();
   });
   actualizarDireccion();
@@ -80,7 +84,7 @@
     var btn=$('confirmar'); btn.disabled=true; btn.textContent='Enviando…';
     var body={
       cliente:{nombre:form.nombre.value,telefono:form.telefono.value,email:form.email.value,direccion:entrega()==='pickup'?undefined:form.direccion.value},
-      entrega:entrega(), pago:pago(), items:Carrito.items(), cupon:cupon||undefined,
+      entrega:entrega(), envio:entrega()==='interior'?form.envio.value:undefined, pago:pago(), items:Carrito.items(), cupon:cupon||undefined,
       origen:window.origenVisita?origenVisita():undefined
     };
     fetch('/api/pedidos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})

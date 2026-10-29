@@ -25,7 +25,7 @@ Lo que tiene que durar más va en `CLAUDE.md`, no acá. Lo actualiza el skill `g
 - Memoria del proyecto: `CLAUDE.md` + `.claude/memory.md` (4 días) + skill `gc` + hooks (`podar-memoria`, `gc-aviso`).
 
 ## 2026-10-26
-- Botón "Agregar al carrito" (`.btn-add`): rosado claro mientras falta elegir algo; se oscurece (`.listo`) cuando ya se puede agregar. En la box, la sección Portachupetes y "Armá tu box".
+- Botones de compra en rosado claro mientras falta algo y rosa oscuro (`.listo`) cuando se puede pasar al siguiente paso: "Agregar al carrito" (`.btn-add`), "Finalizar compra" (carrito con productos sin problemas) y "Confirmar pedido" (datos completos).
 - Boxes: se elige color de la box y **modelo del portachupete** (botones Silicona / Madera → ventana con fotos → OK). El babero de la box va **del mismo color que la box** (sin opción aparte). El servidor exige `modelo` en boxes con portachupete.
 - Números de modelo ("Silicona N° 4"): **solo internos**. El cliente ve material + foto (web, carrito, mails); el admin ve número + foto del modelo; el mensaje de Instagram de "Armá tu box" lleva el número.
 - "Armá tu box": babero solo en Rosa / Celeste / Verde, sin fotos ni estampado (migración 5). Sonajero: modelo "Conejito aro" / "Conejito bastón" (migración 6, va en el campo `color`).

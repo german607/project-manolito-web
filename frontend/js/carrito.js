@@ -92,6 +92,7 @@
       var malos=c.avisos.length;
       panel.querySelector('#drawerError').textContent=malos?'Quitá los productos marcados para continuar.':'';
       panel.querySelector('#drawerGo').classList.toggle('disabled',!!malos);
+      panel.querySelector('#drawerGo').classList.toggle('listo',!malos); // hay algo para pagar
     }).catch(function(err){cuerpo.innerHTML='<p class="cart-error">'+esc(err.message)+'</p>';});
   }
 

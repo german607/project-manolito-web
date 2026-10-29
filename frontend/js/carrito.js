@@ -58,7 +58,7 @@
       '<footer class="drawer-foot" id="drawerFoot">'+
         '<div class="cart-total"><span>Subtotal</span><b id="drawerSub">$0</b></div>'+
         '<p class="cart-error" id="drawerError"></p>'+
-        '<a class="btn btn-green" id="drawerGo" href="checkout.html">Ir al checkout</a>'+
+        '<a class="btn btn-green" id="drawerGo" href="checkout.html">Finalizar compra</a>'+
         '<p class="cart-note">El envío y el medio de pago se eligen en el checkout.</p>'+
       '</footer>';
     document.body.appendChild(overlay); document.body.appendChild(panel);

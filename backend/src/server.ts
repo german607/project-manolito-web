@@ -6,6 +6,7 @@ import { iniciarDb, pool } from './db.js';
 import { imagenesRouter, revisarBucket } from './imagenes.js';
 import { manejarErrores } from './errores.js';
 import { pedidosRouter, vencerPedidos } from './pedidos.js';
+import { abandonosRouter, recuperarCarritos } from './abandonos.js';
 import { pagosManualesRouter } from './pagosManuales.js';
 import { publicoRouter } from './publico.js';
 import { hsts, limitar, limitarConcurrencia, revisarConfig, soloPublicable, trustProxy } from './seguridad.js';
@@ -40,6 +41,7 @@ app.use('/api/pedidos/:id/comprobante', limitar('comprobantes', 10, 10 * MINUTO)
 app.use('/api/mercadopago/pagar', limitar('tarjeta', 10, 10 * MINUTO)); // frena probar tarjetas robadas en serie
 app.use('/api/carrito', limitar('carrito', 60, MINUTO));
 app.use('/api/eventos', limitar('eventos', 120, MINUTO));
+app.use('/api/carritos-abandonados', limitar('abandonos', 20, 10 * MINUTO));
 // Frena probar contraseñas en serie. Solo login y registro: /api/auth/yo lo consulta cada página
 const limiteAuth = limitar('auth', 20, 15 * MINUTO);
 app.use('/api/auth/login', limiteAuth);
@@ -54,6 +56,7 @@ app.use('/api', cargarUsuario);
 app.use('/api/auth', authRouter);
 app.use('/api', publicoRouter);
 app.use('/api', pedidosRouter);
+app.use('/api', abandonosRouter);
 app.use('/api', pagosManualesRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api', (_req, res) => { res.status(404).json({ error: 'No existe' }); });
@@ -92,6 +95,7 @@ const cada = (ms: number, tarea: () => Promise<unknown>) => {
   setInterval(correr, ms).unref();
 };
 cada(5 * MINUTO, vencerPedidos); // pedidos sin pagar
+cada(5 * MINUTO, recuperarCarritos); // mail a quien dejó el carrito sin comprar
 cada(60 * MINUTO, borrarSesionesVencidas);
 
 // Railway frena el server viejo en cada deploy (SIGTERM): se terminan los requests en curso y se cierra la base

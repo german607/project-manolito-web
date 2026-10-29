@@ -47,8 +47,19 @@
   fetch('/api/auth/yo').then(function(r){return r.json();}).then(function(d){
     var u=d.usuario; if(!u) return;
     if(!form.nombre.value) form.nombre.value=u.nombre;
-    if(!form.email.value) form.email.value=u.email;
+    if(!form.email.value){form.email.value=u.email;guardarAbandono();}
   }).catch(function(){});
+
+  // Carrito abandonado: con el email escrito se guarda el carrito; si en 1 h no hace el pedido, le llega un mail para retomarlo
+  function guardarAbandono(){
+    var email=form.email.value.trim(), items=Carrito.items();
+    if(!email||!form.email.checkValidity()||!items.length) return;
+    fetch('/api/carritos-abandonados',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,items:items}),keepalive:true}).catch(function(){});
+  }
+  form.email.addEventListener('change',guardarAbandono);
+  window.addEventListener('carrito',guardarAbandono);
+  // Embudo: empezó a llenar sus datos (una vez por visita)
+  form.addEventListener('input',function llenando(){track('checkout_datos');form.removeEventListener('input',llenando);});
 
   // ---- Formulario ----
   function actualizarDireccion(){
@@ -191,6 +202,15 @@
   // ---- Vuelta desde Mercado Pago: checkout.html?pedido=ID&payment_id=...&status=... ----
   // Lo que dice la URL no se cree: el servidor consulta el pago a Mercado Pago y devuelve el estado real
   var q=new URLSearchParams(location.search);
+  // Link del mail de carrito abandonado: checkout.html?carrito=TOKEN → vuelve a cargar el carrito
+  if(q.get('carrito')){
+    var tc=q.get('carrito'); q.delete('carrito');
+    history.replaceState(null,'',location.pathname+(q.toString()?'?'+q:''));
+    fetch('/api/carritos-abandonados/'+encodeURIComponent(tc)).then(function(r){if(!r.ok)throw new Error();return r.json();})
+      .then(function(d){Carrito.guardar(d.items);}) // dispara 'carrito' → cotizar
+      .catch(function(){cotizar();});
+    return;
+  }
   function noSeCompleto(id){gracias(id,'El pago no se completó','Tu pedido quedó guardado: podés volver a intentarlo dentro de las 2 horas, o escribinos por Instagram y lo coordinamos por otro medio.');}
   // Link del mail de un pago manual: checkout.html?pedido=ID&t=TOKEN
   if(q.get('pedido')&&q.get('t')){

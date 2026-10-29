@@ -225,6 +225,16 @@ const MIGRACIONES: (() => Promise<void>)[] = [
   async () => {
     await q('ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS vence timestamptz');
   },
+  // 10: carritos abandonados (mail para recuperarlos, ver abandonos.ts)
+  async () => {
+    await q(`CREATE TABLE IF NOT EXISTS carritos_abandonados (
+      email       text PRIMARY KEY,            -- en minúsculas
+      items       jsonb NOT NULL,
+      token       text NOT NULL UNIQUE,        -- link del mail que devuelve el carrito
+      actualizado timestamptz NOT NULL DEFAULT now(),
+      enviado     timestamptz                  -- cuándo se mandó el mail; NULL = todavía no
+    )`);
+  },
 ];
 
 // Crea las tablas, aplica migraciones y carga el catálogo inicial si la base está vacía.

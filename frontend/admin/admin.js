@@ -78,7 +78,7 @@ async function cargarResumen() {
   ranking('#topProductos', d.productosAgregados, r => nombre[r.ref] || r.ref);
 
   // ---- Ventas ----
-  const v = d.ventas, abandonos = Math.max(0, (t.checkout || 0) - d.embudo[3].n);
+  const v = d.ventas, abandonos = Math.max(0, (t.checkout || 0) - d.embudo.find(p => p.paso === 'Hicieron el pedido').n);
   $('#kpisVentas').innerHTML = [
     ['Vendido', plata(v.resumen.total), delta(v.resumen.total, a.total)], ['Pedidos pagados', v.resumen.pedidos, delta(v.resumen.pedidos, a.pedidos)],
     ['Ticket promedio', plata(v.resumen.ticket), delta(v.resumen.ticket, a.ticket)], ['Carritos abandonados', abandonos],

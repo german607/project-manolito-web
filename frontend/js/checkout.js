@@ -126,7 +126,7 @@
   function hora(f){return new Date(f).toLocaleTimeString('es-UY',{timeZone:'America/Montevideo',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});} // hora de Uruguay, ej. 19:07
   function pagoManual(id,token,info){
     var box=$('gPago'); box.innerHTML=''; box.hidden=false;
-    if(info.estado==='pagado'||info.estado==='enviado'||info.estado==='entregado'){box.appendChild(el('p','pm-ok','✓ El pago de este pedido ya está confirmado.'));return;}
+    if(['pagado','pronto','enviado','entregado'].indexOf(info.estado)>=0){box.appendChild(el('p','pm-ok','✓ El pago de este pedido ya está confirmado.'));return;}
     if(info.estado==='cancelado'){box.appendChild(el('p','pm-aviso','Este pedido venció sin pago. Si todavía lo querés, hacelo de nuevo o escribinos por Instagram.'));return;}
     if(info.datos){
       box.appendChild(el('h4',null,info.datos.titulo));
@@ -242,7 +242,7 @@
     fetch('/api/mercadopago/confirmar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({paymentId:pid})})
       .then(function(r){if(!r.ok)throw new Error();return r.json();})
       .then(function(d){
-        if(d.estado==='pagado'||d.estado==='enviado'||d.estado==='entregado') gracias(id,'¡Pago recibido!','Gracias por tu compra. Te mandamos el detalle por mail.');
+        if(['pagado','pronto','enviado','entregado'].indexOf(d.estado)>=0) gracias(id,'¡Pago recibido!','Gracias por tu compra. Te mandamos el detalle por mail.');
         else if(d.pago==='pending'||d.pago==='in_process') gracias(id,'Tu pago está pendiente','Cuando Mercado Pago lo confirme te avisamos por mail.');
         else noSeCompleto(id);
       })

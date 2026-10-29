@@ -1,7 +1,7 @@
 import './test-setup.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { armadosIncompletos, guardarRecargoMp, calcular, cambiarEstado, buscarPedido, insertar, vencerPedidos, PedidoInput } from './pedidos.js';
+import { armadosIncompletos, guardarRecargoMp, guardarRetiro, calcular, cambiarEstado, buscarPedido, insertar, vencerPedidos, PedidoInput } from './pedidos.js';
 import { productos, boxes, q, q1 } from './db.js';
 
 const pedido = (items: unknown[], pago = 'transferencia') => PedidoInput.parse({
@@ -237,4 +237,36 @@ test('envío al interior: pide agencia o domicilio y lo guarda adelante de la di
   const input = PedidoInput.parse({ ...base, envio: 'agencia' });
   const id = await insertar(input, await calcular(input, productos.uno, boxes.una));
   assert.equal((await buscarPedido(id))!.direccion, 'Agencia DAC: Salto centro');
+});
+
+test('retiro → "pronto para retirar" con la dirección de Ajustes; interior → enviado con código de rastreo DAC', async () => {
+  const enviados: any[] = [];
+  const real = globalThis.fetch;
+  globalThis.fetch = (async (_u: string, init: RequestInit) => { enviados.push(JSON.parse(String(init.body))); return new Response('{}'); }) as typeof fetch;
+  process.env.RESEND_API_KEY = 're_test';
+  try {
+    await setStock(['porta'], 0, false);
+    const items = [{ tipo: 'producto', id: 'porta', nombreBebe: 'Ema' }];
+    await guardarRetiro({ direccion: 'Gaboto 1234, Cordón' }, 'admin@test.com');
+
+    const retiro = await comprar(items);
+    await assert.rejects(cambiarEstado(retiro, 'enviado'), /pronto para retirar/);
+    await cambiarEstado(retiro, 'pronto');
+    assert.match(enviados.at(-1).subject, /pronto para retirar/);
+    assert.match(enviados.at(-1).text, /Gaboto 1234, Cordón/);
+
+    const input = PedidoInput.parse({ cliente: { nombre: 'Ana', telefono: '099123456', email: 'ana@test.com', direccion: 'Salto' }, entrega: 'interior', envio: 'agencia', pago: 'transferencia', items });
+    const interior = await insertar(input, await calcular(input, productos.uno, boxes.una));
+    await assert.rejects(cambiarEstado(interior, 'pronto'), /solo para pedidos de retiro/);
+    await assert.rejects(cambiarEstado(interior, 'enviado', undefined, 'admin@test.com', '  '), /código de rastreo/);
+    await cambiarEstado(interior, 'enviado', undefined, 'admin@test.com', 'DAC123456');
+    assert.match(enviados.at(-1).subject, /en camino/);
+    assert.match(enviados.at(-1).text, /Código de rastreo DAC: DAC123456/);
+    assert.equal((await buscarPedido(interior))!.rastreo, 'DAC123456');
+    const n = enviados.length;
+    await cambiarEstado(interior, 'enviado', undefined, 'admin@test.com');
+    assert.equal(enviados.length, n, 'el mismo estado otra vez no repite el mail');
+  } finally {
+    globalThis.fetch = real; delete process.env.RESEND_API_KEY;
+  }
 });

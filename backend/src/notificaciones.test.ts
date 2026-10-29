@@ -12,7 +12,7 @@ test('notificaciones: cambios en pedidos que no hizo el admin; las nuevas se cue
     items: [{ tipo: 'producto', id: 'porta', nombreBebe: 'Lola', modelo: 'Silicona N° 1' }] });
   const id = await insertar(input, await calcular(input, productos.uno, boxes.una)); // autor: cliente
   await cambiarEstado(id, 'pagado', undefined, 'mercadopago');
-  await cambiarEstado(id, 'enviado', undefined, admin.email);                         // lo hizo él: no le avisa
+  await cambiarEstado(id, 'pronto', undefined, admin.email);                         // lo hizo él: no le avisa
 
   const n = await notificaciones(admin);
   const deEste = n.items.filter((x: any) => x.pedido === String(id));

@@ -58,7 +58,7 @@ async function cargarResumen() {
   const nombre = Object.fromEntries(prods.map(p => [p.id, p.nombre]));
   const t = d.totales;
   const pedidos = d.pedidos.reduce((s, p) => s + p.cantidad, 0);
-  const facturado = d.pedidos.filter(p => ['pagado', 'enviado', 'entregado'].includes(p.estado)).reduce((s, p) => s + p.total, 0);
+  const facturado = d.pedidos.filter(p => ['pagado', 'pronto', 'enviado', 'entregado'].includes(p.estado)).reduce((s, p) => s + p.total, 0);
 
   // Flecha contra el período anterior del mismo largo
   const delta = (actual, antes) => {
@@ -208,7 +208,10 @@ function tabla(sel, items, tipo) {
 
 // ---------- Pedidos ----------
 
-const ESTADOS = ['pendiente', 'pagado', 'enviado', 'entregado', 'cancelado'];
+const ESTADOS = ['pendiente', 'pagado', 'pronto', 'enviado', 'entregado', 'cancelado'];
+const NOMBRE_ESTADO = { pronto: 'pronto para retirar' };
+// Retiro: "pronto para retirar" en vez de "enviado"; envíos al revés
+const estadosDe = p => ESTADOS.filter(e => p.entrega === 'pickup' ? e !== 'enviado' : e !== 'pronto');
 $('#filtroEstado').addEventListener('change', () => cargarPedidos().catch(err => toast(err.message)));
 
 // Foto del modelo de portachupete elegido ("Silicona N° 4 — detalle" → silicona-4.jpg)
@@ -226,11 +229,13 @@ async function cargarPedidos() {
         <h3>#${p.id} · ${esc(p.nombre)}</h3>
         <p class="meta">${fecha(p.creado)}${p.estado === 'pendiente' ? (p.comprobante ? ' · <b>en revisión (no vence)</b>' : ` · <b>vence ${vence(p)}</b>`) : ''} · ${esc(p.telefono)} · ${esc(p.email)}</p>
         <p class="meta">${ENTREGA[p.entrega] || esc(p.entrega)}${p.direccion ? ' — ' + esc(p.direccion) : ''} · Pago: ${esc(PAGOS[p.pago] || p.pago)} · Ref. MANOLITO-${p.id}</p>
+        ${p.rastreo ? `<p class="meta">Rastreo DAC: <b>${esc(p.rastreo)}</b></p>` : ''}
         ${p.comprobante ? `<p class="comprobante">📎 Comprobante recibido ${fecha(p.comprobante_subido)} · <a href="/api/admin/pedidos/${p.id}/comprobante" target="_blank" rel="noopener">Ver comprobante</a></p>` : ''}
       </div>
       <div>
         <p class="tot">${plata(p.total)}</p>${p.descuento ? `<p class="meta">Descuento ${esc(p.cupon)}: -${plata(p.descuento)}</p>` : ''}
-        <select class="estado" aria-label="Estado del pedido ${p.id}">${ESTADOS.map(e => `<option ${e === p.estado ? 'selected' : ''}>${e}</option>`).join('')}</select>
+        <select class="estado" aria-label="Estado del pedido ${p.id}" data-entrega="${esc(p.entrega)}" data-estado="${p.estado}">${estadosDe(p).map(e => `<option value="${e}" ${e === p.estado ? 'selected' : ''}>${NOMBRE_ESTADO[e] || e}</option>`).join('')}</select>
+        <form class="rastreo" hidden><input name="codigo" required maxlength="60" placeholder="Código de rastreo DAC" aria-label="Código de rastreo DAC"><button class="btn sm" type="submit">Marcar enviado</button></form>
         ${p.estado === 'pendiente' && p.pago !== 'mercadopago' ? '<button class="btn sm confirmar" type="button">Confirmar pago</button>' : ''}
         ${(p.estado === 'pendiente' && !p.comprobante || p.estado === 'pagado') && p.pago !== 'mercadopago' ? `<button class="btn sm outline reclamar" type="button"${p.estado === 'pagado' ? ' data-pagado="1"' : ''} title="Le avisa al cliente que no llegó el pago y le reenvía los datos para pagar y el link para mandar el comprobante">Reclamar pago</button>` : ''}
       </div>
@@ -260,11 +265,22 @@ async function cargarPedidos() {
     } catch (err) { toast(err.message); b.disabled = false; }
   }));
 
-  document.querySelectorAll('.pedido select').forEach(sel => sel.addEventListener('change', async () => {
+  const cambiar = async (sel, rastreo) => {
     try {
-      await api(`/pedidos/${sel.closest('.pedido').dataset.id}`, { method: 'PATCH', body: { estado: sel.value } });
-      toast(sel.value === 'enviado' ? 'Estado actualizado, se avisó al cliente ✓' : 'Estado actualizado ✓');
+      await api(`/pedidos/${sel.closest('.pedido').dataset.id}`, { method: 'PATCH', body: { estado: sel.value, rastreo } });
+      toast(sel.value === 'enviado' || sel.value === 'pronto' ? 'Estado actualizado, se avisó al cliente ✓' : 'Estado actualizado ✓');
+      cargarPedidos();
     } catch (err) { toast(err.message); }
+  };
+  document.querySelectorAll('.pedido select').forEach(sel => sel.addEventListener('change', () => {
+    // Interior → enviado: primero el código de rastreo de DAC (va en el mail al cliente)
+    const form = sel.closest('.pedido').querySelector('.rastreo');
+    form.hidden = !(sel.value === 'enviado' && sel.dataset.entrega === 'interior' && sel.dataset.estado !== 'enviado');
+    if (form.hidden) cambiar(sel); else form.elements.codigo.focus();
+  }));
+  document.querySelectorAll('.pedido .rastreo').forEach(form => form.addEventListener('submit', e => {
+    e.preventDefault();
+    cambiar(form.closest('.pedido').querySelector('select'), form.elements.codigo.value);
   }));
 }
 
@@ -346,7 +362,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') abrirNotific
 
 // ---------- Historial ----------
 
-const CAMPOS = { recargoMp: 'Recargo de Mercado Pago', cupon: 'Código de descuento', descuento: 'Descuento', minimo: 'Compra mínima', usosMax: 'Usos máximos', vence: 'Vence', comprobante: 'Comprobante', datosDePago: 'Datos para pagar', precio: 'Precio', stockCargado: 'Stock', controlaStock: 'Controla stock', activo: 'Activo', estado: 'Estado', foto: 'Foto', total: 'Total', pago: 'Pago' };
+const CAMPOS = { rastreo: 'Código de rastreo DAC', direccionRetiro: 'Dirección de retiro', recargoMp: 'Recargo de Mercado Pago', cupon: 'Código de descuento', descuento: 'Descuento', minimo: 'Compra mínima', usosMax: 'Usos máximos', vence: 'Vence', comprobante: 'Comprobante', datosDePago: 'Datos para pagar', precio: 'Precio', stockCargado: 'Stock', controlaStock: 'Controla stock', activo: 'Activo', estado: 'Estado', foto: 'Foto', total: 'Total', pago: 'Pago' };
 const ACCIONES = { recordatorio: 'Reclamó el pago de', comprobante: 'Subió el comprobante de', crear: 'Creó', editar: 'Editó', foto: 'Cambió la foto de', estado: 'Cambió el estado de' };
 const valor = (campo, x) => x === null || x === undefined ? '—' : typeof x === 'boolean' ? (x ? 'sí' : 'no')
   : campo === 'vence' && String(x).length > 10 ? new Date(x).toLocaleString('es-UY', { timeZone: 'America/Montevideo', dateStyle: 'short', timeStyle: 'short', hourCycle: 'h23' })
@@ -358,7 +374,7 @@ async function cargarHistorial() {
   const [filas, prods, bxs] = await Promise.all([api('/historial' + (entidad ? '?entidad=' + entidad : '')), api('/productos'), api('/boxes')]);
   const nombres = Object.fromEntries([...prods, ...bxs].map(x => [x.id, x.nombre]));
   const fecha = s => new Date(s).toLocaleString('es-UY', { timeZone: 'America/Montevideo', dateStyle: 'short', timeStyle: 'short' });
-  const que = h => h.entidad === 'pedido' ? `pedido #${h.entidad_id}` : h.entidad === 'ajustes' ? (h.entidad_id === 'recargo_mp' ? 'el recargo de Mercado Pago' : 'los datos para pagar') : h.entidad === 'cupon' ? `el código ${h.entidad_id}` : nombres[h.entidad_id] || h.entidad_id; // los nombres de las boxes ya dicen "Box ..."
+  const que = h => h.entidad === 'pedido' ? `pedido #${h.entidad_id}` : h.entidad === 'ajustes' ? (h.entidad_id === 'recargo_mp' ? 'el recargo de Mercado Pago' : h.entidad_id === 'retiro' ? 'la dirección de retiro' : 'los datos para pagar') : h.entidad === 'cupon' ? `el código ${h.entidad_id}` : nombres[h.entidad_id] || h.entidad_id; // los nombres de las boxes ya dicen "Box ..."
   $('#tablaHistorial').innerHTML = filas.length ? `<thead><tr><th>Cuándo</th><th>Quién</th><th>Qué</th><th>Cambio</th></tr></thead><tbody>${filas.map(h => `
     <tr><td>${fecha(h.cuando)}</td><td class="quien">${esc(h.autor)}</td><td>${esc(ACCIONES[h.accion] || h.accion)} ${esc(que(h))}</td>
       <td class="cambio">${Object.entries(h.cambios).map(([c, [a, b]]) => `${esc(CAMPOS[c] || c)}: ${a === null ? '' : `<s>${esc(valor(c, a))}</s> → `}<b>${esc(valor(c, b))}</b>`).join('<br>')}</td></tr>`).join('')}</tbody>`
@@ -408,12 +424,23 @@ $('#formRecargo').addEventListener('submit', async e => {
   } catch (err) { toast(err.message); }
 });
 
+// ---------- Ajustes: dirección de retiro ----------
+
+$('#formRetiro').addEventListener('submit', async e => {
+  e.preventDefault();
+  try {
+    await api('/ajustes/retiro', { method: 'PUT', body: { direccion: e.target.elements.direccion.value } });
+    toast('Dirección de retiro guardada ✓');
+  } catch (err) { toast(err.message); }
+});
+
 // ---------- Ajustes: datos para pagar ----------
 
 async function cargarAjustes() {
   const r = await api('/ajustes/recargo-mp');
   const fr = $('#formRecargo');
   fr.elements.activo.checked = r.activo; fr.elements.porcentaje.value = r.porcentaje; fr.elements.porcentaje.disabled = !r.activo;
+  $('#formRetiro').elements.direccion.value = (await api('/ajustes/retiro')).direccion;
   const a = await api('/ajustes/pagos');
   const f = $('#formPagos');
   for (const [k, v] of Object.entries(a.transferencia)) f.elements['t_' + k].value = v;

@@ -241,6 +241,11 @@ const MIGRACIONES: (() => Promise<void>)[] = [
       ADD CONSTRAINT pedidos_estado_check CHECK (estado IN ('pendiente','pagado','pronto','enviado','entregado','cancelado')),
       ADD COLUMN IF NOT EXISTS rastreo text`);
   },
+  // 12: los pedidos vencen a las 18:00 del día siguiente y el plazo se guarda al crearlos; los pendientes que no lo tienen pasan a la regla nueva
+  async () => {
+    await q(`UPDATE pedidos SET vence = ((creado AT TIME ZONE 'America/Montevideo')::date + 1 + time '18:00') AT TIME ZONE 'America/Montevideo'
+      WHERE estado = 'pendiente' AND vence IS NULL`);
+  },
 ];
 
 // Crea las tablas, aplica migraciones y carga el catálogo inicial si la base está vacía.

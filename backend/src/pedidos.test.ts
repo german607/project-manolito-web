@@ -1,7 +1,7 @@
 import './test-setup.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { armadosIncompletos, guardarRecargoMp, guardarRetiro, calcular, cambiarEstado, buscarPedido, insertar, vencerPedidos, PedidoInput } from './pedidos.js';
+import { armadosIncompletos, guardarRecargoMp, guardarRetiro, venceNormal, cuando, calcular, cambiarEstado, buscarPedido, insertar, vencerPedidos, PedidoInput } from './pedidos.js';
 import { productos, boxes, q, q1 } from './db.js';
 
 const pedido = (items: unknown[], pago = 'transferencia') => PedidoInput.parse({
@@ -57,15 +57,13 @@ test('las boxes no cobran letras extra en el portachupete', async () => {
   assert.equal(c.total, (await boxes.una('mini-box'))!.precio);
 });
 
-test('un pedido sin pagar vence (transferencia a las 4 h), devuelve el stock y se puede reactivar', async () => {
+test('un pedido sin pagar vence (18:00 del día siguiente), devuelve el stock y se puede reactivar', async () => {
   await setStock(['babero'], 3);
   const id = await comprar([{ tipo: 'producto', id: 'babero', armado: 'a1', cantidad: 2 }]);
   assert.equal(await stock('babero'), 1);
 
   assert.equal(await vencerPedidos(), 0, 'recién creado no vence');
-  await q("UPDATE pedidos SET creado = now() - interval '121 minutes' WHERE id = $1", [id]);
-  assert.equal(await vencerPedidos(), 0, 'transferencia: a las 2 h todavía no vence');
-  await q("UPDATE pedidos SET creado = now() - interval '241 minutes' WHERE id = $1", [id]);
+  await q("UPDATE pedidos SET vence = now() - interval '1 minute' WHERE id = $1", [id]);
   assert.equal(await vencerPedidos(), 1);
   assert.equal((await buscarPedido(id))!.estado, 'cancelado');
   assert.equal(await stock('babero'), 3, 'cancelar devuelve el stock');
@@ -220,13 +218,19 @@ test('recargo de Mercado Pago: se apaga o se cambia el porcentaje desde Ajustes'
   }
 });
 
-test('los demás medios de pago (Abitab, Prex, Mercado Pago) vencen a las 2 horas', async () => {
+test('vence a las 18:00 (hora de Uruguay) del día siguiente, a cualquier hora que se haga el pedido', async () => {
+  const uy = (s: string) => new Date(`${s}-03:00`);
+  assert.equal(venceNormal(uy('2026-11-02T10:00:00')).toISOString(), uy('2026-11-03T18:00:00').toISOString());
+  assert.equal(venceNormal(uy('2026-11-02T23:59:00')).toISOString(), uy('2026-11-03T18:00:00').toISOString());
+  assert.equal(venceNormal(uy('2026-11-30T00:10:00')).toISOString(), uy('2026-12-01T18:00:00').toISOString(), 'cambio de mes');
+  assert.equal(cuando(uy('2026-11-03T18:00:00'), uy('2026-11-02T10:00:00')), 'mañana a las 18:00');
+  assert.equal(cuando(uy('2026-11-02T19:07:00'), uy('2026-11-02T15:07:00')), 'hoy a las 19:07');
+  assert.equal(cuando(uy('2026-11-05T18:00:00'), uy('2026-11-02T10:00:00')), 'el 5/11 a las 18:00');
+
   await setStock(['babero', 'manta'], 0, false);
   const input = pedido([{ tipo: 'producto', id: 'babero', armado: 'v1' }, { tipo: 'producto', id: 'manta', armado: 'v1' }], 'abitab_redpagos');
   const id = await insertar(input, await calcular(input, productos.uno, boxes.una));
-  await q("UPDATE pedidos SET creado = now() - interval '121 minutes' WHERE id = $1", [id]);
-  await vencerPedidos();
-  assert.equal((await buscarPedido(id))!.estado, 'cancelado');
+  assert.equal((await buscarPedido(id))!.vence!.toISOString(), venceNormal(new Date()).toISOString(), 'se guarda al crear el pedido');
 });
 
 test('envío al interior: pide agencia o domicilio y lo guarda adelante de la dirección', async () => {

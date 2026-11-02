@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { calcular, insertar, buscarPedido, cambiarEstado, vencerPedidos, reclamarComprobante, PedidoInput } from './pedidos.js';
 import { crearToken, datosDePago, guardarAjustesPagos, leerAjustesPagos, pedidoConToken, subirComprobante } from './pagosManuales.js';
 import { leerPrivado } from './imagenes.js';
-import { productos, boxes, q } from './db.js';
+import { productos, boxes, q, q1 } from './db.js';
 
 after(() => rmSync(fileURLToPath(new URL('../data/privado/comprobantes', import.meta.url)), { recursive: true, force: true }));
 
@@ -101,7 +101,7 @@ test('reclamar pago: manda el mail con un link nuevo; no aplica con comprobante,
     const m = enviados.at(-1);
     assert.equal(m.to, 'ana@test.com');
     assert.match(m.subject, /Todavía no recibimos el pago/);
-    assert.match(m.text, /comprobante de pago antes de las .*se cancela automáticamente/);
+    assert.match(m.text, /comprobante de pago antes de (las \d\d:\d\d|mañana a las \d\d:\d\d); si no, el pedido se cancela automáticamente/);
     assert.match(m.text, /Envianos el comprobante de pago para que podamos comenzar a preparar tu compra\./);
     await assert.rejects(pedidoConToken(id, token), /no encontrado/, 'el link viejo deja de valer: va uno nuevo en el mail');
     const h = await q("SELECT autor, accion FROM historial WHERE entidad = 'pedido' AND entidad_id = $1 AND accion = 'recordatorio'", [String(id)]);
@@ -127,15 +127,18 @@ test('reclamar pago: manda el mail con un link nuevo; no aplica con comprobante,
 });
 
 test('reclamar pago: el cliente tiene 4 h desde el mail, aunque el pedido ya estuviera por vencer', async () => {
-  const { id } = await pedido(); // transferencia: vence a las 4 h de creado
-  await q("UPDATE pedidos SET creado = now() - interval '3 hours 55 minutes' WHERE id = $1", [id]);
+  const { id } = await pedido();
+  await q("UPDATE pedidos SET vence = now() + interval '5 minutes' WHERE id = $1", [id]); // estaba por vencer
   await reclamarComprobante(id, 'admin@test.com');
   const p = (await buscarPedido(id))!;
   const horas = (new Date(p.vence!).getTime() - Date.now()) / 3600_000;
   assert.ok(horas > 3.9 && horas <= 4, `vence en ~4 h desde ahora (${horas.toFixed(2)})`);
-  await q("UPDATE pedidos SET creado = now() - interval '6 hours' WHERE id = $1", [id]);
   await vencerPedidos();
-  assert.equal((await buscarPedido(id))!.estado, 'pendiente', 'pasaron 6 h desde el pedido, pero el plazo nuevo sigue corriendo');
+  assert.equal((await buscarPedido(id))!.estado, 'pendiente', 'el plazo nuevo sigue corriendo');
+  // Si todavía le quedaba más que 4 h, el reclamo no acorta el plazo
+  const lejos = (await q1<{ vence: Date }>("UPDATE pedidos SET vence = now() + interval '20 hours' WHERE id = $1 RETURNING vence", [id]))!.vence;
+  await reclamarComprobante(id, 'admin@test.com');
+  assert.equal((await buscarPedido(id))!.vence!.toISOString(), new Date(lejos).toISOString());
   await q("UPDATE pedidos SET vence = now() - interval '1 minute' WHERE id = $1", [id]);
   await vencerPedidos();
   assert.equal((await buscarPedido(id))!.estado, 'cancelado', 'vencido el plazo del reclamo, se cancela');

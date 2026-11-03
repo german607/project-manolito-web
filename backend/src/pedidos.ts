@@ -40,15 +40,23 @@ export async function guardarRetiro(valor: z.infer<typeof Retiro>, autor: Autor)
 }
 const textoRecargo = (r: RecargoMp) => (r.activo ? `${r.porcentaje}%` : 'apagado');
 const porcentajeMp = (r: RecargoMp) => (r.activo ? r.porcentaje / 100 : 0);
-// Pedidos sin pagar se cancelan solos y liberan el stock. La transferencia tiene más tiempo (el banco puede demorar)
-export const VENCE_HORAS = 2;
-export const VENCE_HORAS_TRANSFERENCIA = 4;
-export const venceHoras = (pago: string) => (pago === 'transferencia' ? VENCE_HORAS_TRANSFERENCIA : VENCE_HORAS);
+// Pedidos sin pagar se cancelan solos y liberan el stock: a las 18:00 (hora de Uruguay) del día siguiente al pedido,
+// con cualquier medio de pago. Se guarda en pedidos.vence al crearlo
+export const VENCE_HORA = 18;
 export const RECLAMO_HORAS = 4; // al reclamar el pago, el cliente tiene 4 h desde ese mail para mandar el comprobante
-// Hasta cuándo puede pagar: el plazo fijado a mano (reclamo) o el normal desde que hizo el pedido
-export const vencimiento = (p: Pick<Pedido, 'creado' | 'pago' | 'vence'>) =>
-  p.vence ? new Date(p.vence) : new Date(new Date(p.creado).getTime() + venceHoras(p.pago) * 3600_000);
-const avisoVence = (pago: string) => `Tenés ${venceHoras(pago)} horas para hacer el pago; si no, el pedido se cancela automáticamente.`;
+const ZONA = 'America/Montevideo';
+const diaUY = (d: Date) => d.toLocaleDateString('en-CA', { timeZone: ZONA }); // AAAA-MM-DD
+// ponytail: Uruguay no tiene horario de verano desde 2015 (siempre -03:00); si vuelve, calcular el desfase con la zona
+export const venceNormal = (creado: Date) => new Date(Date.parse(`${diaUY(creado)}T${VENCE_HORA}:00:00-03:00`) + 86_400_000);
+// Hasta cuándo puede pagar: el plazo guardado (al crear o al reclamar) o, en pedidos viejos, el normal
+export const vencimiento = (p: Pick<Pedido, 'creado' | 'vence'>) => (p.vence ? new Date(p.vence) : venceNormal(new Date(p.creado)));
+// "hoy a las 19:07", "mañana a las 18:00" o "el 5/11 a las 18:00" (hora de Uruguay, 24 h)
+export function cuando(d: Date, desde = new Date()) {
+  const hora = d.toLocaleTimeString('es-UY', { timeZone: ZONA, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+  const dias = Math.round((Date.parse(diaUY(d)) - Date.parse(diaUY(desde))) / 86_400_000);
+  return `${dias === 0 ? 'hoy' : dias === 1 ? 'mañana' : `el ${d.toLocaleDateString('es-UY', { timeZone: ZONA, day: 'numeric', month: 'numeric' })}`} a las ${hora}`;
+}
+const avisoVence = (p: Pedido) => `Tenés hasta ${cuando(vencimiento(p))} para hacer el pago; si no, el pedido se cancela automáticamente.`;
 
 export const Item = z.object({
   tipo: z.enum(['producto', 'box']),
@@ -296,11 +304,11 @@ export const insertar = (input: PedidoInput, c: Awaited<ReturnType<typeof calcul
   const { cliente } = input;
   // Interior: "Agencia DAC: …" o "Domicilio: …", así se ve en el admin y en los mails sin otra columna
   const direccion = input.entrega === 'interior' && input.envio ? `${input.envio === 'agencia' ? 'Agencia DAC' : 'Domicilio'}: ${cliente.direccion}` : cliente.direccion;
-  const r = await q1<{ id: number }>(`INSERT INTO pedidos (nombre, telefono, email, direccion, entrega, pago, items, subtotal, descuento, cupon, recargo, total, usuario_id, origen, campana)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING id`, [
+  const r = await q1<{ id: number }>(`INSERT INTO pedidos (nombre, telefono, email, direccion, entrega, pago, items, subtotal, descuento, cupon, recargo, total, usuario_id, origen, campana, vence)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING id`, [
     cliente.nombre, cliente.telefono, cliente.email, direccion ?? null, input.entrega, input.pago,
     JSON.stringify(c.lineas), c.subtotal, c.descuento, c.cupon ?? null, c.recargo, c.total, usuarioId,
-    input.origen?.fuente || null, input.origen?.campana || null]);
+    input.origen?.fuente || null, input.origen?.campana || null, venceNormal(new Date())]);
   await registrar(autor, 'pedido', r!.id, 'crear', { total: [null, c.total], pago: [null, input.pago], ...(c.cupon ? { cupon: [null, c.cupon] } : {}) });
   return r!.id;
 });
@@ -318,11 +326,10 @@ export async function reclamarComprobante(id: number, autor: Autor) {
   const datos = await datosDePago(p);
   // Marcado como pagado pero la plata no entró: vuelve a pendiente y sin comprobante, así puede subir otro y vence si no llega
   // (el archivo anterior queda guardado; su clave va al historial)
-  const { vence } = (await q1<{ vence: Date }>(`UPDATE pedidos SET vence = now() + make_interval(hours => $1), estado = 'pendiente',
+  // 4 h desde el mail, sin acortar el plazo que ya tenía (ej. si vencía mañana a las 18:00, sigue así)
+  const { vence } = (await q1<{ vence: Date }>(`UPDATE pedidos SET vence = GREATEST(vence, now() + make_interval(hours => $1)), estado = 'pendiente',
     comprobante = CASE WHEN estado = 'pagado' THEN NULL ELSE comprobante END WHERE id = $2 RETURNING vence`, [RECLAMO_HORAS, id]))!;
-  const hora = new Date(vence)
-    .toLocaleTimeString('es-UY', { timeZone: 'America/Montevideo', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }); // ej. 19:07
-  const aviso = `Para mantener tu compra, necesitamos el comprobante de pago antes de las ${hora}; si no, el pedido se cancela automáticamente.`;
+  const aviso = `Para mantener tu compra, necesitamos el comprobante de pago antes de ${cuando(new Date(vence)).replace(/^hoy a /, '')}; si no, el pedido se cancela automáticamente.`;
   const cierre = 'Envianos el comprobante de pago para que podamos comenzar a preparar tu compra.';
   await enviarMail(p.email, `Todavía no recibimos el pago de tu pedido Manolito #${id}`, mailCliente(p, {
     titulo: 'Todavía no recibimos tu pago',
@@ -335,11 +342,11 @@ export async function reclamarComprobante(id: number, autor: Autor) {
     ...(p.estado === 'pagado' ? { estado: ['pagado', 'pendiente'], comprobante: [p.comprobante, null] } : {}) });
 }
 
-// Cancela los pedidos pendientes de pago vencidos (venceHoras) y avisa al cliente. Corre cada 5 min (server.ts)
+// Cancela los pedidos pendientes de pago vencidos (pedidos.vence) y avisa al cliente. Corre cada 5 min (server.ts)
 export async function vencerPedidos() {
   // Con comprobante subido no vence: queda en revisión hasta que el admin confirme (o cancele) el pago
   const vencidos = await q<{ id: number }>(`SELECT id FROM pedidos WHERE estado = 'pendiente' AND comprobante IS NULL
-    AND COALESCE(vence, creado + make_interval(hours => CASE WHEN pago = 'transferencia' THEN $1::int ELSE $2::int END)) <= now()`, [VENCE_HORAS_TRANSFERENCIA, VENCE_HORAS]);
+    AND vence <= now()`);
   for (const { id } of vencidos) {
     const p = await cambiarEstado(id, 'cancelado', undefined, 'sistema (venció sin pago)');
     const fin = 'Si todavía lo querés, podés hacerlo de nuevo en la web o escribirnos por Instagram.';
@@ -391,7 +398,7 @@ pedidosRouter.post('/pedidos', async (req, res) => {
   if (p.pago === 'mercadopago') {
     // El pedido ya está guardado: si Mercado Pago falla no se pierde, queda pendiente para coordinar a mano.
     // Mercado Pago deja de aceptar el pago al mismo tiempo que vence el pedido
-    const vence = new Date(Date.now() + venceHoras(p.pago) * 3600_000);
+    const vence = vencimiento(p);
     pagoUrl = await crearPreferencia({ id, total: p.total, email: p.email, nombre: p.nombre, vence }).catch(e => { console.error(e); return undefined; });
   }
   // Pago manual (transferencia, Abitab, Prex): datos para pagar y token para subir el comprobante
@@ -399,7 +406,7 @@ pedidosRouter.post('/pedidos', async (req, res) => {
   // Token del pedido: para ver los datos de pago y subir el comprobante (manual) o pagar con tarjeta acá mismo (Mercado Pago)
   const token = await crearToken(id);
   const datos = manual ? await datosDePago(p) : null;
-  const AVISO_VENCE = avisoVence(p.pago);
+  const AVISO_VENCE = avisoVence(p);
   const instrucciones = pagoUrl ? undefined : `${datosEnTexto(datos)}\n\n${AVISO_VENCE}`;
 
   const link = linkComprobante(id, token);

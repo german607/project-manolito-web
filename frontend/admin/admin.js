@@ -221,8 +221,8 @@ async function cargarPedidos() {
   const estado = $('#filtroEstado').value;
   const pedidos = await api('/pedidos' + (estado ? '?estado=' + estado : ''));
   const fecha = s => new Date(s).toLocaleString('es-UY', { timeZone: 'America/Montevideo', dateStyle: 'short', timeStyle: 'short' });
-  // Sin pagar se cancela solo: transferencia a las 4 h, el resto a las 2 h (venceHoras en backend/src/pedidos.ts)
-  const vence = p => new Date(p.vence || new Date(p.creado).getTime() + (p.pago === 'transferencia' ? 4 : 2) * 3600_000).toLocaleTimeString('es-UY', { timeZone: 'America/Montevideo', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+  // Sin pagar se cancela solo en pedidos.vence: 18:00 del día siguiente al pedido, o 4 h desde "Reclamar pago"
+  const vence = p => new Date(p.vence).toLocaleString('es-UY', { timeZone: 'America/Montevideo', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
   $('#listaPedidos').innerHTML = pedidos.length ? pedidos.map(p => `
     <article class="card pedido" data-id="${p.id}">
       <div>

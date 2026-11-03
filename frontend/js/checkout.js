@@ -104,7 +104,7 @@
           else{gracias(d.id,'Último paso: el pago','Total: '+plata(d.total)+'.');pagoTarjeta(d.id,d.token,d.total,cot.mpPublicKey,d.pagoUrl);return;}
         }
         gracias(d.id,'¡Gracias! Recibimos tu pedido.','Total: '+plata(d.total)+'. Te mandamos el detalle a '+body.cliente.email+'.',d.datos?'':d.instrucciones);
-        if(d.token) pagoManual(d.id,d.token,{total:d.total,estado:'pendiente',comprobante:false,datos:d.datos,vence:d.vence?new Date(d.vence):new Date(Date.now()+2*3600e3)});
+        if(d.token) pagoManual(d.id,d.token,{total:d.total,estado:'pendiente',comprobante:false,datos:d.datos,vence:new Date(d.vence)});
       })
       .catch(function(err){$('cartError').textContent=err.message||'No pudimos enviar el pedido. Probá de nuevo.';})
       .then(function(){btn.disabled=false;btn.textContent='Confirmar pedido';});
@@ -123,7 +123,13 @@
 
   // ---- Pago manual (transferencia, Abitab, Prex): datos para pagar y comprobante ----
   function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e;}
-  function hora(f){return new Date(f).toLocaleTimeString('es-UY',{timeZone:'America/Montevideo',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});} // hora de Uruguay, ej. 19:07
+  // Hora de Uruguay: "hoy a las 19:07", "mañana a las 18:00" o "el 5/11 a las 18:00" (como cuando() en pedidos.ts)
+  function cuando(f){
+    var z={timeZone:'America/Montevideo'}, d=new Date(f), dia=function(x){return x.toLocaleDateString('en-CA',z);};
+    var dias=Math.round((Date.parse(dia(d))-Date.parse(dia(new Date())))/864e5);
+    return (dias===0?'hoy':dias===1?'mañana':'el '+d.toLocaleDateString('es-UY',{timeZone:z.timeZone,day:'numeric',month:'numeric'}))+
+      ' a las '+d.toLocaleTimeString('es-UY',{timeZone:z.timeZone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+  }
   function pagoManual(id,token,info){
     var box=$('gPago'); box.innerHTML=''; box.hidden=false;
     if(['pagado','pronto','enviado','entregado'].indexOf(info.estado)>=0){box.appendChild(el('p','pm-ok','✓ El pago de este pedido ya está confirmado.'));return;}
@@ -146,7 +152,7 @@
     }
     var estado=el('p','pm-estado');
     if(info.comprobante) estado.textContent='✓ Recibimos tu comprobante. Lo revisamos y te avisamos por mail. Mientras tanto el pedido no vence.';
-    else estado.textContent='Tenés hasta las '+hora(info.vence)+' para pagar. Cuando transfieras, tocá "Confirmar pago" y subí el comprobante (foto o PDF): así el pedido no vence mientras lo revisamos.';
+    else estado.textContent='Tenés hasta '+cuando(info.vence)+' para pagar. Cuando transfieras, tocá "Confirmar pago" y subí el comprobante (foto o PDF): así el pedido no vence mientras lo revisamos.';
     box.appendChild(estado);
     // Sin comprobante, el botón principal es "Confirmar pago" (sube el comprobante); "Volver al inicio" aparece después
     var textoBoton=info.comprobante?'Reemplazar comprobante':'Confirmar pago';
@@ -221,7 +227,7 @@
       .catch(function(){cotizar();});
     return;
   }
-  function noSeCompleto(id){gracias(id,'El pago no se completó','Tu pedido quedó guardado: podés volver a intentarlo dentro de las 2 horas, o escribinos por Instagram y lo coordinamos por otro medio.');}
+  function noSeCompleto(id){gracias(id,'El pago no se completó','Tu pedido quedó guardado: podés volver a intentarlo desde el link del mail hasta las 18:00 del día siguiente al pedido, o escribinos por Instagram y lo coordinamos por otro medio.');}
   // Link del mail de un pago manual: checkout.html?pedido=ID&t=TOKEN
   if(q.get('pedido')&&q.get('t')){
     var pidM=q.get('pedido'), tok=q.get('t');

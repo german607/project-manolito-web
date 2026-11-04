@@ -107,6 +107,7 @@ adminRouter.get('/resumen', async (req, res) => {
     paginas: await suma('visita'),
     boxesVistas: await suma('box_ver'),
     productosAgregados: await suma('arma_agregar'),
+    erroresCheckout: await suma('checkout_error'),
     stockBajo: await q('SELECT id, nombre, COALESCE(stock, 0) AS stock FROM productos WHERE activo AND controla_stock AND COALESCE(stock, 0) <= 3 ORDER BY 3'),
   });
 });

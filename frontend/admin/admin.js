@@ -76,6 +76,7 @@ async function cargarResumen() {
   ranking('#topPaginas', d.paginas, r => (r.ref === '/' || r.ref === '/index.html' ? 'Inicio' : r.ref.replace(/^\//, '').replace('.html', '')));
   ranking('#topBoxes', d.boxesVistas, r => r.ref);
   ranking('#topProductos', d.productosAgregados, r => nombre[r.ref] || r.ref);
+  ranking('#erroresCheckout', d.erroresCheckout, r => r.ref);
 
   // ---- Ventas ----
   const v = d.ventas, abandonos = Math.max(0, (t.checkout || 0) - d.embudo.find(p => p.paso === 'Hicieron el pedido').n);

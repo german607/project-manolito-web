@@ -3,7 +3,7 @@ import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 import type { Request } from 'express';
-import { firmaValida, type PagoMP } from './mercadopago.js';
+import { firmaValida, crearPreferencia, type PagoMP } from './mercadopago.js';
 import { calcular, insertar, buscarPedido, cambiarEstado, procesarPago, PedidoInput } from './pedidos.js';
 import { productos, boxes, q } from './db.js';
 import express from 'express';
@@ -155,4 +155,18 @@ test('tarjeta: rechazo con mensaje claro, y tope de intentos por pedido (tarjeta
     for (let i = 0; i < 4; i++) await s.pagar({ pedido: p.id, t, formData: tarjeta() });
     assert.equal((await s.pagar({ pedido: p.id, t, formData: tarjeta() })).status, 429, 'al 6.º intento se bloquea');
   } finally { s.cerrar(); }
+});
+
+test('preferencia: manda notification_url al webhook (lo exige Mercado Pago)', async () => {
+  const antes = globalThis.fetch;
+  let body: any;
+  globalThis.fetch = (async (url: string, init: RequestInit) => {
+    if (String(url).endsWith('/checkout/preferences')) { body = JSON.parse(String(init.body)); return new Response(JSON.stringify({ init_point: 'https://mp/x' })); }
+    return antes(url, init);
+  }) as typeof fetch;
+  process.env.BASE_URL = 'https://manolitouy.com';
+  try {
+    await crearPreferencia({ id: 7, total: 100, email: 'a@test.com', nombre: 'Ana', vence: new Date(Date.now() + 3600_000) });
+    assert.equal(body.notification_url, 'https://manolitouy.com/api/mercadopago/webhook?source_news=webhooks');
+  } finally { globalThis.fetch = antes; delete process.env.BASE_URL; }
 });

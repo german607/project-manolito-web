@@ -46,4 +46,10 @@ test('resumen: origen de las ventas, cupones, conversión por box, clientes nuev
   assert.ok(r.clientes.nuevos >= 1 && r.clientes.vuelven >= 1);
   assert.ok(r.mejoresClientes.some((c: any) => c.email === 'vuelve@test.com' && c.pedidos === 2), 'el mismo email con distinta mayúscula es la misma clienta');
   assert.ok('total' in r.anterior && r.porHora.length && r.porDiaSemana.length);
+  // Montos por día: un valor por día del período; hoy suma los pedidos pagados de hoy (el de hace 60 días no entra)
+  const hoy = await q<{ n: number }>(`SELECT COALESCE(SUM(total), 0)::int AS n FROM pedidos WHERE estado = 'pagado'
+    AND (creado AT TIME ZONE 'America/Montevideo')::date = (now() AT TIME ZONE 'America/Montevideo')::date`);
+  assert.equal(r.montosPorDia.length, 30);
+  assert.equal(r.montosPorDia.at(-1).n, hoy[0].n);
+  assert.ok(hoy[0].n > 0);
 });

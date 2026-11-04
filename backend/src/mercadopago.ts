@@ -19,8 +19,9 @@ async function mp(path: string, init: RequestInit & { idempotencia?: string } = 
 }
 
 // Checkout Pro: el cliente paga en la página de Mercado Pago. Devuelve la URL a la que redirigir.
-// Los avisos de pago llegan al webhook configurado en el panel de Mercado Pago ("Tus integraciones"), que van
-// firmados. No se manda notification_url en la preferencia: esa tiene prioridad y no se garantiza que esté firmada.
+// Los avisos de pago llegan a notification_url (lo exige Mercado Pago en la evaluación de la integración; tiene prioridad
+// sobre el webhook del panel). source_news=webhooks: solo webhooks firmados con la clave secreta, no los avisos IPN viejos.
+// Si un aviso llega sin firma, el webhook lo rechaza (401): el pago igual se confirma cuando el cliente vuelve a la web
 export async function crearPreferencia(p: { id: number; total: number; email: string; nombre: string; vence: Date }): Promise<string> {
   const base = process.env.BASE_URL ?? 'http://localhost:3000';
   const pref = await mp('/checkout/preferences', {
@@ -45,6 +46,7 @@ export async function crearPreferencia(p: { id: number; total: number; email: st
         failure: `${base}/checkout.html?pedido=${p.id}&pago=error`,
       },
       auto_return: 'approved',
+      notification_url: `${base}/api/mercadopago/webhook?source_news=webhooks`,
     }),
   });
   return pref.init_point;

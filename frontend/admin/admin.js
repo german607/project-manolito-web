@@ -72,7 +72,8 @@ async function cargarResumen() {
     ['Armados enviados', t.arma_enviar], ['Pedidos', pedidos], ['Facturado', plata(facturado)],
   ].map(([k, v, extra = '']) => `<div class="kpi"><small>${k}</small><b>${typeof v === 'string' ? v : (v || 0).toLocaleString('es-UY')}</b>${extra}</div>`).join('');
 
-  grafico(d.visitasPorDia);
+  grafico('#chart', 'Visitas por día', d.visitasPorDia);
+  grafico('#chartMontos', 'Montos recibidos por día', d.montosPorDia, plata, plata);
   ranking('#topPaginas', d.paginas, r => (r.ref === '/' || r.ref === '/index.html' ? 'Inicio' : r.ref.replace(/^\//, '').replace('.html', '')));
   ranking('#topBoxes', d.boxesVistas, r => r.ref);
   ranking('#topProductos', d.productosAgregados, r => nombre[r.ref] || r.ref);
@@ -122,17 +123,18 @@ async function cargarResumen() {
   $('#stockAlert').innerHTML = `<span aria-hidden="true">⚠</span><span><b>Stock bajo:</b> ${bajo.map(p => `${esc(p.nombre)} (${p.stock})`).join(', ')}</span>`;
 }
 
-function grafico(filas) {
+// Barras por día. valor: cómo se escribe un número (ej. "3 visitas" o "$1.590")
+function grafico(sel, titulo, filas, valor = n => `${n} visita${n === 1 ? '' : 's'}`, eje = n => n) {
   const max = Math.max(1, ...filas.map(f => f.n));
   const total = filas.reduce((s, f) => s + f.n, 0);
   const pico = filas.reduce((a, f) => (f.n > a.n ? f : a), filas[0]);
   const medio = filas[Math.floor(filas.length / 2)];
-  const el = $('#chart');
+  const el = $(sel);
   el.setAttribute('role', 'img');
-  el.setAttribute('aria-label', `Visitas por día: ${total} en total, máximo ${pico.n} el ${ddmm(pico.dia)}`);
+  el.setAttribute('aria-label', `${titulo}: ${valor(total)} en total, máximo ${valor(pico.n)} el ${ddmm(pico.dia)}`);
   el.innerHTML = `
-    <div class="y"><span>${max}</span><span>${Math.round(max / 2)}</span><span>0</span></div>
-    <div class="plot">${filas.map(f => `<div class="col" data-tip="${ddmm(f.dia)}: ${f.n} visita${f.n === 1 ? '' : 's'}"><div class="bar" style="height:${(f.n / max) * 100}%"></div></div>`).join('')}</div>
+    <div class="y"><span>${eje(max)}</span><span>${eje(Math.round(max / 2))}</span><span>${eje(0)}</span></div>
+    <div class="plot">${filas.map(f => `<div class="col" data-tip="${ddmm(f.dia)}: ${valor(f.n)}"><div class="bar" style="height:${(f.n / max) * 100}%"></div></div>`).join('')}</div>
     <div class="x"><span>${ddmm(filas[0].dia)}</span><span>${ddmm(medio.dia)}</span><span>${ddmm(filas[filas.length - 1].dia)}</span></div>`;
 }
 

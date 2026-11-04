@@ -30,14 +30,20 @@ adminRouter.get('/resumen', async (req, res) => {
   const suma = (tipo: string, limite = 10) => q(
     'SELECT ref, SUM(n)::int AS n FROM eventos WHERE tipo = $1 AND dia >= $2 GROUP BY ref ORDER BY n DESC LIMIT $3', [tipo, desde, limite]);
 
-  // Todos los días del rango, aunque no haya visitas
-  const porDia = new Map((await q<{ dia: string; n: number }>("SELECT dia, SUM(n)::int AS n FROM eventos WHERE tipo = 'visita' AND dia >= $1 GROUP BY dia", [desde])).map(r => [r.dia, r.n]));
-  const visitasPorDia = Array.from({ length: dias }, (_, i) => {
-    const d = new Date(desde + 'T00:00:00Z');
-    d.setUTCDate(d.getUTCDate() + i);
-    const dia = d.toISOString().slice(0, 10);
-    return { dia, n: porDia.get(dia) ?? 0 };
-  });
+  // Todos los días del rango, aunque no haya datos
+  const serie = (filas: { dia: string; n: number }[]) => {
+    const porDia = new Map(filas.map(r => [r.dia, r.n]));
+    return Array.from({ length: dias }, (_, i) => {
+      const d = new Date(desde + 'T00:00:00Z');
+      d.setUTCDate(d.getUTCDate() + i);
+      const dia = d.toISOString().slice(0, 10);
+      return { dia, n: porDia.get(dia) ?? 0 };
+    });
+  };
+  const visitasPorDia = serie(await q("SELECT dia, SUM(n)::int AS n FROM eventos WHERE tipo = 'visita' AND dia >= $1 GROUP BY dia", [desde]));
+  // Plata de los pedidos pagados, por el día en que se hizo el pedido (como el resto de las ventas)
+  const montosPorDia = serie(await q(`SELECT (creado AT TIME ZONE '${ZONA_UY}')::date::text AS dia, SUM(total)::int AS n FROM pedidos
+    WHERE estado IN ${VENDIDOS} AND (creado AT TIME ZONE '${ZONA_UY}')::date >= $1 GROUP BY 1`, [desde]));
 
   const totales = Object.fromEntries((await q<{ tipo: string; n: number }>('SELECT tipo, SUM(n)::int AS n FROM eventos WHERE dia >= $1 GROUP BY tipo', [desde])).map(r => [r.tipo, r.n]));
 
@@ -102,7 +108,7 @@ adminRouter.get('/resumen', async (req, res) => {
     FROM pedidos WHERE estado IN ${VENDIDOS} GROUP BY 2 ORDER BY n DESC LIMIT 10`);
 
   res.json({
-    dias, desde, visitasPorDia, totales, pedidos, ventas, embudo,
+    dias, desde, visitasPorDia, montosPorDia, totales, pedidos, ventas, embudo,
     anterior, conversionBoxes, porDiaSemana, porHora, cupones, porOrigen, clientes, mejoresClientes,
     paginas: await suma('visita'),
     boxesVistas: await suma('box_ver'),

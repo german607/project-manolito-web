@@ -82,11 +82,13 @@
   });
   actualizarDireccion();
 
+  var CAMPOS={nombre:'nombre',telefono:'teléfono',email:'email',direccion:'dirección',envio:'agencia o domicilio'};
   form.addEventListener('submit',function(e){
     e.preventDefault();
     $('cartError').textContent='';
-    if(!form.reportValidity()) return;
-    if(!cot||cot.avisos.length){$('cartError').textContent='Hay productos con problemas: tocá "Editar" y quitalos.';return;}
+    // Embudo: qué frena al que toca "Confirmar pedido" (sin datos personales: solo el campo o el mensaje de error)
+    if(!form.reportValidity()){var inv=form.querySelector(':invalid');track('checkout_error','Falta o está mal: '+(CAMPOS[inv&&inv.name]||(inv&&inv.name)||'?'));return;}
+    if(!cot||cot.avisos.length){$('cartError').textContent='Hay productos con problemas: tocá "Editar" y quitalos.';track('checkout_error','Productos con problemas en el carrito');return;}
     var btn=$('confirmar'); btn.disabled=true; btn.textContent='Enviando…';
     var body={
       cliente:{nombre:form.nombre.value,telefono:form.telefono.value,email:form.email.value,direccion:entrega()==='pickup'?undefined:form.direccion.value},
@@ -106,7 +108,7 @@
         gracias(d.id,'¡Gracias! Recibimos tu pedido.','Total: '+plata(d.total)+'. Te mandamos el detalle a '+body.cliente.email+'.',d.datos?'':d.instrucciones);
         if(d.token) pagoManual(d.id,d.token,{total:d.total,estado:'pendiente',comprobante:false,datos:d.datos,vence:new Date(d.vence)});
       })
-      .catch(function(err){$('cartError').textContent=err.message||'No pudimos enviar el pedido. Probá de nuevo.';})
+      .catch(function(err){$('cartError').textContent=err.message||'No pudimos enviar el pedido. Probá de nuevo.';track('checkout_error',String(err.message||'Sin conexión').slice(0,80));})
       .then(function(){btn.disabled=false;btn.textContent='Confirmar pedido';});
   });
 

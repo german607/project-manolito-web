@@ -250,6 +250,13 @@ const MIGRACIONES: (() => Promise<void>)[] = [
   async () => {
     await q(`SELECT setval(pg_get_serial_sequence('pedidos', 'id'), ('1' || (COALESCE(MAX(id), 0) + 1))::int - 1, true) FROM pedidos`);
   },
+  // 14: precio anterior (se muestra tachado en la web) y promo: todo 10% más barato, redondeado a 10 ($1590 → $1430)
+  async () => {
+    for (const t of ['productos', 'boxes']) {
+      await q(`ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS precio_anterior integer`);
+      await q(`UPDATE ${t} SET precio_anterior = precio, precio = (ROUND(precio * 0.9 / 10) * 10)::int WHERE precio_anterior IS NULL`);
+    }
+  },
 ];
 
 // Crea las tablas, aplica migraciones y carga el catálogo inicial si la base está vacía.
@@ -296,22 +303,22 @@ export function diferencias<T extends Record<string, unknown>>(antes: T, despues
 export type Producto = {
   id: string; nombre: string; descripcion: string | null; precio: number;
   colores: string[] | null; personalizable: boolean; foto: string | null;
-  activo: boolean;
+  activo: boolean; precioAnterior: number | null; // tachado en la web si es mayor que el precio (promo)
   stock: number | null;   // el que usan las ventas: null = sin límite (no se controla)
   stockCargado: number | null; controlaStock: boolean; // lo que se edita en el admin
 };
 export type Componente = { id: string; nombre: string; cantidad: number; stock: number | null };
 export type Box = {
   id: string; nombre: string; precio: number; items: string[]; colores: string[] | null;
-  foto: string | null; etiqueta: string | null; activo: boolean;
+  foto: string | null; etiqueta: string | null; activo: boolean; precioAnterior: number | null;
   componentes: Componente[]; agotada: boolean; // agotada = algún producto que trae no tiene stock suficiente
 };
 
 // Stock que usan las ventas, en SQL: NULL si el producto tiene "Ignorar stock"
 export const STOCK_SQL = 'CASE WHEN controla_stock THEN COALESCE(stock, 0) END';
 
-const toProducto = ({ controla_stock, orden: _orden, ...r }: any): Producto => ({
-  ...r, stock: controla_stock ? (r.stock ?? 0) : null, stockCargado: r.stock, controlaStock: controla_stock,
+const toProducto = ({ controla_stock, orden: _orden, precio_anterior, ...r }: any): Producto => ({
+  ...r, precioAnterior: precio_anterior, stock: controla_stock ? (r.stock ?? 0) : null, stockCargado: r.stock, controlaStock: controla_stock,
 });
 
 // Cada box con sus componentes en una sola consulta
@@ -320,8 +327,8 @@ const SELECT_BOX = `SELECT b.*, COALESCE((
     FROM box_productos bp JOIN productos p ON p.id = bp.producto_id WHERE bp.box_id = b.id
   ), '[]') AS componentes
   FROM boxes b`;
-const toBox = (r: any): Box => ({
-  ...r, agotada: (r.componentes as Componente[]).some(c => c.stock !== null && c.stock < c.cantidad),
+const toBox = ({ precio_anterior, ...r }: any): Box => ({
+  ...r, precioAnterior: precio_anterior, agotada: (r.componentes as Componente[]).some(c => c.stock !== null && c.stock < c.cantidad),
 });
 
 export const productos = {

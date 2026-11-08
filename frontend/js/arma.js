@@ -17,10 +17,9 @@
   var grid=document.getElementById('armaGrid');
 
   function letters(s){return (s||'').replace(/\s+/g,'').length;}
-  function price(p){
-    if(p.name){var l=letters(st[p.id]&&st[p.id].name);return p.p+(l>5?(l-5)*20:0);}
-    return p.p;
-  }
+  function extraLetras(p){var l=p.name?letters(st[p.id]&&st[p.id].name):0;return l>5?(l-5)*20:0;}
+  function price(p){return p.p+extraLetras(p);}
+  function priceHTML(p){return precioHTML(price(p),p.pa&&p.pa+extraLetras(p));} // p.pa: precio anterior (promo)
   function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e;}
 
   P.forEach(function(p){
@@ -134,7 +133,7 @@
       var eo=card.querySelector('.ap-est'); if(eo) eo.hidden=s.color!=='Estampada';
       card.querySelectorAll('.chip').forEach(function(b){b.classList.toggle('sel',!!(s.color&&b.textContent===s.color));});
       if(p.modelo){var mbb=document.getElementById('apm-'+p.id); if(mbb) mbb.textContent=s.modelo?'Modelo de '+modeloPublico(s.modelo).toLowerCase()+' elegido ✓ (cambiar)':'Ver y elegir modelo';}
-      document.getElementById('apr-'+p.id).textContent='$'+price(p);
+      document.getElementById('apr-'+p.id).innerHTML=priceHTML(p);
       if(s.on){
         count++; total+=price(p);
         var row=el('div','arma-line'); row.appendChild(el('span',null,lineText(p)));
@@ -211,7 +210,7 @@
     P.forEach(function(p){
       var d=m[p.id], card=document.getElementById('ap-'+p.id);
       if(!d){card.style.display='none';if(st[p.id])st[p.id].on=false;return;}
-      p.p=d.precio; p.agotado=d.stock===0;
+      p.p=d.precio; p.pa=d.precioAnterior; p.agotado=d.stock===0;
       var im=card.querySelector('.ap-img'); if(im&&d.foto) im.src=d.foto;
     });
     render();

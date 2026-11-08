@@ -140,8 +140,9 @@ async function actualizar(tabla: 'productos' | 'boxes', id: string, cambios: Rec
 }
 
 adminRouter.patch('/productos/:id', async (req, res) => {
-  const { controlaStock, ...cambios } = z.object({
+  const { controlaStock, precioAnterior, ...cambios } = z.object({
     precio: Precio.optional(),
+    precioAnterior: Precio.nullable().optional(), // vacío = sin promo
     stock: z.number().int().min(0).nullable().optional(),
     controlaStock: z.boolean().optional(), // false = "Ignorar stock"
     activo: z.boolean().optional(),
@@ -152,9 +153,9 @@ adminRouter.patch('/productos/:id', async (req, res) => {
     throw new HttpError(400, 'Cargá la cantidad de stock, o activá "Ignorar stock"');
   }
   const nuevo = await tx(async () => {
-    await actualizar('productos', req.params.id, { ...cambios, controla_stock: controlaStock });
+    await actualizar('productos', req.params.id, { ...cambios, controla_stock: controlaStock, precio_anterior: precioAnterior });
     const nuevo = (await productos.uno(req.params.id))!;
-    const d = diferencias(actual, nuevo, ['precio', 'stockCargado', 'controlaStock', 'activo']);
+    const d = diferencias(actual, nuevo, ['precio', 'precioAnterior', 'stockCargado', 'controlaStock', 'activo']);
     if (Object.keys(d).length) await registrar(res.locals.usuario.email, 'producto', actual.id, 'editar', d);
     return nuevo;
   });
@@ -162,13 +163,13 @@ adminRouter.patch('/productos/:id', async (req, res) => {
 });
 
 adminRouter.patch('/boxes/:id', async (req, res) => {
-  const cambios = z.object({ precio: Precio.optional(), activo: z.boolean().optional() }).strict().parse(req.body);
+  const { precioAnterior, ...cambios } = z.object({ precio: Precio.optional(), precioAnterior: Precio.nullable().optional(), activo: z.boolean().optional() }).strict().parse(req.body);
   const antes = await boxes.una(req.params.id);
   if (!antes) throw new HttpError(404, 'No encontrado');
   const nueva = await tx(async () => {
-    await actualizar('boxes', req.params.id, cambios);
+    await actualizar('boxes', req.params.id, { ...cambios, precio_anterior: precioAnterior });
     const nueva = (await boxes.una(req.params.id))!;
-    const d = diferencias(antes, nueva, ['precio', 'activo']);
+    const d = diferencias(antes, nueva, ['precio', 'precioAnterior', 'activo']);
     if (Object.keys(d).length) await registrar(res.locals.usuario.email, 'box', antes.id, 'editar', d);
     return nueva;
   });

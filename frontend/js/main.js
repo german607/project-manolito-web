@@ -37,6 +37,8 @@ document.addEventListener('click',function(e){if(e.target.closest('a[href*="inst
 })();
 
 // Modelo de portachupete ("Silicona N° 4 — detalle"): el número es interno (admin); el cliente ve el material y la foto
+// Precio con el anterior tachado en gris cuando hay promo (precio anterior mayor que el actual). Solo números: va como HTML
+window.precioHTML=function(actual,anterior){return (anterior>actual?'<s class="precio-antes">$'+Number(anterior)+'</s> ':'')+'$'+Number(actual);};
 window.fotoModelo=function(m){var r=/^(Silicona|Madera) N° (\d+)/.exec(m||'');return r?'assets/img/portachupetes/modelos/'+r[1].toLowerCase()+'-'+r[2]+'.jpg':'';};
 window.modeloPublico=function(m){return String(m||'').replace(/ N° \d+/,'');};
 
@@ -164,7 +166,7 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
     document.querySelectorAll('.box-card').forEach(function(card){
       var b=m[card.querySelector('h3').textContent.trim()];
       if(!b){card.style.display='none';return;}
-      card.querySelector('.box-price').textContent=b.agotada?'Sin stock':'$'+b.precio;
+      card.querySelector('.box-price').innerHTML=b.agotada?'Sin stock':precioHTML(b.precio,b.precioAnterior);
       card.dataset.boxId=b.id;
       card.classList.toggle('agotada',b.agotada);
     });
@@ -196,7 +198,7 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
     document.getElementById('bmImg').alt=t;
     document.getElementById('bmTitle').textContent=t;
     track('box_ver',t);
-    document.getElementById('bmPrice').textContent=card.querySelector('.box-price').textContent;
+    document.getElementById('bmPrice').innerHTML=card.querySelector('.box-price').innerHTML;
     var box=document.getElementById('bmItems'); box.innerHTML='';
     card.querySelectorAll('.box-items li').forEach(function(li){
       var n=li.textContent, p=pick(n), d=document.createElement('div');

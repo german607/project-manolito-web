@@ -576,6 +576,8 @@
   .cart-sum label.opt input{accent-color:var(--green-deep);width:16px;height:16px;}
   .cart-sum label.opt small{color:var(--ink-soft);}
   .nota{font-size:.8rem;font-weight:500;color:var(--ink-soft);}
+  /* Promo: precio anterior tachado en gris, antes del precio actual */
+  .precio-antes{color:var(--ink-soft);text-decoration:line-through;font-weight:500;font-size:.85em;margin-right:4px;}
   /* Nota que aparece solo con la opción elegida */
   .cart-sum label.opt{flex-wrap:wrap;}
   .cart-sum label.opt .opt-nota{display:none;flex-basis:100%;padding-left:26px;margin-top:-4px;font-weight:500;font-style:italic;}

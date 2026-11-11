@@ -22,6 +22,10 @@ async function mp(path: string, init: RequestInit & { idempotencia?: string } = 
 // Los avisos de pago llegan a notification_url (lo exige Mercado Pago en la evaluación de la integración; tiene prioridad
 // sobre el webhook del panel). source_news=webhooks: solo webhooks firmados con la clave secreta, no los avisos IPN viejos.
 // Si un aviso llega sin firma, el webhook lo rechaza (401): el pago igual se confirma cuando el cliente vuelve a la web
+// Hasta 12 cuotas con tarjeta de crédito (en el formulario de tarjeta y en la página de Mercado Pago). Que sean sin interés
+// se configura en la cuenta de Mercado Pago, no acá
+export const MAX_CUOTAS = 12;
+
 export async function crearPreferencia(p: { id: number; total: number; email: string; nombre: string; vence: Date }): Promise<string> {
   const base = process.env.BASE_URL ?? 'http://localhost:3000';
   const pref = await mp('/checkout/preferences', {
@@ -36,7 +40,7 @@ export async function crearPreferencia(p: { id: number; total: number; email: st
       statement_descriptor: 'MANOLITO', // lo que ve el cliente en el resumen de la tarjeta
       // Sin pagos en efectivo (cupón Abitab / Red Pagos): no se pagan dentro de las 2 h que dura el pedido.
       // Igual se ofrecen aparte en el checkout, coordinados a mano
-      payment_methods: { excluded_payment_types: [{ id: 'ticket' }, { id: 'atm' }] },
+      payment_methods: { excluded_payment_types: [{ id: 'ticket' }, { id: 'atm' }], installments: MAX_CUOTAS },
       expires: true, // después de esta fecha Mercado Pago no acepta el pago
       expiration_date_from: new Date().toISOString(),
       expiration_date_to: p.vence.toISOString(),

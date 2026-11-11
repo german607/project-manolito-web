@@ -168,5 +168,6 @@ test('preferencia: manda notification_url al webhook (lo exige Mercado Pago)', a
   try {
     await crearPreferencia({ id: 7, total: 100, email: 'a@test.com', nombre: 'Ana', vence: new Date(Date.now() + 3600_000) });
     assert.equal(body.notification_url, 'https://manolitouy.com/api/mercadopago/webhook?source_news=webhooks');
+    assert.equal(body.payment_methods.installments, 12, 'hasta 12 cuotas');
   } finally { globalThis.fetch = antes; delete process.env.BASE_URL; }
 });

@@ -4,7 +4,7 @@ import { q, q1, tx, productos, boxes, registrar, STOCK_SQL, type Autor, type Pro
 import { HttpError } from './errores.js';
 import { aplicarCupon, usarCupon, sumarUso, Codigo } from './cupones.js';
 import { enviarMail, plantilla, parrafo, caja, esc } from './mail.js';
-import { crearPreferencia, firmaValida, MOTIVOS_RECHAZO, obtenerPago, pagarConTarjeta, type PagoMP } from './mercadopago.js';
+import { crearPreferencia, MAX_CUOTAS, firmaValida, MOTIVOS_RECHAZO, obtenerPago, pagarConTarjeta, type PagoMP } from './mercadopago.js';
 import { crearToken, datosDePago, datosEnTexto, linkComprobante, MANUALES, pedidoConToken } from './pagosManuales.js';
 
 // pronto = pronto para retirar (solo retiro; los envíos pasan a enviado)
@@ -487,7 +487,7 @@ const Tarjeta = z.object({
     token: z.string().min(10).max(200),
     payment_method_id: z.string().min(2).max(40),
     issuer_id: z.union([z.string().max(20), z.number()]).optional(),
-    installments: z.coerce.number().int().min(1).max(24),
+    installments: z.coerce.number().int().min(1).max(MAX_CUOTAS),
     payer: z.object({
       email: z.email().max(120),
       identification: z.object({ type: z.string().max(20), number: z.string().max(30) }).optional(),

@@ -191,7 +191,7 @@
       return mp.bricks().create('cardPayment','mpBrick',{
         initialization:{amount:total},
         customization:{
-          paymentMethods:{maxInstallments:12},
+          paymentMethods:{maxInstallments:12}, // hasta 12 cuotas; cuáles y con qué interés lo decide la cuenta de Mercado Pago
           visual:{style:{theme:'default',customVariables:{ // colores de Manolito
             baseColor:'#C97D8D',baseColorFirstVariant:'#B0606F',baseColorSecondVariant:'#EAB3BE',
             borderRadiusSmall:'8px',borderRadiusMedium:'12px',borderRadiusLarge:'16px',borderRadiusFull:'999px'}}}

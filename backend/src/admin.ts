@@ -310,8 +310,14 @@ adminRouter.get('/historial', async (req, res) => {
 // ---------- Pedidos ----------
 
 adminRouter.get('/pedidos', async (req, res) => {
-  const estado = z.enum(ESTADOS).optional().catch(undefined).parse(req.query.estado);
-  const filas = await q(`SELECT * FROM pedidos ${estado ? 'WHERE estado = $1' : ''} ORDER BY id DESC LIMIT 200`, estado ? [estado] : []);
+  const { estado, entrega } = z.object({
+    estado: z.enum(ESTADOS).optional().catch(undefined),
+    entrega: z.enum(['pickup', 'cadeteria', 'interior']).optional().catch(undefined),
+  }).parse(req.query);
+  const filtros: string[] = [], params: unknown[] = [];
+  if (estado) { params.push(estado); filtros.push(`estado = $${params.length}`); }
+  if (entrega) { params.push(entrega); filtros.push(`entrega = $${params.length}`); }
+  const filas = await q(`SELECT * FROM pedidos ${filtros.length ? 'WHERE ' + filtros.join(' AND ') : ''} ORDER BY id DESC LIMIT 200`, params);
   res.json(filas.map(({ token_pago: _t, ...p }) => p));
 });
 

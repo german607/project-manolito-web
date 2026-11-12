@@ -53,3 +53,19 @@ test('resumen: origen de las ventas, cupones, conversión por box, clientes nuev
   assert.equal(r.montosPorDia.at(-1).n, hoy[0].n);
   assert.ok(hoy[0].n > 0);
 });
+
+test('pedidos del admin: se filtran por entrega y por estado', async () => {
+  const app = express();
+  app.use((_req, res, next) => { res.locals.usuario = { id: 1, email: 'admin@test.com', rol: 'admin' }; next(); });
+  app.use('/api/admin', adminRouter);
+  const srv = app.listen(0);
+  const get = async (qs: string) => (await (await fetch(`http://127.0.0.1:${(srv.address() as AddressInfo).port}/api/admin/pedidos?${qs}`)).json()) as any[];
+  try {
+    await comprar('cadete@test.com', { entrega: 'cadeteria', cliente: { nombre: 'Ana', telefono: '099123456', email: 'cadete@test.com', direccion: 'Pocitos' } });
+    const cadeteria = await get('entrega=cadeteria');
+    assert.ok(cadeteria.length && cadeteria.every(p => p.entrega === 'cadeteria'));
+    assert.ok((await get('entrega=pickup')).every(p => p.entrega === 'pickup'));
+    assert.ok((await get('entrega=cadeteria&estado=pagado')).every(p => p.entrega === 'cadeteria' && p.estado === 'pagado'));
+    assert.ok((await get('entrega=cualquiera')).some(p => p.entrega === 'pickup'), 'un filtro inválido se ignora');
+  } finally { srv.close(); }
+});

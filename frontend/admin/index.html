@@ -163,9 +163,14 @@
   <section class="panel" id="tab-pedidos" hidden>
     <div class="row-head">
       <h2>Pedidos</h2>
+      <div class="filtros">
       <select id="filtroEstado" aria-label="Filtrar por estado">
         <option value="">Todos</option><option>pendiente</option><option>pagado</option><option value="pronto">pronto para retirar</option><option>enviado</option><option>entregado</option><option>cancelado</option>
       </select>
+      <select id="filtroEntrega" aria-label="Filtrar por entrega">
+        <option value="">Todas las entregas</option><option value="interior">Envío al interior</option><option value="cadeteria">Cadetería</option><option value="pickup">Pick-up</option>
+      </select>
+      </div>
     </div>
     <div id="listaPedidos"></div>
   </section>

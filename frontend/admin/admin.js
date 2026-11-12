@@ -217,13 +217,14 @@ const NOMBRE_ESTADO = { pronto: 'pronto para retirar' };
 // Retiro: "pronto para retirar" en vez de "enviado"; envíos al revés
 const estadosDe = p => ESTADOS.filter(e => p.entrega === 'pickup' ? e !== 'enviado' : e !== 'pronto');
 $('#filtroEstado').addEventListener('change', () => cargarPedidos().catch(err => toast(err.message)));
+$('#filtroEntrega').addEventListener('change', () => cargarPedidos().catch(err => toast(err.message)));
 
 // Foto del modelo de portachupete elegido ("Silicona N° 4 — detalle" → silicona-4.jpg)
 const fotoModelo = m => { const r = /^(Silicona|Madera) N° (\d+)/.exec(m || ''); return r ? `/assets/img/portachupetes/modelos/${r[1].toLowerCase()}-${r[2]}.jpg` : ''; };
 
 async function cargarPedidos() {
-  const estado = $('#filtroEstado').value;
-  const pedidos = await api('/pedidos' + (estado ? '?estado=' + estado : ''));
+  const filtro = new URLSearchParams(Object.entries({ estado: $('#filtroEstado').value, entrega: $('#filtroEntrega').value }).filter(([, v]) => v));
+  const pedidos = await api('/pedidos?' + filtro);
   const fecha = s => new Date(s).toLocaleString('es-UY', { timeZone: 'America/Montevideo', dateStyle: 'short', timeStyle: 'short' });
   // Sin pagar se cancela solo en pedidos.vence: 18:00 del día siguiente al pedido, o 4 h desde "Reclamar pago"
   const vence = p => new Date(p.vence).toLocaleString('es-UY', { timeZone: 'America/Montevideo', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
@@ -350,7 +351,7 @@ $('#notifBtn').addEventListener('click', e => { e.stopPropagation(); abrirNotifi
 $('#notifPanel').addEventListener('click', e => {
   const b = e.target.closest('button[data-pedido]'); if (!b) return;
   abrirNotificaciones(false);
-  $('#filtroEstado').value = '';
+  $('#filtroEstado').value = ''; $('#filtroEntrega').value = '';
   abrirTab('pedidos');
   // Lleva al pedido y lo resalta cuando la lista termina de cargar
   let intentos = 0;

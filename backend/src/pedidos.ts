@@ -180,7 +180,7 @@ export type Pedido = {
   email: string; direccion: string | null; entrega: string; pago: string; items: Linea[];
   subtotal: number; descuento: number; cupon: string | null; recargo: number; total: number; mp_payment_id: string | null; usuario_id: number | null;
   token_pago: string | null; comprobante: string | null; comprobante_tipo: string | null; comprobante_subido: Date | null;
-  vence: Date | null; rastreo: string | null;
+  vence: Date | null; rastreo: string | null; pagado: Date | null;
 };
 
 // bloquear = trabar la fila hasta el fin de la transacción (para cambios de estado simultáneos)
@@ -273,7 +273,9 @@ export async function cambiarEstado(id: number, estado: Pedido['estado'], mpPaym
     if (estado === 'cancelado' && antes.estado !== 'cancelado') { await devolverStock(antes.items); if (antes.cupon) await sumarUso(antes.cupon, -1); }
     if (antes.estado === 'cancelado' && estado !== 'cancelado') { await descontarStock(antes.items); if (antes.cupon) await sumarUso(antes.cupon, 1); }
     if (antes.estado !== estado) await registrar(autor, 'pedido', id, 'estado', { estado: [antes.estado, estado] });
-    return (await q1<Pedido>('UPDATE pedidos SET estado = $1, mp_payment_id = COALESCE($2, mp_payment_id) WHERE id = $3 RETURNING *',
+    // pagado: cuándo entró la plata (Finanzas). Vuelve a pendiente o se cancela (devolución): deja de contar
+    return (await q1<Pedido>(`UPDATE pedidos SET estado = $1, mp_payment_id = COALESCE($2, mp_payment_id),
+      pagado = CASE WHEN $1 = 'pagado' THEN COALESCE(pagado, now()) WHEN $1 IN ('pendiente', 'cancelado') THEN NULL ELSE pagado END WHERE id = $3 RETURNING *`,
       [estado, mpPaymentId ?? null, id]))!;
   });
   // Solo al cambiar de estado: elegir el mismo estado otra vez no repite el mail
@@ -328,7 +330,7 @@ export async function reclamarComprobante(id: number, autor: Autor) {
   // (el archivo anterior queda guardado; su clave va al historial)
   // 4 h desde el mail, sin acortar el plazo que ya tenía (ej. si vencía mañana a las 18:00, sigue así)
   const { vence } = (await q1<{ vence: Date }>(`UPDATE pedidos SET vence = GREATEST(vence, now() + make_interval(hours => $1)), estado = 'pendiente',
-    comprobante = CASE WHEN estado = 'pagado' THEN NULL ELSE comprobante END WHERE id = $2 RETURNING vence`, [RECLAMO_HORAS, id]))!;
+    comprobante = CASE WHEN estado = 'pagado' THEN NULL ELSE comprobante END, pagado = NULL WHERE id = $2 RETURNING vence`, [RECLAMO_HORAS, id]))!;
   const aviso = `Para mantener tu compra, necesitamos el comprobante de pago antes de ${cuando(new Date(vence)).replace(/^hoy a /, '')}; si no, el pedido se cancela automáticamente.`;
   const cierre = 'Envianos el comprobante de pago para que podamos comenzar a preparar tu compra.';
   await enviarMail(p.email, `Todavía no recibimos el pago de tu pedido Manolito #${id}`, mailCliente(p, {

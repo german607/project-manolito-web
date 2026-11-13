@@ -24,6 +24,7 @@
       <button role="tab" data-tab="productos">Productos</button>
       <button role="tab" data-tab="boxes">Boxes</button>
       <button role="tab" data-tab="pedidos">Pedidos</button>
+      <button role="tab" data-tab="finanzas">Finanzas</button>
       <button role="tab" data-tab="cupones">Cupones</button>
       <button role="tab" data-tab="historial">Historial</button>
       <button role="tab" data-tab="ajustes">Ajustes</button>
@@ -150,11 +151,32 @@
     <div class="card table-wrap"><table id="tablaCupones"></table></div>
   </section>
 
+  <section class="panel" id="tab-finanzas" hidden>
+    <div class="row-head"><h2>Finanzas</h2><p class="hint">Cada vez que retirás la plata, hacé un cierre: el contador vuelve a cero y cuenta lo cobrado desde ahí. Cuenta el día en que se confirmó el pago. Montos sin descontar comisiones.</p></div>
+    <div class="card">
+      <h3 id="finDesde">Desde el último cierre</h3>
+      <div class="kpis" id="finKpis"></div>
+      <div id="finPorPago"></div>
+      <details class="fin-lista"><summary>Ver los pedidos</summary><div class="table-wrap"><table id="finPedidos"></table></div></details>
+    </div>
+    <form class="card form-ajustes" id="formCierre">
+      <h3>Hacer cierre</h3>
+      <p class="hint">Hacelo cuando retires la plata. Si el retiro fue antes, poné la fecha y hora del retiro: lo cobrado después queda para el próximo cierre.</p>
+      <div class="campos2">
+        <label>Fecha y hora del retiro<input name="hasta" type="datetime-local" required></label>
+        <label><span>Nota <small>(opcional)</small></span><input name="nota" maxlength="200" placeholder="Ej: Retiro del banco y de Mercado Pago"></label>
+      </div>
+      <button class="btn" type="submit">Hacer cierre</button>
+    </form>
+    <h2 class="sub">Cierres anteriores</h2>
+    <div class="card table-wrap"><table id="tablaCierres"></table></div>
+  </section>
+
   <section class="panel" id="tab-historial" hidden>
     <div class="row-head">
       <h2>Historial de cambios</h2>
       <select id="filtroHistorial" aria-label="Filtrar historial">
-        <option value="">Todo</option><option value="producto">Productos</option><option value="box">Boxes</option><option value="pedido">Pedidos</option><option value="cupon">Cupones</option>
+        <option value="">Todo</option><option value="producto">Productos</option><option value="box">Boxes</option><option value="pedido">Pedidos</option><option value="cupon">Cupones</option><option value="cierre">Cierres de caja</option>
       </select>
     </div>
     <div class="card table-wrap"><table id="tablaHistorial"></table></div>

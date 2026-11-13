@@ -34,7 +34,7 @@ $('#logout').addEventListener('click', async () => {
 
 // ---------- Pestañas ----------
 
-const CARGAR = { resumen: cargarResumen, productos: cargarProductos, boxes: cargarBoxes, pedidos: cargarPedidos, cupones: cargarCupones, historial: cargarHistorial, ajustes: cargarAjustes };
+const CARGAR = { resumen: cargarResumen, productos: cargarProductos, boxes: cargarBoxes, pedidos: cargarPedidos, finanzas: cargarFinanzas, cupones: cargarCupones, historial: cargarHistorial, ajustes: cargarAjustes };
 const tabActual = () => (CARGAR[location.hash.slice(1)] ? location.hash.slice(1) : 'resumen');
 
 function abrirTab(tab) {
@@ -367,10 +367,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') abrirNotific
 
 // ---------- Historial ----------
 
-const CAMPOS = { rastreo: 'Código de rastreo DAC', direccionRetiro: 'Dirección de retiro', recargoMp: 'Recargo de Mercado Pago', cupon: 'Código de descuento', descuento: 'Descuento', minimo: 'Compra mínima', usosMax: 'Usos máximos', vence: 'Vence', comprobante: 'Comprobante', datosDePago: 'Datos para pagar', precio: 'Precio', precioAnterior: 'Precio anterior (tachado)', stockCargado: 'Stock', controlaStock: 'Controla stock', activo: 'Activo', estado: 'Estado', foto: 'Foto', total: 'Total', pago: 'Pago' };
-const ACCIONES = { recordatorio: 'Reclamó el pago de', comprobante: 'Subió el comprobante de', crear: 'Creó', editar: 'Editó', foto: 'Cambió la foto de', estado: 'Cambió el estado de' };
+const CAMPOS = { hasta: 'Hasta', rastreo: 'Código de rastreo DAC', direccionRetiro: 'Dirección de retiro', recargoMp: 'Recargo de Mercado Pago', cupon: 'Código de descuento', descuento: 'Descuento', minimo: 'Compra mínima', usosMax: 'Usos máximos', vence: 'Vence', comprobante: 'Comprobante', datosDePago: 'Datos para pagar', precio: 'Precio', precioAnterior: 'Precio anterior (tachado)', stockCargado: 'Stock', controlaStock: 'Controla stock', activo: 'Activo', estado: 'Estado', foto: 'Foto', total: 'Total', pago: 'Pago' };
+const ACCIONES = { recordatorio: 'Reclamó el pago de', comprobante: 'Subió el comprobante de', crear: 'Creó', editar: 'Editó', foto: 'Cambió la foto de', estado: 'Cambió el estado de', borrar: 'Deshizo', rastreo: 'Cargó el rastreo de' };
 const valor = (campo, x) => x === null || x === undefined ? '—' : typeof x === 'boolean' ? (x ? 'sí' : 'no')
-  : campo === 'vence' && String(x).length > 10 ? new Date(x).toLocaleString('es-UY', { timeZone: 'America/Montevideo', dateStyle: 'short', timeStyle: 'short', hourCycle: 'h23' })
+  : (campo === 'vence' || campo === 'hasta') && String(x).length > 10 ? new Date(x).toLocaleString('es-UY', { timeZone: 'America/Montevideo', dateStyle: 'short', timeStyle: 'short', hourCycle: 'h23' })
   : campo === 'precio' || campo === 'precioAnterior' || campo === 'total' || campo === 'minimo' ? plata(x) : campo === 'pago' ? PAGOS[x] || x : campo === 'foto' ? 'imagen' : String(x);
 $('#filtroHistorial').addEventListener('change', () => cargarHistorial().catch(err => toast(err.message)));
 
@@ -379,7 +379,7 @@ async function cargarHistorial() {
   const [filas, prods, bxs] = await Promise.all([api('/historial' + (entidad ? '?entidad=' + entidad : '')), api('/productos'), api('/boxes')]);
   const nombres = Object.fromEntries([...prods, ...bxs].map(x => [x.id, x.nombre]));
   const fecha = s => new Date(s).toLocaleString('es-UY', { timeZone: 'America/Montevideo', dateStyle: 'short', timeStyle: 'short' });
-  const que = h => h.entidad === 'pedido' ? `pedido #${h.entidad_id}` : h.entidad === 'ajustes' ? (h.entidad_id === 'recargo_mp' ? 'el recargo de Mercado Pago' : h.entidad_id === 'retiro' ? 'la dirección de retiro' : 'los datos para pagar') : h.entidad === 'cupon' ? `el código ${h.entidad_id}` : nombres[h.entidad_id] || h.entidad_id; // los nombres de las boxes ya dicen "Box ..."
+  const que = h => h.entidad === 'pedido' ? `pedido #${h.entidad_id}` : h.entidad === 'ajustes' ? (h.entidad_id === 'recargo_mp' ? 'el recargo de Mercado Pago' : h.entidad_id === 'retiro' ? 'la dirección de retiro' : 'los datos para pagar') : h.entidad === 'cupon' ? `el código ${h.entidad_id}` : h.entidad === 'cierre' ? `el cierre de caja #${h.entidad_id}` : nombres[h.entidad_id] || h.entidad_id; // los nombres de las boxes ya dicen "Box ..."
   $('#tablaHistorial').innerHTML = filas.length ? `<thead><tr><th>Cuándo</th><th>Quién</th><th>Qué</th><th>Cambio</th></tr></thead><tbody>${filas.map(h => `
     <tr><td>${fecha(h.cuando)}</td><td class="quien">${esc(h.autor)}</td><td>${esc(ACCIONES[h.accion] || h.accion)} ${esc(que(h))}</td>
       <td class="cambio">${Object.entries(h.cambios).map(([c, [a, b]]) => `${esc(CAMPOS[c] || c)}: ${a === null ? '' : `<s>${esc(valor(c, a))}</s> → `}<b>${esc(valor(c, b))}</b>`).join('<br>')}</td></tr>`).join('')}</tbody>`
@@ -387,6 +387,43 @@ async function cargarHistorial() {
 }
 
 // ---------- Cupones ----------
+
+// ---------- Finanzas: cierres de caja ----------
+
+const fechaHora = s => new Date(s).toLocaleString('es-UY', { timeZone: 'America/Montevideo', dateStyle: 'short', timeStyle: 'short', hourCycle: 'h23' });
+const porPagoTexto = filas => filas.map(f => `${PAGOS[f.pago] || f.pago}: ${plata(f.total)}`).join(' · ') || '—';
+// Ahora en hora local, en el formato de <input type="datetime-local"> (AAAA-MM-DDTHH:MM)
+const ahoraLocal = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 16); };
+
+async function cargarFinanzas() {
+  const { actual: a, cierres } = await api('/finanzas');
+  $('#finDesde').textContent = a.desde ? `Desde el último cierre (${fechaHora(a.desde)})` : 'Desde el inicio (todavía no hay cierres)';
+  $('#finKpis').innerHTML = [['Cobrado', plata(a.total)], ['Pedidos', a.pedidos]]
+    .map(([k, x]) => `<div class="kpi"><small>${k}</small><b>${x}</b></div>`).join('');
+  ranking('#finPorPago', a.porPago.map(p => ({ ...p, n: p.total })), p => `${PAGOS[p.pago] || p.pago} (${p.pedidos})`, plata);
+  $('#finPedidos').innerHTML = a.lista.length ? `<thead><tr><th>Pedido</th><th>Cliente</th><th>Pago</th><th>Pagado</th><th>Total</th></tr></thead><tbody>${a.lista.map(p => `
+    <tr><td>#${p.id}</td><td>${esc(p.nombre)}</td><td>${esc(PAGOS[p.pago] || p.pago)}</td><td>${fechaHora(p.pagado)}</td><td>${plata(p.total)}</td></tr>`).join('')}</tbody>` : '';
+  $('#formCierre').elements.hasta.value = ahoraLocal();
+  $('#formCierre').elements.hasta.max = ahoraLocal();
+  $('#tablaCierres').innerHTML = cierres.length ? `<thead><tr><th>Cierre</th><th>Desde</th><th>Pedidos</th><th>Total</th><th>Por medio de pago</th><th>Nota</th><th>Quién</th><th></th></tr></thead><tbody>${cierres.map((c, i) => `
+    <tr><td><b>${fechaHora(c.hasta)}</b></td><td>${cierres[i + 1] ? fechaHora(cierres[i + 1].hasta) : 'el inicio'}</td><td>${c.pedidos}</td><td><b>${plata(c.total)}</b></td>
+      <td>${esc(porPagoTexto(c.por_pago))}</td><td>${esc(c.nota || '')}</td><td>${esc(c.autor)}</td>
+      <td>${i === 0 ? `<button class="btn sm outline deshacer" data-id="${c.id}" type="button">Deshacer</button>` : ''}</td></tr>`).join('')}</tbody>`
+    : '<tbody><tr><td class="empty">Todavía no hay cierres.</td></tr></tbody>';
+  document.querySelector('#tablaCierres .deshacer')?.addEventListener('click', async e => {
+    if (!confirm('¿Deshacer el último cierre? Lo cobrado en ese período vuelve al contador.')) return;
+    try { await api('/finanzas/cierres/' + e.target.dataset.id, { method: 'DELETE' }); toast('Cierre deshecho ✓'); cargarFinanzas(); } catch (err) { toast(err.message); }
+  });
+}
+$('#formCierre').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target.elements, hasta = new Date(f.hasta.value);
+  if (!confirm(`¿Hacer el cierre al ${fechaHora(hasta)}? Lo cobrado hasta ese momento queda cerrado y el contador empieza de nuevo.`)) return;
+  try {
+    const c = await api('/finanzas/cierres', { method: 'POST', body: { hasta: hasta.toISOString(), nota: f.nota.value || undefined } });
+    toast(`Cierre hecho: ${plata(c.total)} ✓`); f.nota.value = ''; cargarFinanzas();
+  } catch (err) { toast(err.message); }
+});
 
 async function cargarCupones() {
   const cs = await api('/cupones');

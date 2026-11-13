@@ -257,6 +257,35 @@ const MIGRACIONES: (() => Promise<void>)[] = [
       await q(`UPDATE ${t} SET precio_anterior = precio, precio = (ROUND(precio * 0.9 / 10) * 10)::int WHERE precio_anterior IS NULL`);
     }
   },
+  // 15: Finanzas. pedidos.pagado = cuándo se confirmó el pago (los ya pagados lo toman del historial; si no hay, la fecha del
+  // pedido). cierres = cortes de caja (retiros de plata): cada uno guarda los totales de su período, así no cambian después
+  async () => {
+    await q('ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS pagado timestamptz');
+    await q(`UPDATE pedidos p SET pagado = COALESCE((SELECT MIN(h.cuando) FROM historial h WHERE h.entidad = 'pedido' AND h.entidad_id = p.id::text
+        AND h.accion = 'estado' AND h.cambios->'estado'->>1 = 'pagado'), p.creado)
+      WHERE p.pagado IS NULL AND p.estado IN ('pagado', 'pronto', 'enviado', 'entregado')`);
+    await q(`CREATE TABLE IF NOT EXISTS cierres (
+      id       integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+      hasta    timestamptz NOT NULL UNIQUE,   -- el corte: entra lo pagado hasta este momento (desde el cierre anterior)
+      total    integer NOT NULL,
+      pedidos  integer NOT NULL,
+      por_pago jsonb NOT NULL,                -- [{ pago, total, pedidos }]
+      nota     text,                          -- ej. "Retiro del banco"
+      autor    text NOT NULL,
+      creado   timestamptz NOT NULL DEFAULT now()
+    )`);
+  },
+  // 16: primer cierre de caja: el retiro del 11/11/2026 (fin del día, hora de Uruguay). Solo en bases con pagos hasta esa
+  // fecha (producción, staging): en una base vacía no hay nada que cerrar
+  async () => {
+    const hasta = '2026-11-11T23:59:59-03:00';
+    const pagados = `FROM pedidos WHERE estado IN ('pagado', 'pronto', 'enviado', 'entregado') AND COALESCE(pagado, creado) <= $1`;
+    await q(`INSERT INTO cierres (hasta, total, pedidos, por_pago, nota, autor)
+      SELECT $1, COALESCE(SUM(total), 0)::int, COUNT(*)::int,
+        COALESCE((SELECT json_agg(x ORDER BY x.total DESC) FROM (SELECT pago, SUM(total)::int AS total, COUNT(*)::int AS pedidos ${pagados} GROUP BY pago) x), '[]'),
+        'Retiro del 11/11', 'sistema'
+      ${pagados} AND NOT EXISTS (SELECT 1 FROM cierres) HAVING COUNT(*) > 0`, [hasta]);
+  },
 ];
 
 // Crea las tablas, aplica migraciones y carga el catálogo inicial si la base está vacía.
@@ -288,7 +317,7 @@ export async function iniciarDb() {
 // ---------- Historial ----------
 // Llamar dentro de la misma transacción que el cambio: así nunca queda un cambio sin registrar (ni al revés)
 export type Autor = string; // email del admin, 'cliente', 'sistema', 'mercadopago'
-export const registrar = (autor: Autor, entidad: 'producto' | 'box' | 'pedido' | 'ajustes' | 'cupon', id: string | number, accion: string, cambios: Record<string, unknown> = {}) =>
+export const registrar = (autor: Autor, entidad: 'producto' | 'box' | 'pedido' | 'ajustes' | 'cupon' | 'cierre', id: string | number, accion: string, cambios: Record<string, unknown> = {}) =>
   q('INSERT INTO historial (autor, entidad, entidad_id, accion, cambios) VALUES ($1, $2, $3, $4, $5)',
     [autor, entidad, String(id), accion, JSON.stringify(cambios)]);
 

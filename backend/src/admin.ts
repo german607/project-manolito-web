@@ -9,6 +9,7 @@ import { soloAdmin } from './auth.js';
 import { guardarImagen, leerPrivado } from './imagenes.js';
 import { AjustesPagos, guardarAjustesPagos, leerAjustesPagos } from './pagosManuales.js';
 import { NuevoCupon, listarCupones } from './cupones.js';
+import { finanzasRouter } from './finanzas.js';
 
 export const FRONTEND = fileURLToPath(new URL('../../frontend', import.meta.url));
 
@@ -16,6 +17,7 @@ export const adminRouter = Router();
 
 // El login es el de todos (/api/auth): acá solo entra una sesión con rol admin
 adminRouter.use(soloAdmin);
+adminRouter.use('/finanzas', finanzasRouter);
 
 // Para configurar TRUST_PROXY: "ip" tiene que ser la IP real de quien navega (comparala con https://ifconfig.me)
 adminRouter.get('/diagnostico', (req, res) => {
@@ -298,7 +300,7 @@ adminRouter.put('/ajustes/recargo-mp', async (req, res) => {
 
 adminRouter.get('/historial', async (req, res) => {
   const { entidad, id } = z.object({
-    entidad: z.enum(['producto', 'box', 'pedido', 'ajustes', 'cupon']).optional().catch(undefined),
+    entidad: z.enum(['producto', 'box', 'pedido', 'ajustes', 'cupon', 'cierre']).optional().catch(undefined),
     id: z.string().max(60).optional().catch(undefined),
   }).parse(req.query);
   const filtros: string[] = [], params: unknown[] = [];

@@ -21,9 +21,9 @@
     <a class="brand" href="../index.html" title="Ver la web"><img src="../assets/img/marca/manolito.png" alt=""><span>Manolito <small>admin</small></span></a>
     <nav class="tabs" role="tablist">
       <button role="tab" data-tab="resumen">Resumen</button>
-      <button role="tab" data-tab="productos">Productos</button>
-      <button role="tab" data-tab="boxes">Boxes</button>
+      <button role="tab" data-tab="catalogo">Catálogo</button>
       <button role="tab" data-tab="pedidos">Pedidos</button>
+      <button role="tab" data-tab="produccion">Producción</button>
       <button role="tab" data-tab="finanzas">Finanzas</button>
       <button role="tab" data-tab="cupones">Cupones</button>
       <button role="tab" data-tab="historial">Historial</button>
@@ -90,14 +90,17 @@
     </div>
   </section>
 
-  <section class="panel" id="tab-productos" hidden>
+  <section class="panel" id="tab-catalogo" hidden>
     <div class="row-head"><h2>Productos</h2><p class="hint">Con «Ignorar stock» activado se vende sin mirar la cantidad (no se descuenta). Tocá la foto para cambiarla.</p></div>
     <div class="card table-wrap"><table id="tablaProductos"></table></div>
-  </section>
-
-  <section class="panel" id="tab-boxes" hidden>
     <div class="row-head"><h2>Boxes</h2></div>
     <div class="card table-wrap"><table id="tablaBoxes"></table></div>
+  </section>
+
+  <section class="panel" id="tab-produccion" hidden>
+    <div class="row-head"><h2>Producción</h2><p class="hint">Los pedidos pagados que hay que preparar, el más viejo primero. El estado de acá es interno: el cliente no lo ve. Cuando lo pases a «pronto para retirar» o «enviado» en Pedidos, sale de esta lista.</p></div>
+    <div class="kpis" id="kpisProduccion"></div>
+    <div id="listaProduccion"></div>
   </section>
 
   <section class="panel" id="tab-ajustes" hidden>

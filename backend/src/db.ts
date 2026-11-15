@@ -291,6 +291,11 @@ const MIGRACIONES: (() => Promise<void>)[] = [
   async () => {
     await q('ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS manual text, ALTER COLUMN email DROP NOT NULL, ALTER COLUMN telefono DROP NOT NULL');
   },
+  // 18: estado interno de producción (admin → Producción): quién trabaja el pedido lo marca. No se le muestra al cliente
+  async () => {
+    await q(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS taller text NOT NULL DEFAULT 'pendiente'
+      CHECK (taller IN ('pendiente', 'trabajando', 'completado'))`);
+  },
 ];
 
 // Crea las tablas, aplica migraciones y carga el catálogo inicial si la base está vacía.

@@ -76,3 +76,25 @@ test('pedido cargado en el admin: box, armado y portachupete; sin mails, no venc
     await q("UPDATE productos SET controla_stock = false");
   }
 });
+
+test('producción: solo los pedidos pagados, el más viejo primero; el estado interno se cambia y queda en el historial', async () => {
+  await q('UPDATE productos SET controla_stock = false');
+  const nuevo = async (estado: string) => (await api('POST', '/pedidos', { cliente: { nombre: 'Ana' }, entrega: 'pickup', pago: 'transferencia', estado, items: [PORTA] })).d.id;
+  const viejo = await nuevo('pagado'), reciente = await nuevo('pagado'), sinPagar = await nuevo('pendiente');
+  await q("UPDATE pedidos SET pagado = now() - interval '2 days' WHERE id = $1", [viejo]);
+
+  const lista = async () => (await api('GET', '/produccion')).d as any[];
+  const ids = (await lista()).map(p => p.id);
+  assert.ok(ids.indexOf(viejo) < ids.indexOf(reciente), 'el que pagó primero, primero');
+  assert.ok(!ids.includes(sinPagar), 'los que no pagaron no están');
+  assert.equal((await lista()).find(p => p.id === viejo).taller, 'pendiente');
+
+  assert.equal((await api('PATCH', `/pedidos/${viejo}/taller`, { taller: 'trabajando' })).status, 200);
+  assert.equal((await api('PATCH', `/pedidos/${viejo}/taller`, { taller: 'listo' })).status, 400);
+  assert.equal((await lista()).find(p => p.id === viejo).taller, 'trabajando');
+  const h = await q("SELECT cambios FROM historial WHERE entidad_id = $1 AND accion = 'taller'", [String(viejo)]);
+  assert.deepEqual(h[0].cambios.taller, ['pendiente', 'trabajando']);
+
+  await q("UPDATE pedidos SET estado = 'pronto' WHERE id = $1", [viejo]);
+  assert.ok(!(await lista()).some(p => p.id === viejo), 'pronto para retirar: sale de la lista');
+});

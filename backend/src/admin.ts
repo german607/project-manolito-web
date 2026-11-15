@@ -333,6 +333,25 @@ adminRouter.put('/pedidos/:id', async (req, res) => {
   res.json({ id });
 });
 
+// ---------- Producción: trabajo interno de los pedidos en curso (pagados, todavía sin preparar ni enviar) ----------
+
+export const TALLER = ['pendiente', 'trabajando', 'completado'] as const;
+adminRouter.get('/produccion', async (_req, res) => {
+  res.json(await q(`SELECT id, nombre, entrega, direccion, items, taller, creado, COALESCE(pagado, creado) AS pagado, manual
+    FROM pedidos WHERE estado = 'pagado' ORDER BY COALESCE(pagado, creado), id`)); // el que pagó primero, primero
+});
+adminRouter.patch('/pedidos/:id/taller', async (req, res) => {
+  const { taller } = z.object({ taller: z.enum(TALLER) }).strict().parse(req.body);
+  await tx(async () => {
+    const antes = await q1<{ taller: string }>('SELECT taller FROM pedidos WHERE id = $1 FOR UPDATE', [Number(req.params.id)]);
+    if (!antes) throw new HttpError(404, 'Pedido no encontrado');
+    if (antes.taller === taller) return;
+    await q('UPDATE pedidos SET taller = $1 WHERE id = $2', [taller, Number(req.params.id)]);
+    await registrar(res.locals.usuario.email, 'pedido', req.params.id, 'taller', { taller: [antes.taller, taller] });
+  });
+  res.json({ ok: true });
+});
+
 adminRouter.post('/pedidos/:id/reclamar-comprobante', async (req, res) => {
   await reclamarComprobante(Number(req.params.id), res.locals.usuario.email);
   res.json({ ok: true });

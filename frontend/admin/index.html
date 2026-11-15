@@ -192,8 +192,34 @@
       <select id="filtroEntrega" aria-label="Filtrar por entrega">
         <option value="">Todas las entregas</option><option value="interior">Envío al interior</option><option value="cadeteria">Cadetería</option><option value="pickup">Pick-up</option>
       </select>
+      <button class="btn" id="nuevoPedido" type="button">+ Nuevo pedido</button>
       </div>
     </div>
+    <form class="card form-ajustes form-pedido" id="formPedido" hidden novalidate>
+      <h3 id="fpTitulo">Nuevo pedido</h3>
+      <p class="hint">Para pedidos que llegaron por otro lado (Instagram, WhatsApp…). El precio lo calcula la web, con las mismas reglas. No se le manda mail al cliente y no vence solo.</p>
+      <div class="campos2">
+        <label>Nombre<input name="nombre" required minlength="2" maxlength="80"></label>
+        <label><span>Teléfono <small>(opcional)</small></span><input name="telefono" maxlength="30"></label>
+        <label><span>Email <small>(opcional)</small></span><input name="email" type="email" maxlength="120"></label>
+        <label>Llegó por<input name="fuente" list="fuentes" required maxlength="40" value="instagram"><datalist id="fuentes"><option value="instagram"><option value="whatsapp"><option value="feria"><option value="conocido"></datalist></label>
+        <label>Entrega<select name="entrega"><option value="pickup">Pick-up</option><option value="cadeteria">Cadetería</option><option value="interior">Envío al interior</option></select></label>
+        <label class="fp-envio">Interior<select name="envio"><option value="agencia">Agencia DAC</option><option value="domicilio">A domicilio</option></select></label>
+        <label class="fp-dir">Dirección<input name="direccion" maxlength="200"></label>
+        <label>Pago<select name="pago"><option value="transferencia">Transferencia</option><option value="mercadopago">Mercado Pago</option><option value="abitab_redpagos">Abitab / Red Pagos</option><option value="prex_midinero">Prex / Mi Dinero</option></select></label>
+        <label class="fp-estado">Estado<select name="estado"><option value="pagado">Ya pagó</option><option value="pendiente">Falta pagar</option></select></label>
+        <label><span>Cupón <small>(opcional)</small></span><input name="cupon" maxlength="30" style="text-transform:uppercase"></label>
+      </div>
+      <h3>Productos</h3>
+      <div id="fpLineas"></div>
+      <div class="fp-agregar">
+        <button class="btn sm outline" type="button" data-agregar="box">+ Box</button>
+        <button class="btn sm outline" type="button" data-agregar="porta">+ Portachupete</button>
+        <button class="btn sm outline" type="button" data-agregar="armado">+ Armado (Armá tu box)</button>
+      </div>
+      <p class="fp-total" id="fpTotal"></p>
+      <div class="fp-acciones"><button class="btn" type="submit">Guardar pedido</button><button class="btn outline" type="button" id="fpCancelar">Cancelar</button></div>
+    </form>
     <div id="listaPedidos"></div>
   </section>
 </div>

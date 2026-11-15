@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 import { q, q1, tx, productos, boxes, registrar, diferencias } from './db.js';
 import { HttpError } from './errores.js';
-import { ESTADOS, VENDIDOS, cambiarEstado, reclamarComprobante, RecargoMp, leerRecargoMp, guardarRecargoMp, Retiro, leerRetiro, guardarRetiro } from './pedidos.js';
+import { ESTADOS, VENDIDOS, PedidoAdmin, guardarPedidoAdmin, cambiarEstado, reclamarComprobante, RecargoMp, leerRecargoMp, guardarRecargoMp, Retiro, leerRetiro, guardarRetiro } from './pedidos.js';
 import { HOY_UY, ZONA_UY } from './publico.js';
 import { soloAdmin } from './auth.js';
 import { guardarImagen, leerPrivado } from './imagenes.js';
@@ -102,12 +102,12 @@ adminRouter.get('/resumen', async (req, res) => {
 
   // ---- Clientes (por email, pedidos pagados) ----
   const clientes = await q1(`WITH c AS (SELECT lower(email) AS email, MIN(creado) AS primera FROM pedidos
-      WHERE estado IN ${VENDIDOS} GROUP BY 1)
+      WHERE estado IN ${VENDIDOS} AND email IS NOT NULL GROUP BY 1)
     SELECT COUNT(*) FILTER (WHERE (primera AT TIME ZONE '${ZONA_UY}')::date >= $1)::int AS nuevos,
       COUNT(*) FILTER (WHERE (primera AT TIME ZONE '${ZONA_UY}')::date < $1 AND email IN (SELECT lower(email) FROM pedidos WHERE ${VENDIDO}))::int AS vuelven
     FROM c`, [desde]);
   const mejoresClientes = await q(`SELECT MAX(nombre) AS nombre, lower(email) AS email, COUNT(*)::int AS pedidos, SUM(total)::int AS n
-    FROM pedidos WHERE estado IN ${VENDIDOS} GROUP BY 2 ORDER BY n DESC LIMIT 10`);
+    FROM pedidos WHERE estado IN ${VENDIDOS} AND email IS NOT NULL GROUP BY 2 ORDER BY n DESC LIMIT 10`);
 
   res.json({
     dias, desde, visitasPorDia, montosPorDia, totales, pedidos, ventas, embudo,
@@ -321,6 +321,16 @@ adminRouter.get('/pedidos', async (req, res) => {
   if (entrega) { params.push(entrega); filtros.push(`entrega = $${params.length}`); }
   const filas = await q(`SELECT * FROM pedidos ${filtros.length ? 'WHERE ' + filtros.join(' AND ') : ''} ORDER BY id DESC LIMIT 200`, params);
   res.json(filas.map(({ token_pago: _t, ...p }) => p));
+});
+
+// Pedidos cargados a mano (Instagram, WhatsApp…): crear y editar
+adminRouter.post('/pedidos', async (req, res) => {
+  const id = await guardarPedidoAdmin(PedidoAdmin.parse(req.body), res.locals.usuario.email);
+  res.status(201).json({ id });
+});
+adminRouter.put('/pedidos/:id', async (req, res) => {
+  const id = await guardarPedidoAdmin(PedidoAdmin.parse(req.body), res.locals.usuario.email, Number(req.params.id));
+  res.json({ id });
 });
 
 adminRouter.post('/pedidos/:id/reclamar-comprobante', async (req, res) => {

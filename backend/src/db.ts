@@ -286,6 +286,11 @@ const MIGRACIONES: (() => Promise<void>)[] = [
         'Retiro del 11/11', 'sistema'
       ${pagados} AND NOT EXISTS (SELECT 1 FROM cierres) HAVING COUNT(*) > 0`, [hasta]);
   },
+  // 17: pedidos cargados a mano en el admin (Instagram, WhatsApp…): manual = quién lo cargó (NULL = de la web).
+  // Pueden no tener email ni teléfono
+  async () => {
+    await q('ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS manual text, ALTER COLUMN email DROP NOT NULL, ALTER COLUMN telefono DROP NOT NULL');
+  },
 ];
 
 // Crea las tablas, aplica migraciones y carga el catálogo inicial si la base está vacía.

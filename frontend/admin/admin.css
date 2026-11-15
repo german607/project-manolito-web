@@ -158,3 +158,15 @@ td input[type=number]{width:96px;}
 .pedido .rastreo{margin-top:6px;}
 .pedido .rastreo[hidden]{display:none;}
 .pedido .rastreo input{width:100%;}
+
+/* Pedido cargado a mano (admin → Pedidos → Nuevo pedido) */
+.form-pedido{max-width:none;}
+.form-pedido [hidden]{display:none !important;}
+.fp-linea{border:1.5px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px;margin-bottom:10px;}
+.fp-linea-head{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.fp-campos{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;}
+.fp-sub{border-top:1px dashed var(--line);padding-top:8px;}
+.fp-agregar,.fp-acciones{display:flex;gap:8px;flex-wrap:wrap;}
+.fp-aviso{color:#B0413E;font-size:.85rem;font-weight:700;}
+.fp-total{font-weight:800;}
+.fp-sub .btn{align-self:end;justify-self:start;}

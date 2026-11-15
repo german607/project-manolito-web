@@ -5,7 +5,8 @@ export type Adjunto = { nombre: string; datos: Buffer };
 // Texto solo (avisos internos) o texto + HTML (mails al cliente, con plantilla()). El texto queda para los
 // clientes de correo que no muestran HTML
 export type Contenido = string | { texto: string; html: string };
-export async function enviarMail(para: string, asunto: string, contenido: Contenido, responderA?: string, adjuntos: Adjunto[] = []) {
+export async function enviarMail(para: string | null | undefined, asunto: string, contenido: Contenido, responderA?: string, adjuntos: Adjunto[] = []) {
+  if (!para) return; // pedidos cargados a mano sin email
   const texto = typeof contenido === 'string' ? contenido : contenido.texto;
   const html = typeof contenido === 'string' ? undefined : contenido.html;
   const key = process.env.RESEND_API_KEY;

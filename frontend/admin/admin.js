@@ -232,7 +232,8 @@ async function cargarPedidos() {
     <article class="card pedido" data-id="${p.id}">
       <div>
         <h3>#${p.id} · ${esc(p.nombre)}</h3>
-        <p class="meta">${fecha(p.creado)}${p.estado === 'pendiente' ? (p.comprobante ? ' · <b>en revisión (no vence)</b>' : ` · <b>vence ${vence(p)}</b>`) : ''} · ${esc(p.telefono)} · ${esc(p.email)}</p>
+        <p class="meta">${fecha(p.creado)}${p.estado === 'pendiente' ? (p.comprobante ? ' · <b>en revisión (no vence)</b>' : p.vence ? ` · <b>vence ${vence(p)}</b>` : ' · <b>sin pagar (no vence)</b>') : ''}${[p.telefono, p.email].filter(Boolean).map(x => ' · ' + esc(x)).join('')}</p>
+        ${p.manual ? `<p class="meta">✍️ Cargado a mano por ${esc(p.manual)}${p.origen ? ' · llegó por ' + esc(p.origen) : ''}</p>` : ''}
         <p class="meta">${ENTREGA[p.entrega] || esc(p.entrega)}${p.direccion ? ' — ' + esc(p.direccion) : ''} · Pago: ${esc(PAGOS[p.pago] || p.pago)} · Ref. MANOLITO-${p.id}</p>
         ${p.rastreo ? `<p class="meta">Rastreo DAC: <b>${esc(p.rastreo)}</b></p>` : ''}
         ${p.comprobante ? `<p class="comprobante">📎 Comprobante recibido ${fecha(p.comprobante_subido)} · <a href="/api/admin/pedidos/${p.id}/comprobante" target="_blank" rel="noopener">Ver comprobante</a></p>` : ''}
@@ -242,13 +243,17 @@ async function cargarPedidos() {
         <select class="estado" aria-label="Estado del pedido ${p.id}" data-entrega="${esc(p.entrega)}" data-estado="${p.estado}">${estadosDe(p).map(e => `<option value="${e}" ${e === p.estado ? 'selected' : ''}>${NOMBRE_ESTADO[e] || e}</option>`).join('')}</select>
         <form class="rastreo" hidden><input name="codigo" required maxlength="60" placeholder="Código de rastreo DAC" aria-label="Código de rastreo DAC"><button class="btn sm" type="submit">Marcar enviado</button></form>
         ${p.estado === 'pendiente' && p.pago !== 'mercadopago' ? '<button class="btn sm confirmar" type="button">Confirmar pago</button>' : ''}
-        ${(p.estado === 'pendiente' && !p.comprobante || p.estado === 'pagado') && p.pago !== 'mercadopago' ? `<button class="btn sm outline reclamar" type="button"${p.estado === 'pagado' ? ' data-pagado="1"' : ''} title="Le avisa al cliente que no llegó el pago y le reenvía los datos para pagar y el link para mandar el comprobante">Reclamar pago</button>` : ''}
+        ${p.manual && p.estado !== 'cancelado' ? '<button class="btn sm outline editar" type="button">Editar</button>' : ''}
+        ${(p.estado === 'pendiente' && !p.comprobante || p.estado === 'pagado') && p.pago !== 'mercadopago' && p.email ? `<button class="btn sm outline reclamar" type="button"${p.estado === 'pagado' ? ' data-pagado="1"' : ''} title="Le avisa al cliente que no llegó el pago y le reenvía los datos para pagar y el link para mandar el comprobante">Reclamar pago</button>` : ''}
       </div>
       <ul>${(armados => p.items.map(l => `<li>${l.armado ? `<b>Armado ${armados.indexOf(l.armado) + 1}:</b> ` : ''}${l.cantidad} × ${esc(l.nombre)}${l.color ? ` (${esc(l.color)})` : ''}${l.nombreBebe ? ` “${esc(l.nombreBebe)}”` : ''}${l.modelo ? ` · Modelo: ${esc(l.modelo)}` : ''}${l.babero ? ` · Babero: ${esc(l.babero)}` : ''} — ${plata(l.total)}${fotoModelo(l.modelo) ? `<br><a href="${fotoModelo(l.modelo)}" target="_blank" rel="noopener" title="Ver el modelo ${esc(l.modelo)}"><img class="modelo-foto" src="${fotoModelo(l.modelo)}" alt="Modelo ${esc(l.modelo)}"></a>` : ''}</li>`).join(''))([...new Set(p.items.map(l => l.armado).filter(Boolean))])}</ul>
     </article>`).join('')
     : '<p class="empty card">No hay pedidos todavía. Van a aparecer acá cuando la web tenga checkout.</p>';
 
   // Pago manual: después de ver el comprobante (o la transferencia en el banco), un click
+  document.querySelectorAll('.pedido .editar').forEach(b => b.addEventListener('click', () =>
+    abrirFormPedido(pedidos.find(p => p.id === Number(b.closest('.pedido').dataset.id))).catch(err => toast(err.message))));
+
   document.querySelectorAll('.pedido .confirmar').forEach(b => b.addEventListener('click', async () => {
     const id = b.closest('.pedido').dataset.id;
     if (!confirm(`¿Confirmás que entró el pago del pedido #${id}? Se le avisa al cliente por mail.`)) return;
@@ -288,6 +293,164 @@ async function cargarPedidos() {
     cambiar(form.closest('.pedido').querySelector('select'), form.elements.codigo.value);
   }));
 }
+
+// ---------- Pedidos cargados a mano (Instagram, WhatsApp…) ----------
+// Líneas del formulario: box, portachupete suelto o armado ("Armá tu box": varios productos que van juntos).
+// El precio lo calcula el servidor (/api/carrito), con las mismas reglas que la web
+const MODELOS = { Silicona: 19, Madera: 9 }; // cuántos modelos de portachupete hay de cada material (como en la web)
+let catalogo = null, lineas = [], editando = null;
+const fp = () => $('#formPedido').elements;
+
+async function cargarCatalogo() {
+  if (!catalogo) {
+    const [productos, boxes] = await Promise.all(['/api/productos', '/api/boxes'].map(u => fetch(u).then(r => r.json())));
+    catalogo = { productos, boxes };
+  }
+}
+const nuevaLinea = tipo => tipo === 'armado' ? { tipo, productos: [{ id: '', cantidad: 1 }, { id: '', cantidad: 1 }] }
+  : { tipo, id: tipo === 'porta' ? 'porta' : catalogo.boxes[0]?.id, cantidad: 1, mat: 'Silicona', num: 1, det: '' };
+const leerModelo = m => { const r = /^(Silicona|Madera) N° (\d+)(?: — (.*))?$/.exec(m || ''); return r ? { mat: r[1], num: Number(r[2]), det: r[3] || '' } : { mat: 'Silicona', num: 1, det: '' }; };
+const modeloTexto = l => `${l.mat} N° ${l.num}${l.det ? ' — ' + l.det : ''}`;
+const conPorta = l => l.tipo === 'porta' || !!catalogo.boxes.find(b => b.id === l.id)?.componentes.some(c => c.id === 'porta');
+
+// Ítems del pedido → líneas del formulario (para editar)
+function lineasDe(items) {
+  const out = [], armados = {};
+  for (const it of items) {
+    if (it.armado) {
+      if (!armados[it.armado]) out.push(armados[it.armado] = { tipo: 'armado', productos: [] });
+      armados[it.armado].productos.push({ id: it.id, color: it.color, estampado: it.estampado, cantidad: it.cantidad });
+    } else out.push({ tipo: it.tipo === 'box' ? 'box' : 'porta', id: it.id, color: it.color, nombreBebe: it.nombreBebe, cantidad: it.cantidad, ...leerModelo(it.modelo) });
+  }
+  return out;
+}
+// Líneas → ítems para el servidor; linea[k] = de qué línea salió el ítem k (para mostrar los avisos)
+function itemsDe() {
+  const items = [], linea = [];
+  lineas.forEach((l, i) => {
+    const nuevos = l.tipo === 'armado'
+      ? l.productos.filter(p => p.id).map(p => ({ tipo: 'producto', id: p.id, cantidad: p.cantidad, color: p.color || undefined, estampado: p.color === 'Estampada' ? p.estampado : undefined, armado: 'adm-' + i }))
+      : [{ tipo: l.tipo === 'box' ? 'box' : 'producto', id: l.id, cantidad: l.cantidad, color: l.color || undefined,
+        nombreBebe: conPorta(l) ? l.nombreBebe : undefined, modelo: conPorta(l) ? modeloTexto(l) : undefined }];
+    nuevos.forEach(it => { items.push(it); linea.push(i); });
+  });
+  return { items, linea };
+}
+
+const opciones = (lista, sel, vacio) => (vacio ? `<option value="">${vacio}</option>` : '') +
+  lista.map(([v, t]) => `<option value="${esc(v)}" ${String(v) === String(sel ?? '') ? 'selected' : ''}>${esc(t)}</option>`).join('');
+const campoModelo = (l, i) => `
+  <label>Material<select data-i="${i}" data-k="mat">${opciones(Object.keys(MODELOS).map(m => [m, m]), l.mat)}</select></label>
+  <label>Modelo N°<select data-i="${i}" data-k="num">${opciones(Array.from({ length: MODELOS[l.mat] }, (_, n) => [n + 1, n + 1]), l.num)}</select></label>
+  <label>Nombre del bebé<input data-i="${i}" data-k="nombreBebe" maxlength="20" value="${esc(l.nombreBebe)}"></label>
+  <label><span>Detalle <small>(opcional)</small></span><input data-i="${i}" data-k="det" maxlength="60" value="${esc(l.det)}"></label>`;
+
+function pintarLineas() {
+  const { productos: ps, boxes: bs } = catalogo;
+  const titulos = { box: 'Box', porta: 'Portachupete', armado: 'Armado (Armá tu box)' };
+  $('#fpLineas').innerHTML = lineas.map((l, i) => {
+    let cuerpo;
+    if (l.tipo === 'armado') {
+      cuerpo = l.productos.map((p, j) => {
+        const prod = ps.find(x => x.id === p.id), d = `data-i="${i}" data-j="${j}"`;
+        return `<div class="fp-campos fp-sub">
+          <label>Producto<select ${d} data-k="id">${opciones(ps.filter(x => !x.personalizable).map(x => [x.id, x.nombre]), p.id, 'Elegí…')}</select></label>
+          ${prod?.colores ? `<label>Color<select ${d} data-k="color">${opciones(prod.colores.map(c => [c, c]), p.color, 'Elegí…')}</select></label>` : ''}
+          ${p.color === 'Estampada' ? `<label>Estampado<input ${d} data-k="estampado" maxlength="60" value="${esc(p.estampado)}"></label>` : ''}
+          <label>Cantidad<input type="number" min="1" max="20" ${d} data-k="cantidad" value="${p.cantidad}"></label>
+          <button class="btn sm outline" type="button" data-quitar-producto="${i}-${j}">Quitar</button></div>`;
+      }).join('') + `<button class="btn sm outline" type="button" data-sumar-producto="${i}">+ producto</button>`;
+    } else {
+      const b = l.tipo === 'box' ? bs.find(x => x.id === l.id) : null;
+      cuerpo = `<div class="fp-campos">
+        ${l.tipo === 'box' ? `<label>Box<select data-i="${i}" data-k="id">${opciones(bs.map(x => [x.id, x.nombre]), l.id)}</select></label>` : ''}
+        ${b?.colores?.length ? `<label>Color<select data-i="${i}" data-k="color">${opciones(b.colores.map(c => [c, c]), l.color, 'Elegí…')}</select></label>` : ''}
+        ${conPorta(l) ? campoModelo(l, i) : ''}
+        <label>Cantidad<input type="number" min="1" max="20" data-i="${i}" data-k="cantidad" value="${l.cantidad}"></label></div>`;
+    }
+    return `<div class="fp-linea"><div class="fp-linea-head"><b>${titulos[l.tipo]}</b><button class="btn sm outline" type="button" data-quitar="${i}">Quitar</button></div>
+      ${cuerpo}<p class="fp-aviso" id="fpAviso-${i}"></p></div>`;
+  }).join('') || '<p class="empty">Agregá al menos un producto.</p>';
+  cotizarPedido();
+}
+
+let cotizarT;
+function cotizarPedido() {
+  clearTimeout(cotizarT);
+  cotizarT = setTimeout(async () => {
+    const { items, linea } = itemsDe(), f = fp();
+    if (!items.length) { $('#fpTotal').textContent = ''; return; }
+    try {
+      const r = await fetch('/api/carrito', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items, pago: f.pago.value, cupon: f.cupon.value || undefined }) });
+      const c = await r.json();
+      if (!r.ok) throw new Error(c.error || 'No se pudo calcular el precio');
+      document.querySelectorAll('.fp-aviso').forEach(a => (a.textContent = ''));
+      c.avisos.forEach(a => { const el = $('#fpAviso-' + linea[a.i]); if (el) el.textContent += (el.textContent ? ' · ' : '') + a.error; });
+      $('#fpTotal').textContent = `Total: ${plata(c.total)}` + (c.descuento ? ` (descuento ${plata(c.descuento)})` : '') +
+        (c.recargo ? ` · incluye recargo de Mercado Pago ${plata(c.recargo)}` : '') + (c.cuponError ? ` · ${c.cuponError}` : '');
+    } catch (err) { $('#fpTotal').textContent = err.message; }
+  }, 300);
+}
+
+function actualizarEntrega() {
+  const f = fp();
+  $('#formPedido .fp-envio').hidden = f.entrega.value !== 'interior';
+  $('#formPedido .fp-dir').hidden = f.entrega.value === 'pickup';
+}
+
+async function abrirFormPedido(p) {
+  await cargarCatalogo();
+  editando = p?.id ?? null;
+  const form = $('#formPedido'), f = form.elements;
+  form.reset();
+  $('#fpTitulo').textContent = p ? `Editar pedido #${p.id}` : 'Nuevo pedido';
+  form.querySelector('.fp-estado').hidden = !!p; // el estado se cambia desde la lista, como en cualquier pedido
+  if (p) {
+    for (const k of ['nombre', 'telefono', 'email', 'entrega', 'pago', 'cupon']) f[k].value = p[k] ?? '';
+    f.fuente.value = p.origen || 'instagram';
+    const dir = /^(Agencia DAC|Domicilio): (.*)$/.exec(p.direccion || ''); // "Agencia DAC: Salto" (ver direccionTexto en pedidos.ts)
+    f.envio.value = dir?.[1] === 'Domicilio' ? 'domicilio' : 'agencia';
+    f.direccion.value = dir ? dir[2] : p.direccion || '';
+  }
+  lineas = p ? lineasDe(p.items) : [nuevaLinea('box')];
+  actualizarEntrega(); pintarLineas();
+  form.hidden = false; form.scrollIntoView({ behavior: 'smooth' });
+}
+
+$('#nuevoPedido').addEventListener('click', () => abrirFormPedido().catch(err => toast(err.message)));
+$('#fpCancelar').addEventListener('click', () => { $('#formPedido').hidden = true; });
+$('#formPedido').addEventListener('click', e => {
+  const t = e.target;
+  if (t.dataset.agregar) lineas.push(nuevaLinea(t.dataset.agregar));
+  else if (t.dataset.quitar) lineas.splice(Number(t.dataset.quitar), 1);
+  else if (t.dataset.sumarProducto) lineas[t.dataset.sumarProducto].productos.push({ id: '', cantidad: 1 });
+  else if (t.dataset.quitarProducto) { const [i, j] = t.dataset.quitarProducto.split('-').map(Number); lineas[i].productos.splice(j, 1); }
+  else return;
+  pintarLineas();
+});
+$('#formPedido').addEventListener('input', e => {
+  const { i, j, k } = e.target.dataset;
+  if (k === undefined) { if (['pago', 'cupon'].includes(e.target.name)) cotizarPedido(); if (e.target.name === 'entrega') actualizarEntrega(); return; }
+  const obj = j === undefined ? lineas[i] : lineas[i].productos[j];
+  obj[k] = ['cantidad', 'num'].includes(k) ? Number(e.target.value) : e.target.value;
+  if (k === 'mat') obj.num = 1;
+  if (['id', 'mat', 'color'].includes(k)) pintarLineas(); else cotizarPedido(); // cambian qué campos se muestran
+});
+$('#formPedido').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = fp(), interior = f.entrega.value === 'interior';
+  const body = {
+    cliente: { nombre: f.nombre.value, telefono: f.telefono.value, email: f.email.value, direccion: f.entrega.value === 'pickup' ? undefined : f.direccion.value },
+    entrega: f.entrega.value, envio: interior ? f.envio.value : undefined, pago: f.pago.value, cupon: f.cupon.value.trim() || undefined,
+    fuente: f.fuente.value, items: itemsDe().items, ...(editando ? {} : { estado: f.estado.value }),
+  };
+  try {
+    const r = await api(editando ? `/pedidos/${editando}` : '/pedidos', { method: editando ? 'PUT' : 'POST', body });
+    toast(editando ? `Pedido #${r.id} actualizado ✓` : `Pedido #${r.id} creado ✓`);
+    $('#formPedido').hidden = true;
+    cargarPedidos();
+  } catch (err) { toast(err.message); }
+});
 
 // ---------- Inicio ----------
 

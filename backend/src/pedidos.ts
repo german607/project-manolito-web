@@ -71,7 +71,7 @@ export const Item = z.object({
 
 const Pago = z.enum(['transferencia', 'abitab_redpagos', 'prex_midinero', 'mercadopago']);
 
-export const PedidoInput = z.object({
+const PedidoBase = z.object({
   cliente: z.object({
     nombre: z.string().trim().min(2).max(80),
     telefono: z.string().trim().min(6).max(30),
@@ -88,11 +88,27 @@ export const PedidoInput = z.object({
     fuente: z.string().trim().toLowerCase().max(40),
     campana: z.string().trim().toLowerCase().max(60).optional(),
   }).optional().catch(undefined),
-}).refine(p => p.entrega === 'pickup' || !!p.cliente.direccion, {
-  message: 'La dirección es obligatoria salvo para pick-up', path: ['cliente', 'direccion'],
-}).refine(p => p.entrega !== 'interior' || !!p.envio, {
-  message: 'Elegí si el envío al interior va a agencia o a domicilio', path: ['envio'],
 });
+const conEntrega = <T extends z.ZodType<{ entrega: string; envio?: string; cliente: { direccion?: string } }>>(s: T) => s
+  .refine(p => p.entrega === 'pickup' || !!p.cliente.direccion, {
+    message: 'La dirección es obligatoria salvo para pick-up', path: ['cliente', 'direccion'],
+  }).refine(p => p.entrega !== 'interior' || !!p.envio, {
+    message: 'Elegí si el envío al interior va a agencia o a domicilio', path: ['envio'],
+  });
+export const PedidoInput = conEntrega(PedidoBase);
+
+// Pedido cargado a mano en el admin (Instagram, WhatsApp, feria…): solo el nombre es obligatorio
+export const PedidoAdmin = conEntrega(PedidoBase.omit({ origen: true }).extend({
+  cliente: z.object({
+    nombre: z.string().trim().min(2).max(80),
+    telefono: z.string().trim().max(30).optional().transform(v => v || undefined),
+    email: z.union([z.email().max(120), z.literal('')]).optional().transform(v => v || undefined),
+    direccion: z.string().trim().max(200).optional().transform(v => v || undefined),
+  }),
+  fuente: z.string().trim().toLowerCase().min(2).max(40).default('instagram'), // de dónde vino (métricas)
+  estado: z.enum(['pendiente', 'pagado']).default('pagado'), // solo al crearlo; después se cambia como cualquier pedido
+}));
+export type PedidoAdmin = z.infer<typeof PedidoAdmin>;
 export type PedidoInput = z.infer<typeof PedidoInput>;
 
 export const CarritoInput = z.object({
@@ -180,7 +196,7 @@ export type Pedido = {
   email: string; direccion: string | null; entrega: string; pago: string; items: Linea[];
   subtotal: number; descuento: number; cupon: string | null; recargo: number; total: number; mp_payment_id: string | null; usuario_id: number | null;
   token_pago: string | null; comprobante: string | null; comprobante_tipo: string | null; comprobante_subido: Date | null;
-  vence: Date | null; rastreo: string | null; pagado: Date | null;
+  vence: Date | null; rastreo: string | null; pagado: Date | null; manual: string | null;
 };
 
 // bloquear = trabar la fila hasta el fin de la transacción (para cambios de estado simultáneos)
@@ -300,12 +316,15 @@ export async function cambiarEstado(id: number, estado: Pedido['estado'], mpPaym
   return p;
 }
 
+// Interior: "Agencia DAC: …" o "Domicilio: …", así se ve en el admin y en los mails sin otra columna
+const direccionTexto = (p: { entrega: string; envio?: string; cliente: { direccion?: string } }) =>
+  p.entrega === 'interior' && p.envio ? `${p.envio === 'agencia' ? 'Agencia DAC' : 'Domicilio'}: ${p.cliente.direccion}` : p.cliente.direccion;
+
 export const insertar = (input: PedidoInput, c: Awaited<ReturnType<typeof calcular>>, usuarioId: number | null = null, autor: Autor = 'cliente') => tx(async () => {
   await descontarStock(c.lineas);
   if (c.cupon) await usarCupon(c.cupon);
   const { cliente } = input;
-  // Interior: "Agencia DAC: …" o "Domicilio: …", así se ve en el admin y en los mails sin otra columna
-  const direccion = input.entrega === 'interior' && input.envio ? `${input.envio === 'agencia' ? 'Agencia DAC' : 'Domicilio'}: ${cliente.direccion}` : cliente.direccion;
+  const direccion = direccionTexto(input);
   const r = await q1<{ id: number }>(`INSERT INTO pedidos (nombre, telefono, email, direccion, entrega, pago, items, subtotal, descuento, cupon, recargo, total, usuario_id, origen, campana, vence)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING id`, [
     cliente.nombre, cliente.telefono, cliente.email, direccion ?? null, input.entrega, input.pago,
@@ -314,6 +333,39 @@ export const insertar = (input: PedidoInput, c: Awaited<ReturnType<typeof calcul
   await registrar(autor, 'pedido', r!.id, 'crear', { total: [null, c.total], pago: [null, input.pago], ...(c.cupon ? { cupon: [null, c.cupon] } : {}) });
   return r!.id;
 });
+
+// Admin → Pedidos → "Nuevo pedido" / "Editar": pedidos que llegaron por otro lado (Instagram, WhatsApp…).
+// Mismas reglas y precios que la web (calcular). No manda mails ni vence solo: se coordina por donde llegó.
+// Editar solo los cargados a mano: devuelve el stock y el cupón de antes y descuenta los nuevos
+export async function guardarPedidoAdmin(input: PedidoAdmin, autor: string, id?: number) {
+  if (armadosIncompletos(input.items).size) throw new HttpError(400, AVISO_ARMADO);
+  return tx(async () => {
+    const antes = id ? await buscarPedido(id, true) : undefined;
+    if (id && !antes) throw new HttpError(404, 'Pedido no encontrado');
+    if (antes && !antes.manual) throw new HttpError(409, 'Solo se editan los pedidos cargados desde el admin');
+    if (antes?.estado === 'cancelado') throw new HttpError(409, 'Un pedido cancelado no se edita');
+    if (antes) { await devolverStock(antes.items); if (antes.cupon) await sumarUso(antes.cupon, -1); }
+    const c = await calcular(input, productos.uno, boxes.una); // con el stock de antes ya devuelto
+    await descontarStock(c.lineas);
+    if (c.cupon) await usarCupon(c.cupon);
+    const { cliente } = input;
+    const datos = [cliente.nombre, cliente.telefono ?? null, cliente.email ?? null, direccionTexto(input) ?? null, input.entrega, input.pago,
+      JSON.stringify(c.lineas), c.subtotal, c.descuento, c.cupon ?? null, c.recargo, c.total, input.fuente];
+    if (antes) {
+      await q(`UPDATE pedidos SET nombre = $1, telefono = $2, email = $3, direccion = $4, entrega = $5, pago = $6, items = $7, subtotal = $8,
+        descuento = $9, cupon = $10, recargo = $11, total = $12, origen = $13 WHERE id = $14`, [...datos, antes.id]);
+      const cambios = Object.fromEntries(([['total', antes.total, c.total], ['pago', antes.pago, input.pago], ['entrega', antes.entrega, input.entrega],
+        ['productos', antes.items.length, c.lineas.length], ['cupon', antes.cupon, c.cupon ?? null]] as const).filter(([, a, b]) => a !== b).map(([k, a, b]) => [k, [a, b]]));
+      await registrar(autor, 'pedido', antes.id, 'editar', cambios);
+      return antes.id;
+    }
+    const r = (await q1<{ id: number }>(`INSERT INTO pedidos (nombre, telefono, email, direccion, entrega, pago, items, subtotal, descuento, cupon, recargo, total, origen,
+      manual, estado, pagado) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, CASE WHEN $15 = 'pagado' THEN now() END) RETURNING id`,
+    [...datos, autor, input.estado]))!;
+    await registrar(autor, 'pedido', r.id, 'crear', { total: [null, c.total], pago: [null, input.pago], estado: [null, input.estado], origen: [null, input.fuente] });
+    return r.id;
+  });
+}
 
 // Admin → Pedidos → "Reclamar pago": avisa al cliente que no llegó el pago, le reenvía los datos para pagar y el link para
 // mandar el comprobante (necesario para mantener la compra; si no llega, el pedido se cancela). Genera un link nuevo (el token anterior deja de valer)

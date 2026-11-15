@@ -34,8 +34,9 @@ $('#logout').addEventListener('click', async () => {
 
 // ---------- Pestañas ----------
 
-const CARGAR = { resumen: cargarResumen, productos: cargarProductos, boxes: cargarBoxes, pedidos: cargarPedidos, finanzas: cargarFinanzas, cupones: cargarCupones, historial: cargarHistorial, ajustes: cargarAjustes };
-const tabActual = () => (CARGAR[location.hash.slice(1)] ? location.hash.slice(1) : 'resumen');
+const CARGAR = { resumen: cargarResumen, catalogo: () => Promise.all([cargarProductos(), cargarBoxes()]), pedidos: cargarPedidos, produccion: cargarProduccion, finanzas: cargarFinanzas, cupones: cargarCupones, historial: cargarHistorial, ajustes: cargarAjustes };
+const ALIAS = { productos: 'catalogo', boxes: 'catalogo' }; // links viejos (antes eran dos pestañas)
+const tabActual = () => { const h = location.hash.slice(1); return CARGAR[ALIAS[h] || h] ? ALIAS[h] || h : 'resumen'; };
 
 function abrirTab(tab) {
   document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === tab));
@@ -221,6 +222,8 @@ $('#filtroEntrega').addEventListener('change', () => cargarPedidos().catch(err =
 
 // Foto del modelo de portachupete elegido ("Silicona N° 4 — detalle" → silicona-4.jpg)
 const fotoModelo = m => { const r = /^(Silicona|Madera) N° (\d+)/.exec(m || ''); return r ? `/assets/img/portachupetes/modelos/${r[1].toLowerCase()}-${r[2]}.jpg` : ''; };
+// Qué lleva el pedido (con el número de modelo y su foto: lo que necesita quien lo arma)
+const itemsHTML = p => `<ul>${(armados => p.items.map(l => `<li>${l.armado ? `<b>Armado ${armados.indexOf(l.armado) + 1}:</b> ` : ''}${l.cantidad} × ${esc(l.nombre)}${l.color ? ` (${esc(l.color)})` : ''}${l.nombreBebe ? ` “${esc(l.nombreBebe)}”` : ''}${l.modelo ? ` · Modelo: ${esc(l.modelo)}` : ''}${l.babero ? ` · Babero: ${esc(l.babero)}` : ''} — ${plata(l.total)}${fotoModelo(l.modelo) ? `<br><a href="${fotoModelo(l.modelo)}" target="_blank" rel="noopener" title="Ver el modelo ${esc(l.modelo)}"><img class="modelo-foto" src="${fotoModelo(l.modelo)}" alt="Modelo ${esc(l.modelo)}"></a>` : ''}</li>`).join(''))([...new Set(p.items.map(l => l.armado).filter(Boolean))])}</ul>`;
 
 async function cargarPedidos() {
   const filtro = new URLSearchParams(Object.entries({ estado: $('#filtroEstado').value, entrega: $('#filtroEntrega').value }).filter(([, v]) => v));
@@ -246,7 +249,7 @@ async function cargarPedidos() {
         ${p.manual && p.estado !== 'cancelado' ? '<button class="btn sm outline editar" type="button">Editar</button>' : ''}
         ${(p.estado === 'pendiente' && !p.comprobante || p.estado === 'pagado') && p.pago !== 'mercadopago' && p.email ? `<button class="btn sm outline reclamar" type="button"${p.estado === 'pagado' ? ' data-pagado="1"' : ''} title="Le avisa al cliente que no llegó el pago y le reenvía los datos para pagar y el link para mandar el comprobante">Reclamar pago</button>` : ''}
       </div>
-      <ul>${(armados => p.items.map(l => `<li>${l.armado ? `<b>Armado ${armados.indexOf(l.armado) + 1}:</b> ` : ''}${l.cantidad} × ${esc(l.nombre)}${l.color ? ` (${esc(l.color)})` : ''}${l.nombreBebe ? ` “${esc(l.nombreBebe)}”` : ''}${l.modelo ? ` · Modelo: ${esc(l.modelo)}` : ''}${l.babero ? ` · Babero: ${esc(l.babero)}` : ''} — ${plata(l.total)}${fotoModelo(l.modelo) ? `<br><a href="${fotoModelo(l.modelo)}" target="_blank" rel="noopener" title="Ver el modelo ${esc(l.modelo)}"><img class="modelo-foto" src="${fotoModelo(l.modelo)}" alt="Modelo ${esc(l.modelo)}"></a>` : ''}</li>`).join(''))([...new Set(p.items.map(l => l.armado).filter(Boolean))])}</ul>
+      ${itemsHTML(p)}
     </article>`).join('')
     : '<p class="empty card">No hay pedidos todavía. Van a aparecer acá cuando la web tenga checkout.</p>';
 
@@ -291,6 +294,37 @@ async function cargarPedidos() {
   document.querySelectorAll('.pedido .rastreo').forEach(form => form.addEventListener('submit', e => {
     e.preventDefault();
     cambiar(form.closest('.pedido').querySelector('select'), form.elements.codigo.value);
+  }));
+}
+
+// ---------- Producción: estado interno de los pedidos en curso ----------
+
+const TALLER = { pendiente: 'Pendiente', trabajando: 'Trabajando', completado: 'Completado' };
+// Cuánto hace que pagó: "hace 5 h", "hace 1 día", "hace 3 días"
+const demora = f => { const h = Math.floor((Date.now() - new Date(f)) / 3600_000), d = Math.floor(h / 24);
+  return h < 1 ? 'hace menos de 1 h' : d < 1 ? `hace ${h} h` : `hace ${d} día${d === 1 ? '' : 's'}`; };
+async function cargarProduccion() {
+  const ps = await api('/produccion');
+  $('#kpisProduccion').innerHTML = Object.entries(TALLER).map(([k, t]) =>
+    `<div class="kpi taller-kpi ${k}"><small>${t}</small><b>${ps.filter(p => p.taller === k).length}</b></div>`).join('');
+  $('#listaProduccion').innerHTML = ps.length ? ps.map(p => `
+    <article class="card pedido produccion" data-id="${p.id}">
+      <div>
+        <h3>#${p.id} · ${esc(p.nombre)}</h3>
+        <p class="meta">Pagado ${new Date(p.pagado).toLocaleString('es-UY', { timeZone: 'America/Montevideo', dateStyle: 'short', timeStyle: 'short', hourCycle: 'h23' })}
+          · <b>${demora(p.pagado)}</b> · ${ENTREGA[p.entrega] || esc(p.entrega)}${p.direccion ? ' — ' + esc(p.direccion) : ''}</p>
+      </div>
+      <div class="taller" role="group" aria-label="Estado interno del pedido ${p.id}">${Object.entries(TALLER).map(([k, t]) =>
+        `<button type="button" class="${k}" data-taller="${k}" aria-pressed="${p.taller === k}">${t}</button>`).join('')}</div>
+      ${itemsHTML(p)}
+    </article>`).join('')
+    : '<p class="empty card">No hay pedidos en curso.</p>';
+  document.querySelectorAll('#listaProduccion .taller button').forEach(b => b.addEventListener('click', async () => {
+    if (b.getAttribute('aria-pressed') === 'true') return;
+    try {
+      await api(`/pedidos/${b.closest('.pedido').dataset.id}/taller`, { method: 'PATCH', body: { taller: b.dataset.taller } });
+      cargarProduccion();
+    } catch (err) { toast(err.message); }
   }));
 }
 
@@ -530,8 +564,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') abrirNotific
 
 // ---------- Historial ----------
 
-const CAMPOS = { hasta: 'Hasta', rastreo: 'Código de rastreo DAC', direccionRetiro: 'Dirección de retiro', recargoMp: 'Recargo de Mercado Pago', cupon: 'Código de descuento', descuento: 'Descuento', minimo: 'Compra mínima', usosMax: 'Usos máximos', vence: 'Vence', comprobante: 'Comprobante', datosDePago: 'Datos para pagar', precio: 'Precio', precioAnterior: 'Precio anterior (tachado)', stockCargado: 'Stock', controlaStock: 'Controla stock', activo: 'Activo', estado: 'Estado', foto: 'Foto', total: 'Total', pago: 'Pago' };
-const ACCIONES = { recordatorio: 'Reclamó el pago de', comprobante: 'Subió el comprobante de', crear: 'Creó', editar: 'Editó', foto: 'Cambió la foto de', estado: 'Cambió el estado de', borrar: 'Deshizo', rastreo: 'Cargó el rastreo de' };
+const CAMPOS = { taller: 'Estado interno', hasta: 'Hasta', rastreo: 'Código de rastreo DAC', direccionRetiro: 'Dirección de retiro', recargoMp: 'Recargo de Mercado Pago', cupon: 'Código de descuento', descuento: 'Descuento', minimo: 'Compra mínima', usosMax: 'Usos máximos', vence: 'Vence', comprobante: 'Comprobante', datosDePago: 'Datos para pagar', precio: 'Precio', precioAnterior: 'Precio anterior (tachado)', stockCargado: 'Stock', controlaStock: 'Controla stock', activo: 'Activo', estado: 'Estado', foto: 'Foto', total: 'Total', pago: 'Pago' };
+const ACCIONES = { recordatorio: 'Reclamó el pago de', comprobante: 'Subió el comprobante de', crear: 'Creó', editar: 'Editó', foto: 'Cambió la foto de', estado: 'Cambió el estado de', taller: 'Cambió el estado interno de', borrar: 'Deshizo', rastreo: 'Cargó el rastreo de' };
 const valor = (campo, x) => x === null || x === undefined ? '—' : typeof x === 'boolean' ? (x ? 'sí' : 'no')
   : (campo === 'vence' || campo === 'hasta') && String(x).length > 10 ? new Date(x).toLocaleString('es-UY', { timeZone: 'America/Montevideo', dateStyle: 'short', timeStyle: 'short', hourCycle: 'h23' })
   : campo === 'precio' || campo === 'precioAnterior' || campo === 'total' || campo === 'minimo' ? plata(x) : campo === 'pago' ? PAGOS[x] || x : campo === 'foto' ? 'imagen' : String(x);

@@ -170,3 +170,16 @@ td input[type=number]{width:96px;}
 .fp-aviso{color:#B0413E;font-size:.85rem;font-weight:700;}
 .fp-total{font-weight:800;}
 .fp-sub .btn{align-self:end;justify-self:start;}
+
+/* Producción: estado interno. Rojo = pendiente, amarillo = trabajando, verde = completado */
+:root{--taller-pendiente:#D9534F;--taller-trabajando:#F2C14E;--taller-completado:#4CAF50;}
+.taller{display:flex;gap:6px;flex-wrap:wrap;align-self:start;}
+.taller button{font:inherit;font-weight:700;font-size:.85rem;border:1.5px solid var(--line);background:var(--white);color:var(--ink-soft);border-radius:999px;padding:6px 14px;cursor:pointer;}
+.taller button[aria-pressed=true]{color:var(--white);border-color:transparent;}
+.taller button.pendiente[aria-pressed=true]{background:var(--taller-pendiente);}
+.taller button.trabajando[aria-pressed=true]{background:var(--taller-trabajando);color:var(--ink);}
+.taller button.completado[aria-pressed=true]{background:var(--taller-completado);}
+.taller-kpi{border-left:6px solid;}
+.taller-kpi.pendiente{border-left-color:var(--taller-pendiente);}
+.taller-kpi.trabajando{border-left-color:var(--taller-trabajando);}
+.taller-kpi.completado{border-left-color:var(--taller-completado);}

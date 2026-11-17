@@ -256,6 +256,11 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
   document.querySelectorAll('.box-photo.bs').forEach(function(ph){
     var card=ph.closest('.box-card'), track=ph.querySelector('.bs-track'), imgs=[].slice.call(track.children);
     var sw=[].slice.call(card.querySelectorAll('button.bc')), dots=ph.querySelector('.bs-dots'), cur=-1;
+    // Una sola foto para todos los colores (ej. Bienvenida y especial Manolito): el color se elige igual, sin cambiar la foto
+    if(imgs.length<2){
+      sw.forEach(function(b){ b.addEventListener('click',function(e){e.stopPropagation();sw.forEach(function(x){x.classList.toggle('on',x===b);});}); });
+      return;
+    }
     imgs.forEach(function(){dots.appendChild(document.createElement('i'));});
     function go(i){ i=Math.max(0,Math.min(imgs.length-1,i)); track.scrollTo({left:i*track.clientWidth,behavior:'smooth'}); }
     function mark(i){

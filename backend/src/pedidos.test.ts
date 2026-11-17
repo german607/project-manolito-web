@@ -274,3 +274,10 @@ test('retiro → "pronto para retirar" con la dirección de Ajustes; interior �
     globalThis.fetch = real; delete process.env.RESEND_API_KEY;
   }
 });
+
+test('sin peine de bamboo: la Bienvenida trae zapatitos y la especial Manolito un sonajero', async () => {
+  const ids = async (box: string) => (await boxes.una(box))!.componentes.map(c => c.id).sort();
+  assert.deepEqual(await ids('bienvenida'), ['manta', 'porta', 'trapito', 'zapatitos']);
+  assert.deepEqual(await ids('especial-manolito'), ['babero', 'manta', 'porta', 'sonajero', 'zapatitos']);
+  assert.ok((await boxes.una('especial-manolito'))!.items.includes('Sonajero de tela'));
+});

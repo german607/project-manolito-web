@@ -296,6 +296,18 @@ const MIGRACIONES: (() => Promise<void>)[] = [
     await q(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS taller text NOT NULL DEFAULT 'pendiente'
       CHECK (taller IN ('pendiente', 'trabajando', 'completado'))`);
   },
+  // 19: sin stock de peine de bamboo: la Bienvenida lleva zapatitos y la especial Manolito un sonajero en su lugar (foto nueva)
+  async () => {
+    const cambios = [
+      { box: 'bienvenida', nuevo: 'zapatitos', foto: 'box-bienvenida-zapatitos.jpg', items: ['Manta de muselina', 'Zapatitos tejidos', 'Trapito de apego', 'Portachupete personalizado'] },
+      { box: 'especial-manolito', nuevo: 'sonajero', foto: 'box-especial-manolito-sonajero.jpg', items: ['Manta de muselina', 'Babero de algodón', 'Zapatitos tejidos', 'Sonajero de tela', 'Conejo de peluche', 'Portachupete personalizado'] },
+    ];
+    for (const c of cambios) {
+      await q("DELETE FROM box_productos WHERE box_id = $1 AND producto_id = 'peine'", [c.box]);
+      await q('INSERT INTO box_productos (box_id, producto_id) SELECT $1, $2 WHERE EXISTS (SELECT 1 FROM boxes WHERE id = $1) ON CONFLICT DO NOTHING', [c.box, c.nuevo]);
+      await q('UPDATE boxes SET items = $2, foto = $3 WHERE id = $1', [c.box, JSON.stringify(c.items), c.foto]);
+    }
+  },
 ];
 
 // Crea las tablas, aplica migraciones y carga el catálogo inicial si la base está vacía.

@@ -169,6 +169,13 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
       card.querySelector('.box-price').innerHTML=b.agotada?'Sin stock':precioHTML(b.precio,b.precioAnterior);
       card.dataset.boxId=b.id;
       card.classList.toggle('agotada',b.agotada);
+      // Colores sin stock (a algún producto de la box le falta ese color): tachados y no se pueden elegir
+      card.querySelectorAll('button.bc').forEach(function(bc){
+        var sin=(b.coloresSinStock||[]).indexOf(bc.title)>=0;
+        bc.classList.toggle('sin',sin); bc.disabled=sin;
+        bc.setAttribute('aria-label',(sin?'Sin stock en ':'Elegir color ')+bc.title.toLowerCase());
+        if(sin) bc.classList.remove('on');
+      });
     });
     // Datos para Google (resultados con precio y stock), con los precios del admin
     var abs=function(u){return 'https://manolitouy.com/'+String(u||'').replace(/^\//,'').replace(/\?.*$/,'');};
@@ -217,7 +224,9 @@ document.querySelectorAll('.porta-slider').forEach(function(s){
     colorSel=on.length===1?on[0].title:''; cs.innerHTML='';
     card.querySelectorAll('button.bc').forEach(function(b){
       if(vistos.indexOf(b.title)>=0) return; vistos.push(b.title);
-      var c=document.createElement('button'); c.type='button'; c.className='chip'+(b.title===colorSel?' sel':'');
+      if(b.disabled&&colorSel===b.title) colorSel='';
+      var c=document.createElement('button'); c.type='button'; c.className='chip'+(b.title===colorSel?' sel':'')+(b.disabled?' sin':'');
+      if(b.disabled){c.disabled=true;c.title='Sin stock por ahora';}
       c.innerHTML='<i style="background:'+b.style.background+'"></i>'; c.appendChild(document.createTextNode(b.title));
       c.addEventListener('click',function(){colorSel=b.title;[].forEach.call(cs.children,function(x){x.classList.toggle('sel',x===c);});marcarListo();});
       cs.appendChild(c);

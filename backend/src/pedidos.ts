@@ -153,6 +153,7 @@ export async function calcular(
       if (!it.nombreBebe && b.items.some(i => /portachupete/i.test(i))) throw new HttpError(400, `Falta el nombre del bebé para el portachupete de ${b.nombre}`);
       if (b.colores?.length && !it.color) throw new HttpError(400, `Elegí el color de ${b.nombre}`);
       if (it.color && !b.colores?.includes(it.color)) throw new HttpError(400, `Color "${it.color}" no disponible para ${b.nombre}`);
+      if (it.color && b.coloresSinStock.includes(it.color)) throw new HttpError(409, `${b.nombre} en ${it.color.toLowerCase()} está sin stock por ahora`);
       // El babero de la box va del mismo color que la box
       const conPorta = b.componentes.some(c => c.id === 'porta');
       if (conPorta && !it.modelo) throw new HttpError(400, `Elegí el modelo del portachupete de ${b.nombre}`);
@@ -170,6 +171,7 @@ export async function calcular(
     // Los productos se compran armando una box; solo el portachupete se vende suelto (desde su sección)
     if (!it.armado && !p.personalizable) throw new HttpError(400, `${p.nombre} se compra desde "Armá tu box" (mínimo ${MIN_ARMADO} productos)`);
     if (it.color && !p.colores?.includes(it.color)) throw new HttpError(400, `Color "${it.color}" no disponible para ${p.nombre}`);
+    if (it.color && p.sinStock.includes(it.color)) throw new HttpError(409, `${p.nombre} en ${it.color.toLowerCase()} está sin stock por ahora`);
     if (it.color === 'Estampada' && !it.estampado) throw new HttpError(400, `Falta contar qué estampado querés para ${p.nombre}`);
     if (it.estampado && it.color !== 'Estampada') throw new HttpError(400, `El estampado solo va con el color Estampada`);
     if (it.nombreBebe && !p.personalizable) throw new HttpError(400, `${p.nombre} no lleva nombre`);

@@ -308,6 +308,11 @@ const MIGRACIONES: (() => Promise<void>)[] = [
       await q('UPDATE boxes SET items = $2, foto = $3 WHERE id = $1', [c.box, JSON.stringify(c.items), c.foto]);
     }
   },
+  // 20: stock por color: qué colores de cada producto no hay (sí/no, aparte de la cantidad). Una box no se vende en un color
+  // si alguno de sus productos no tiene ese color
+  async () => {
+    await q(`ALTER TABLE productos ADD COLUMN IF NOT EXISTS sin_stock jsonb NOT NULL DEFAULT '[]'`);
+  },
 ];
 
 // Crea las tablas, aplica migraciones y carga el catálogo inicial si la base está vacía.
@@ -346,7 +351,7 @@ export const registrar = (autor: Autor, entidad: 'producto' | 'box' | 'pedido' |
 // { campo: [antes, después] } solo con lo que cambió
 export function diferencias<T extends Record<string, unknown>>(antes: T, despues: T, campos: (keyof T)[]) {
   const d: Record<string, [unknown, unknown]> = {};
-  for (const c of campos) if (antes[c] !== despues[c]) d[c as string] = [antes[c], despues[c]];
+  for (const c of campos) if (JSON.stringify(antes[c]) !== JSON.stringify(despues[c])) d[c as string] = [antes[c], despues[c]]; // por contenido (listas)
   return d;
 }
 
@@ -355,32 +360,42 @@ export type Producto = {
   id: string; nombre: string; descripcion: string | null; precio: number;
   colores: string[] | null; personalizable: boolean; foto: string | null;
   activo: boolean; precioAnterior: number | null; // tachado en la web si es mayor que el precio (promo)
+  sinStock: string[]; // colores que no hay (stock por color)
   stock: number | null;   // el que usan las ventas: null = sin límite (no se controla)
   stockCargado: number | null; controlaStock: boolean; // lo que se edita en el admin
 };
-export type Componente = { id: string; nombre: string; cantidad: number; stock: number | null };
+export type Componente = { id: string; nombre: string; cantidad: number; stock: number | null; colores: string[] | null; sinStock: string[] };
 export type Box = {
   id: string; nombre: string; precio: number; items: string[]; colores: string[] | null;
   foto: string | null; etiqueta: string | null; activo: boolean; precioAnterior: number | null;
+  coloresSinStock: string[];
   componentes: Componente[]; agotada: boolean; // agotada = algún producto que trae no tiene stock suficiente
 };
 
 // Stock que usan las ventas, en SQL: NULL si el producto tiene "Ignorar stock"
 export const STOCK_SQL = 'CASE WHEN controla_stock THEN COALESCE(stock, 0) END';
 
-const toProducto = ({ controla_stock, orden: _orden, precio_anterior, ...r }: any): Producto => ({
-  ...r, precioAnterior: precio_anterior, stock: controla_stock ? (r.stock ?? 0) : null, stockCargado: r.stock, controlaStock: controla_stock,
+const toProducto = ({ controla_stock, orden: _orden, precio_anterior, sin_stock, ...r }: any): Producto => ({
+  ...r, precioAnterior: precio_anterior, sinStock: sin_stock ?? [], stock: controla_stock ? (r.stock ?? 0) : null, stockCargado: r.stock, controlaStock: controla_stock,
 });
 
 // Cada box con sus componentes en una sola consulta
 const SELECT_BOX = `SELECT b.*, COALESCE((
-    SELECT json_agg(json_build_object('id', p.id, 'nombre', p.nombre, 'cantidad', bp.cantidad, 'stock', CASE WHEN p.controla_stock THEN COALESCE(p.stock, 0) END) ORDER BY bp.orden)
+    SELECT json_agg(json_build_object('id', p.id, 'nombre', p.nombre, 'cantidad', bp.cantidad, 'stock', CASE WHEN p.controla_stock THEN COALESCE(p.stock, 0) END,
+      'colores', p.colores, 'sinStock', p.sin_stock) ORDER BY bp.orden)
     FROM box_productos bp JOIN productos p ON p.id = bp.producto_id WHERE bp.box_id = b.id
   ), '[]') AS componentes
   FROM boxes b`;
-const toBox = ({ precio_anterior, ...r }: any): Box => ({
-  ...r, precioAnterior: precio_anterior, agotada: (r.componentes as Componente[]).some(c => c.stock !== null && c.stock < c.cantidad),
-});
+// coloresSinStock: colores de la box que no se venden porque a algún producto le falta ese color.
+// agotada: falta cantidad de algún producto, o no queda ningún color
+const toBox = ({ precio_anterior, ...r }: any): Box => {
+  const comps = r.componentes as Componente[];
+  const coloresSinStock = ((r.colores ?? []) as string[]).filter(color => comps.some(c => c.colores?.includes(color) && c.sinStock.includes(color)));
+  return {
+    ...r, precioAnterior: precio_anterior, coloresSinStock,
+    agotada: comps.some(c => c.stock !== null && c.stock < c.cantidad) || (!!r.colores?.length && coloresSinStock.length === r.colores.length),
+  };
+};
 
 export const productos = {
   todos: async (soloActivos = true): Promise<Producto[]> =>

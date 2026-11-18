@@ -131,7 +131,10 @@
       if(p.agotado) s.on=false;
       var bt=card.querySelector('.ap-btn'); bt.disabled=!!p.agotado; bt.textContent=p.agotado?'Sin stock':(s.on?'Quitar':'Agregar');
       var eo=card.querySelector('.ap-est'); if(eo) eo.hidden=s.color!=='Estampada';
-      card.querySelectorAll('.chip').forEach(function(b){b.classList.toggle('sel',!!(s.color&&b.textContent===s.color));});
+      card.querySelectorAll('.ap-chips .chip').forEach(function(b){
+        var sin=!!p.sin&&p.sin.indexOf(b.textContent)>=0;
+        b.classList.toggle('sel',!!(s.color&&b.textContent===s.color)); b.classList.toggle('sin',sin); b.disabled=sin; b.title=sin?'Sin stock por ahora':'';
+      });
       if(p.modelo){var mbb=document.getElementById('apm-'+p.id); if(mbb) mbb.textContent=s.modelo?'Modelo de '+modeloPublico(s.modelo).toLowerCase()+' elegido ✓ (cambiar)':'Ver y elegir modelo';}
       document.getElementById('apr-'+p.id).innerHTML=priceHTML(p);
       if(s.on){
@@ -210,7 +213,8 @@
     P.forEach(function(p){
       var d=m[p.id], card=document.getElementById('ap-'+p.id);
       if(!d){card.style.display='none';if(st[p.id])st[p.id].on=false;return;}
-      p.p=d.precio; p.pa=d.precioAnterior; p.agotado=d.stock===0;
+      p.p=d.precio; p.pa=d.precioAnterior; p.agotado=d.stock===0; p.sin=d.sinStock||[]; // colores sin stock
+      if(st[p.id]&&p.sin.indexOf(st[p.id].color)>=0) st[p.id].color=null;
       var im=card.querySelector('.ap-img'); if(im&&d.foto) im.src=d.foto;
     });
     render();

@@ -42,3 +42,30 @@ test('promo: el precio anterior se edita en el admin, queda en el historial y no
   assert.equal((await patch('/boxes/esencial', { precioAnterior: null })).d.precioAnterior, null);
   assert.equal((await patch('/productos/porta', { precioAnterior: 890 })).d.precioAnterior, 890);
 });
+
+test('stock por color: el producto y las boxes que lo traen no se venden en ese color', async () => {
+  await q("UPDATE productos SET controla_stock = false");
+  const r = await patch('/productos/zapatitos', { sinStock: ['Celeste'] });
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.d.sinStock, ['Celeste']);
+  assert.equal((await patch('/productos/zapatitos', { sinStock: ['Violeta'] })).status, 400, 'un color que el producto no tiene');
+
+  // Las boxes con zapatitos pierden el celeste; las que no los traen, no
+  assert.ok((await boxes.una('bienvenida'))!.coloresSinStock.includes('Celeste'));
+  assert.deepEqual((await boxes.una('esencial'))!.coloresSinStock, []);
+  assert.equal((await boxes.una('bienvenida'))!.agotada, false, 'quedan otros colores');
+
+  const pedir = (items: unknown[]) => calcular(PedidoInput.parse({ cliente: { nombre: 'Ana', telefono: '099123456', email: 'ana@test.com' }, entrega: 'pickup', pago: 'transferencia', items }), productos.uno, boxes.una);
+  const box = (color: string) => ({ tipo: 'box', id: 'bienvenida', color, nombreBebe: 'Ema', modelo: 'Silicona N° 1' });
+  await assert.rejects(pedir([box('Celeste')]), /Bienvenida en celeste está sin stock/);
+  await assert.doesNotReject(pedir([box('Rosa')]));
+  await assert.rejects(pedir([{ tipo: 'producto', id: 'zapatitos', color: 'Celeste', armado: 'a' }, { tipo: 'producto', id: 'babero', color: 'Rosa', armado: 'a' }]), /Zapatitos tejidos en celeste/);
+
+  // Sin ningún color: la box queda agotada
+  await patch('/productos/zapatitos', { sinStock: ['Rosa', 'Celeste', 'Beige'] });
+  assert.equal((await boxes.una('bienvenida'))!.agotada, true);
+  await patch('/productos/zapatitos', { sinStock: [] });
+  const h = await q("SELECT count(*)::int AS n FROM historial WHERE entidad = 'producto' AND entidad_id = 'zapatitos'");
+  await patch('/productos/zapatitos', { sinStock: [] });
+  assert.equal((await q("SELECT count(*)::int AS n FROM historial WHERE entidad = 'producto' AND entidad_id = 'zapatitos'"))[0].n, h[0].n, 'guardar lo mismo no ensucia el historial');
+});

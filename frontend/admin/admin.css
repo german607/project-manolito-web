@@ -183,3 +183,8 @@ td input[type=number]{width:96px;}
 .taller-kpi.pendiente{border-left-color:var(--taller-pendiente);}
 .taller-kpi.trabajando{border-left-color:var(--taller-trabajando);}
 .taller-kpi.completado{border-left-color:var(--taller-completado);}
+
+/* Catálogo: stock por color. Tachado en rojo = no hay ese color */
+.sin-stock{display:flex;gap:4px;flex-wrap:wrap;}
+.sin-stock button{font:inherit;font-size:.78rem;font-weight:700;border:1.5px solid var(--line);background:var(--white);color:var(--ink);border-radius:999px;padding:3px 9px;cursor:pointer;}
+.sin-stock button.sin{text-decoration:line-through;color:#B0413E;border-color:#E8B4B2;background:#FBEDEC;}

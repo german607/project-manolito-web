@@ -567,6 +567,8 @@
 
   .cart-sum{position:sticky;top:90px;background:var(--white);border:1px solid rgba(63,58,52,.08);border-radius:24px;padding:24px;display:flex;flex-direction:column;gap:12px;box-shadow:0 12px 30px -16px rgba(63,58,52,.14);}
   .cart-form{position:static;}
+  #lugarWrap{display:flex;flex-direction:column;gap:12px;} #lugarWrap[hidden]{display:none;}
+  .cart-sum select{font:inherit;font-weight:600;border:1.5px solid rgba(63,58,52,.16);border-radius:12px;padding:10px 12px;background:var(--white);}
   .resumen-head{display:flex;justify-content:space-between;align-items:baseline;}
   .cart-line.ro{grid-template-columns:56px 1fr auto;padding:8px;border-radius:16px;}
   .cart-line.ro img,.cart-line.ro .cart-ph{width:56px;height:56px;}

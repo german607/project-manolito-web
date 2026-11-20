@@ -233,14 +233,18 @@ test('vence a las 18:00 (hora de Uruguay) del día siguiente, a cualquier hora q
   assert.equal((await buscarPedido(id))!.vence!.toISOString(), venceNormal(new Date()).toISOString(), 'se guarda al crear el pedido');
 });
 
-test('envío al interior: pide agencia o domicilio y lo guarda adelante de la dirección', async () => {
-  const base = { cliente: { nombre: 'Ana', telefono: '099123456', email: 'ana@test.com', direccion: 'Salto centro' }, entrega: 'interior', pago: 'transferencia',
-    items: [{ tipo: 'producto', id: 'porta', nombreBebe: 'Ema' }] };
+test('envío al interior: agencia o domicilio, departamento y localidad; la dirección solo a domicilio', async () => {
+  const cliente = { nombre: 'Ana', telefono: '099123456', email: 'ana@test.com' };
+  const base = { cliente: { ...cliente, departamento: 'Salto', localidad: 'Salto' }, entrega: 'interior', pago: 'transferencia', items: [{ tipo: 'producto', id: 'porta', nombreBebe: 'Ema' }] };
   assert.throws(() => PedidoInput.parse(base), /agencia o a domicilio/);
+  assert.throws(() => PedidoInput.parse({ ...base, envio: 'agencia', cliente }), /departamento y la localidad/);
+  assert.throws(() => PedidoInput.parse({ ...base, envio: 'agencia', cliente: { ...base.cliente, departamento: 'Montevideo' } }), 'Montevideo no es interior');
+  assert.throws(() => PedidoInput.parse({ ...base, envio: 'domicilio' }), /dirección es obligatoria/);
   await setStock(['porta'], 0, false);
-  const input = PedidoInput.parse({ ...base, envio: 'agencia' });
-  const id = await insertar(input, await calcular(input, productos.uno, boxes.una));
-  assert.equal((await buscarPedido(id))!.direccion, 'Agencia DAC: Salto centro');
+  const guardar = async (extra: object) => { const i = PedidoInput.parse({ ...base, ...extra }); return (await buscarPedido(await insertar(i, await calcular(i, productos.uno, boxes.una))))!.direccion; };
+  assert.equal(await guardar({ envio: 'agencia' }), 'Agencia DAC: Salto, Salto');
+  assert.equal(await guardar({ envio: 'domicilio', cliente: { ...cliente, direccion: 'Uruguay 1234', departamento: 'Paysandú', localidad: 'Paysandú' } }),
+    'Domicilio: Uruguay 1234 — Paysandú, Paysandú');
 });
 
 test('retiro → "pronto para retirar" con la dirección de Ajustes; interior → enviado con código de rastreo DAC', async () => {
@@ -259,7 +263,7 @@ test('retiro → "pronto para retirar" con la dirección de Ajustes; interior �
     assert.match(enviados.at(-1).subject, /pronto para retirar/);
     assert.match(enviados.at(-1).text, /Gaboto 1234, Cordón/);
 
-    const input = PedidoInput.parse({ cliente: { nombre: 'Ana', telefono: '099123456', email: 'ana@test.com', direccion: 'Salto' }, entrega: 'interior', envio: 'agencia', pago: 'transferencia', items });
+    const input = PedidoInput.parse({ cliente: { nombre: 'Ana', telefono: '099123456', email: 'ana@test.com', departamento: 'Salto', localidad: 'Salto' }, entrega: 'interior', envio: 'agencia', pago: 'transferencia', items });
     const interior = await insertar(input, await calcular(input, productos.uno, boxes.una));
     await assert.rejects(cambiarEstado(interior, 'pronto'), /solo para pedidos de retiro/);
     await assert.rejects(cambiarEstado(interior, 'enviado', undefined, 'admin@test.com', '  '), /código de rastreo/);

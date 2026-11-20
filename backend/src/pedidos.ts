@@ -71,12 +71,20 @@ export const Item = z.object({
 
 const Pago = z.enum(['transferencia', 'abitab_redpagos', 'prex_midinero', 'mercadopago']);
 
+// Envío al interior: departamento (sin Montevideo: ahí es cadetería o pick-up) y localidad
+export const DEPARTAMENTOS = ['Artigas', 'Canelones', 'Cerro Largo', 'Colonia', 'Durazno', 'Flores', 'Florida', 'Lavalleja', 'Maldonado',
+  'Paysandú', 'Río Negro', 'Rivera', 'Rocha', 'Salto', 'San José', 'Soriano', 'Tacuarembó', 'Treinta y Tres'] as const;
+const Lugar = {
+  localidad: z.string().trim().max(80).optional().transform(v => v || undefined),
+  departamento: z.enum(DEPARTAMENTOS).optional(),
+};
 const PedidoBase = z.object({
   cliente: z.object({
     nombre: z.string().trim().min(2).max(80),
     telefono: z.string().trim().min(6).max(30),
     email: z.email().max(120),
     direccion: z.string().trim().max(200).optional(),
+    ...Lugar,
   }),
   entrega: z.enum(['cadeteria', 'pickup', 'interior']),
   envio: z.enum(['agencia', 'domicilio']).optional(), // solo interior: retira en la agencia o se lo llevan a la casa
@@ -89,11 +97,14 @@ const PedidoBase = z.object({
     campana: z.string().trim().toLowerCase().max(60).optional(),
   }).optional().catch(undefined),
 });
-const conEntrega = <T extends z.ZodType<{ entrega: string; envio?: string; cliente: { direccion?: string } }>>(s: T) => s
-  .refine(p => p.entrega === 'pickup' || !!p.cliente.direccion, {
-    message: 'La dirección es obligatoria salvo para pick-up', path: ['cliente', 'direccion'],
+type ConEntrega = { entrega: string; envio?: string; cliente: { direccion?: string; localidad?: string; departamento?: string } };
+const conEntrega = <T extends z.ZodType<ConEntrega>>(s: T) => s
+  .refine(p => p.entrega === 'pickup' || (p.entrega === 'interior' && p.envio === 'agencia') || !!p.cliente.direccion, {
+    message: 'La dirección es obligatoria salvo para pick-up o agencia DAC', path: ['cliente', 'direccion'],
   }).refine(p => p.entrega !== 'interior' || !!p.envio, {
     message: 'Elegí si el envío al interior va a agencia o a domicilio', path: ['envio'],
+  }).refine(p => p.entrega !== 'interior' || (!!p.cliente.departamento && !!p.cliente.localidad), {
+    message: 'Para el envío al interior falta el departamento y la localidad', path: ['cliente', 'localidad'],
   });
 export const PedidoInput = conEntrega(PedidoBase);
 
@@ -104,6 +115,7 @@ export const PedidoAdmin = conEntrega(PedidoBase.omit({ origen: true }).extend({
     telefono: z.string().trim().max(30).optional().transform(v => v || undefined),
     email: z.union([z.email().max(120), z.literal('')]).optional().transform(v => v || undefined),
     direccion: z.string().trim().max(200).optional().transform(v => v || undefined),
+    ...Lugar,
   }),
   fuente: z.string().trim().toLowerCase().min(2).max(40).default('instagram'), // de dónde vino (métricas)
   estado: z.enum(['pendiente', 'pagado']).default('pagado'), // solo al crearlo; después se cambia como cualquier pedido
@@ -318,9 +330,13 @@ export async function cambiarEstado(id: number, estado: Pedido['estado'], mpPaym
   return p;
 }
 
-// Interior: "Agencia DAC: …" o "Domicilio: …", así se ve en el admin y en los mails sin otra columna
-const direccionTexto = (p: { entrega: string; envio?: string; cliente: { direccion?: string } }) =>
-  p.entrega === 'interior' && p.envio ? `${p.envio === 'agencia' ? 'Agencia DAC' : 'Domicilio'}: ${p.cliente.direccion}` : p.cliente.direccion;
+// Interior: "Agencia DAC: Salto, Salto" o "Domicilio: Uruguay 1234 — Paysandú, Paysandú", así se ve en el admin y en los
+// mails sin otras columnas (el admin lo vuelve a separar al editar un pedido manual)
+const direccionTexto = ({ entrega, envio, cliente: c }: ConEntrega) => {
+  if (entrega !== 'interior' || !envio) return c.direccion;
+  const lugar = [c.localidad, c.departamento].filter(Boolean).join(', ');
+  return `${envio === 'agencia' ? 'Agencia DAC' : 'Domicilio'}: ${[envio === 'domicilio' ? c.direccion : '', lugar].filter(Boolean).join(' — ')}`;
+};
 
 export const insertar = (input: PedidoInput, c: Awaited<ReturnType<typeof calcular>>, usuarioId: number | null = null, autor: Autor = 'cliente') => tx(async () => {
   await descontarStock(c.lineas);

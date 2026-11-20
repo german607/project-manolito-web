@@ -347,10 +347,12 @@ async function cargarCatalogo() {
     catalogo = { productos, boxes };
   }
 }
-const nuevaLinea = tipo => tipo === 'armado' ? { tipo, productos: [{ id: '', cantidad: 1 }, { id: '', cantidad: 1 }] }
+const nuevoProducto = () => ({ id: '', cantidad: 1, mat: 'Silicona', num: 1, det: '' });
+const nuevaLinea = tipo => tipo === 'armado' ? { tipo, productos: [nuevoProducto(), nuevoProducto()] }
   : { tipo, id: tipo === 'porta' ? 'porta' : catalogo.boxes[0]?.id, cantidad: 1, mat: 'Silicona', num: 1, det: '' };
 const leerModelo = m => { const r = /^(Silicona|Madera) N° (\d+)(?: — (.*))?$/.exec(m || ''); return r ? { mat: r[1], num: Number(r[2]), det: r[3] || '' } : { mat: 'Silicona', num: 1, det: '' }; };
 const modeloTexto = l => `${l.mat} N° ${l.num}${l.det ? ' — ' + l.det : ''}`;
+const personalizable = id => !!catalogo.productos.find(x => x.id === id)?.personalizable; // el portachupete (lleva nombre y modelo)
 const conPorta = l => l.tipo === 'porta' || !!catalogo.boxes.find(b => b.id === l.id)?.componentes.some(c => c.id === 'porta');
 
 // Ítems del pedido → líneas del formulario (para editar)
@@ -359,7 +361,7 @@ function lineasDe(items) {
   for (const it of items) {
     if (it.armado) {
       if (!armados[it.armado]) out.push(armados[it.armado] = { tipo: 'armado', productos: [] });
-      armados[it.armado].productos.push({ id: it.id, color: it.color, estampado: it.estampado, cantidad: it.cantidad });
+      armados[it.armado].productos.push({ id: it.id, color: it.color, estampado: it.estampado, cantidad: it.cantidad, nombreBebe: it.nombreBebe, ...leerModelo(it.modelo) });
     } else out.push({ tipo: it.tipo === 'box' ? 'box' : 'porta', id: it.id, color: it.color, nombreBebe: it.nombreBebe, cantidad: it.cantidad, ...leerModelo(it.modelo) });
   }
   return out;
@@ -369,7 +371,8 @@ function itemsDe() {
   const items = [], linea = [];
   lineas.forEach((l, i) => {
     const nuevos = l.tipo === 'armado'
-      ? l.productos.filter(p => p.id).map(p => ({ tipo: 'producto', id: p.id, cantidad: p.cantidad, color: p.color || undefined, estampado: p.color === 'Estampada' ? p.estampado : undefined, armado: 'adm-' + i }))
+      ? l.productos.filter(p => p.id).map(p => ({ tipo: 'producto', id: p.id, cantidad: p.cantidad, color: p.color || undefined, estampado: p.color === 'Estampada' ? p.estampado : undefined, armado: 'adm-' + i,
+        ...(personalizable(p.id) ? { nombreBebe: p.nombreBebe, modelo: modeloTexto(p) } : {}) }))
       : [{ tipo: l.tipo === 'box' ? 'box' : 'producto', id: l.id, cantidad: l.cantidad, color: l.color || undefined,
         nombreBebe: conPorta(l) ? l.nombreBebe : undefined, modelo: conPorta(l) ? modeloTexto(l) : undefined }];
     nuevos.forEach(it => { items.push(it); linea.push(i); });
@@ -379,11 +382,11 @@ function itemsDe() {
 
 const opciones = (lista, sel, vacio) => (vacio ? `<option value="">${vacio}</option>` : '') +
   lista.map(([v, t]) => `<option value="${esc(v)}" ${String(v) === String(sel ?? '') ? 'selected' : ''}>${esc(t)}</option>`).join('');
-const campoModelo = (l, i) => `
-  <label>Material<select data-i="${i}" data-k="mat">${opciones(Object.keys(MODELOS).map(m => [m, m]), l.mat)}</select></label>
-  <label>Modelo N°<select data-i="${i}" data-k="num">${opciones(Array.from({ length: MODELOS[l.mat] }, (_, n) => [n + 1, n + 1]), l.num)}</select></label>
-  <label>Nombre del bebé<input data-i="${i}" data-k="nombreBebe" maxlength="20" value="${esc(l.nombreBebe)}"></label>
-  <label><span>Detalle <small>(opcional)</small></span><input data-i="${i}" data-k="det" maxlength="60" value="${esc(l.det)}"></label>`;
+const campoModelo = (l, i, j) => { const d = `data-i="${i}"${j === undefined ? '' : ` data-j="${j}"`}`; return `
+  <label>Material<select ${d} data-k="mat">${opciones(Object.keys(MODELOS).map(m => [m, m]), l.mat)}</select></label>
+  <label>Modelo N°<select ${d} data-k="num">${opciones(Array.from({ length: MODELOS[l.mat] }, (_, n) => [n + 1, n + 1]), l.num)}</select></label>
+  <label>Nombre del bebé<input ${d} data-k="nombreBebe" maxlength="20" value="${esc(l.nombreBebe)}"></label>
+  <label><span>Detalle <small>(opcional)</small></span><input ${d} data-k="det" maxlength="60" value="${esc(l.det)}"></label>`; };
 
 function pintarLineas() {
   const { productos: ps, boxes: bs } = catalogo;
@@ -394,7 +397,8 @@ function pintarLineas() {
       cuerpo = l.productos.map((p, j) => {
         const prod = ps.find(x => x.id === p.id), d = `data-i="${i}" data-j="${j}"`;
         return `<div class="fp-campos fp-sub">
-          <label>Producto<select ${d} data-k="id">${opciones(ps.filter(x => !x.personalizable).map(x => [x.id, x.nombre]), p.id, 'Elegí…')}</select></label>
+          <label>Producto<select ${d} data-k="id">${opciones(ps.map(x => [x.id, x.nombre]), p.id, 'Elegí…')}</select></label>
+          ${prod?.personalizable ? campoModelo(p, i, j) : ''}
           ${prod?.colores ? `<label>Color<select ${d} data-k="color">${opciones(prod.colores.map(c => [c, c]), p.color, 'Elegí…')}</select></label>` : ''}
           ${p.color === 'Estampada' ? `<label>Estampado<input ${d} data-k="estampado" maxlength="60" value="${esc(p.estampado)}"></label>` : ''}
           <label>Cantidad<input type="number" min="1" max="20" ${d} data-k="cantidad" value="${p.cantidad}"></label>
@@ -463,7 +467,7 @@ $('#formPedido').addEventListener('click', e => {
   const t = e.target;
   if (t.dataset.agregar) lineas.push(nuevaLinea(t.dataset.agregar));
   else if (t.dataset.quitar) lineas.splice(Number(t.dataset.quitar), 1);
-  else if (t.dataset.sumarProducto) lineas[t.dataset.sumarProducto].productos.push({ id: '', cantidad: 1 });
+  else if (t.dataset.sumarProducto) lineas[t.dataset.sumarProducto].productos.push(nuevoProducto());
   else if (t.dataset.quitarProducto) { const [i, j] = t.dataset.quitarProducto.split('-').map(Number); lineas[i].productos.splice(j, 1); }
   else return;
   pintarLineas();

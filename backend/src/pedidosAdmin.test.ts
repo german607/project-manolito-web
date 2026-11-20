@@ -47,6 +47,11 @@ test('pedido cargado en el admin: box, armado y portachupete; sin mails, no venc
     await vencerPedidos();
     assert.equal((await buscarPedido(p.id))!.estado, 'pendiente', 'no vence solo');
 
+    // Un armado puede llevar portachupete (con nombre y modelo), como en "Armá tu box"
+    const conPorta = await api('POST', '/pedidos', { cliente: { nombre: 'Ana' }, entrega: 'pickup', pago: 'transferencia', items: [{ ...PORTA, armado: 'a2' }, { ...ARMADO[1], armado: 'a2' }] }); // manta: el babero se cuenta más abajo
+    assert.equal(conPorta.status, 201);
+    assert.equal((await buscarPedido(conPorta.d.id))!.items.find(l => l.id === 'porta')!.modelo, 'Madera N° 2');
+
     // Mismas reglas que la web
     assert.equal((await api('POST', '/pedidos', { cliente: { nombre: 'Xx' }, entrega: 'pickup', pago: 'transferencia', items: [ARMADO[0]] })).status, 400, 'armado de 1 producto');
 

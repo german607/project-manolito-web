@@ -65,12 +65,15 @@
 
   // ---- Formulario ----
   // Interior: primero elige agencia o domicilio, después escribe cuál
+  // Interior: agencia o domicilio, departamento y localidad; la dirección solo a domicilio (la agencia sale de la localidad)
   function actualizarDireccion(){
     var pick=entrega()==='pickup', interior=entrega()==='interior', envio=form.querySelector('input[name=envio]:checked');
+    var agencia=interior&&!!envio&&envio.value==='agencia';
     $('envioWrap').hidden=!interior; form.envio[0].required=interior;
-    $('dirWrap').hidden=pick; form.direccion.required=!pick;
-    $('dirLabel').textContent=interior&&envio&&envio.value==='agencia'?'Sucursal de DAC':'Dirección';
-    form.direccion.placeholder=!interior?'':envio&&envio.value==='agencia'?'Departamento, Localidad':'Dirección';
+    $('lugarWrap').hidden=!interior; form.departamento.required=interior; form.localidad.required=interior;
+    $('dirWrap').hidden=pick||agencia; form.direccion.required=!pick&&!agencia;
+    $('dirLabel').textContent='Dirección';
+    form.direccion.placeholder=interior?'Calle y número':'';
   }
   // "Confirmar pedido" en rosa oscuro cuando los datos están completos y el carrito no tiene problemas
   function marcarListo(){$('confirmar').classList.toggle('listo',!!cot&&!cot.avisos.length&&form.checkValidity());}
@@ -82,7 +85,7 @@
   });
   actualizarDireccion();
 
-  var CAMPOS={nombre:'nombre',telefono:'teléfono',email:'email',direccion:'dirección',envio:'agencia o domicilio'};
+  var CAMPOS={nombre:'nombre',telefono:'teléfono',email:'email',direccion:'dirección',envio:'agencia o domicilio',departamento:'departamento',localidad:'localidad'};
   form.addEventListener('submit',function(e){
     e.preventDefault();
     $('cartError').textContent='';
@@ -91,7 +94,9 @@
     if(!cot||cot.avisos.length){$('cartError').textContent='Hay productos con problemas: tocá "Editar" y quitalos.';track('checkout_error','Productos con problemas en el carrito');return;}
     var btn=$('confirmar'); btn.disabled=true; btn.textContent='Enviando…';
     var body={
-      cliente:{nombre:form.nombre.value,telefono:form.telefono.value,email:form.email.value,direccion:entrega()==='pickup'?undefined:form.direccion.value},
+      cliente:{nombre:form.nombre.value,telefono:form.telefono.value,email:form.email.value,
+        direccion:$('dirWrap').hidden?undefined:form.direccion.value,
+        departamento:entrega()==='interior'?form.departamento.value:undefined,localidad:entrega()==='interior'?form.localidad.value:undefined},
       entrega:entrega(), envio:entrega()==='interior'?form.envio.value:undefined, pago:pago(), items:Carrito.items(), cupon:cupon||undefined,
       origen:window.origenVisita?origenVisita():undefined
     };

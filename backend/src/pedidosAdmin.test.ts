@@ -58,12 +58,12 @@ test('pedido cargado en el admin: box, armado y portachupete; sin mails, no venc
     // Editar: sale el armado, queda la box y el portachupete; el stock vuelve
     const e = await api('PUT', `/pedidos/${p.id}`, { cliente: { nombre: 'Clienta de Instagram', telefono: '099123456' }, entrega: 'interior', envio: 'agencia',
       pago: 'mercadopago', fuente: 'instagram', items: [BOX, PORTA]});
-    assert.equal(e.status, 400, 'interior sin dirección');
-    const ok = await api('PUT', `/pedidos/${p.id}`, { cliente: { nombre: 'Clienta de Instagram', telefono: '099123456', direccion: 'Salto' }, entrega: 'interior',
+    assert.equal(e.status, 400, 'interior sin departamento ni localidad');
+    const ok = await api('PUT', `/pedidos/${p.id}`, { cliente: { nombre: 'Clienta de Instagram', telefono: '099123456', departamento: 'Salto', localidad: 'Salto' }, entrega: 'interior',
       envio: 'agencia', pago: 'transferencia', fuente: 'instagram', items: [BOX, PORTA] });
     assert.equal(ok.status, 200);
     const editado = (await buscarPedido(p.id))!;
-    assert.deepEqual([editado.items.length, editado.direccion, editado.telefono], [2, 'Agencia DAC: Salto', '099123456']);
+    assert.deepEqual([editado.items.length, editado.direccion, editado.telefono], [2, 'Agencia DAC: Salto, Salto', '099123456']);
     assert.equal(await stock('babero'), 10, 'el stock del armado que salió volvió');
 
     // Pagado al crear: cuenta para Finanzas desde ya

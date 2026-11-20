@@ -63,7 +63,7 @@
 
         <fieldset>
           <legend>Entrega</legend>
-          <label class="opt"><input type="radio" name="entrega" value="pickup" checked> Pick-up en Cordón (Montevideo)</label>
+          <label class="opt"><input type="radio" name="entrega" value="pickup" checked> Pick-up en zona Tres Cruces (Montevideo)</label>
           <label class="opt"><input type="radio" name="entrega" value="cadeteria"> Cadetería en Montevideo</label>
           <label class="opt"><input type="radio" name="entrega" value="interior"> Envío al interior</label>
         </fieldset>
@@ -72,6 +72,10 @@
           <label class="opt"><input type="radio" name="envio" value="agencia"> Agencia DAC</label>
           <label class="opt"><input type="radio" name="envio" value="domicilio"> A domicilio</label>
         </fieldset>
+        <div id="lugarWrap" hidden>
+          <label>Departamento<select name="departamento" autocomplete="address-level1"><option value="">Elegí el departamento</option><option>Artigas</option><option>Canelones</option><option>Cerro Largo</option><option>Colonia</option><option>Durazno</option><option>Flores</option><option>Florida</option><option>Lavalleja</option><option>Maldonado</option><option>Paysandú</option><option>Río Negro</option><option>Rivera</option><option>Rocha</option><option>Salto</option><option>San José</option><option>Soriano</option><option>Tacuarembó</option><option>Treinta y Tres</option></select></label>
+          <label>Localidad<input name="localidad" maxlength="80" autocomplete="address-level2" placeholder="Ej: Salto, Young, Atlántida"></label>
+        </div>
         <label id="dirWrap"><span id="dirLabel">Dirección</span><input name="direccion" maxlength="200" autocomplete="street-address"></label>
 
         <fieldset>

@@ -139,7 +139,7 @@ function grafico(sel, titulo, filas, valor = n => `${n} visita${n === 1 ? '' : '
     <div class="x"><span>${ddmm(filas[0].dia)}</span><span>${ddmm(medio.dia)}</span><span>${ddmm(filas[filas.length - 1].dia)}</span></div>`;
 }
 
-const ENTREGA = { cadeteria: 'Cadetería', pickup: 'Pick-up Cordón', interior: 'Interior' };
+const ENTREGA = { cadeteria: 'Cadetería', pickup: 'Pick-up Tres Cruces', interior: 'Interior' };
 const PAGOS = { transferencia: 'Transferencia', abitab_redpagos: 'Abitab / Red Pagos', prex_midinero: 'Prex / Mi Dinero', mercadopago: 'Mercado Pago' };
 
 function ranking(sel, filas, etiqueta, formato = n => n.toLocaleString('es-UY')) {
@@ -436,10 +436,12 @@ function cotizarPedido() {
   }, 300);
 }
 
+// Interior: departamento y localidad; la dirección solo a domicilio (pick-up y agencia DAC no la llevan)
 function actualizarEntrega() {
-  const f = fp();
-  $('#formPedido .fp-envio').hidden = f.entrega.value !== 'interior';
-  $('#formPedido .fp-dir').hidden = f.entrega.value === 'pickup';
+  const f = fp(), interior = f.entrega.value === 'interior';
+  $('#formPedido .fp-envio').hidden = !interior;
+  $('#formPedido').querySelectorAll('.fp-lugar').forEach(l => (l.hidden = !interior));
+  $('#formPedido .fp-dir').hidden = f.entrega.value === 'pickup' || (interior && f.envio.value === 'agencia');
 }
 
 async function abrirFormPedido(p) {
@@ -452,9 +454,12 @@ async function abrirFormPedido(p) {
   if (p) {
     for (const k of ['nombre', 'telefono', 'email', 'entrega', 'pago', 'cupon']) f[k].value = p[k] ?? '';
     f.fuente.value = p.origen || 'instagram';
-    const dir = /^(Agencia DAC|Domicilio): (.*)$/.exec(p.direccion || ''); // "Agencia DAC: Salto" (ver direccionTexto en pedidos.ts)
+    // "Agencia DAC: Salto, Salto" o "Domicilio: Uruguay 1234 — Paysandú, Paysandú" (ver direccionTexto en pedidos.ts)
+    const dir = /^(Agencia DAC|Domicilio): (?:(.*) — )?(.*)$/.exec(p.direccion || '');
+    const lugar = /^(.*), ([^,]+)$/.exec(dir?.[3] || ''), conLugar = lugar && [...f.departamento.options].some(o => o.value === lugar[2]);
     f.envio.value = dir?.[1] === 'Domicilio' ? 'domicilio' : 'agencia';
-    f.direccion.value = dir ? dir[2] : p.direccion || '';
+    f.departamento.value = conLugar ? lugar[2] : ''; f.localidad.value = conLugar ? lugar[1] : '';
+    f.direccion.value = !dir ? p.direccion || '' : dir[2] ?? (conLugar ? '' : dir[3]); // pedidos viejos: todo junto en la dirección
   }
   lineas = p ? lineasDe(p.items) : [nuevaLinea('box')];
   actualizarEntrega(); pintarLineas();
@@ -474,7 +479,7 @@ $('#formPedido').addEventListener('click', e => {
 });
 $('#formPedido').addEventListener('input', e => {
   const { i, j, k } = e.target.dataset;
-  if (k === undefined) { if (['pago', 'cupon'].includes(e.target.name)) cotizarPedido(); if (e.target.name === 'entrega') actualizarEntrega(); return; }
+  if (k === undefined) { if (['pago', 'cupon'].includes(e.target.name)) cotizarPedido(); if (['entrega', 'envio'].includes(e.target.name)) actualizarEntrega(); return; }
   const obj = j === undefined ? lineas[i] : lineas[i].productos[j];
   obj[k] = ['cantidad', 'num'].includes(k) ? Number(e.target.value) : e.target.value;
   if (k === 'mat') obj.num = 1;
@@ -484,7 +489,8 @@ $('#formPedido').addEventListener('submit', async e => {
   e.preventDefault();
   const f = fp(), interior = f.entrega.value === 'interior';
   const body = {
-    cliente: { nombre: f.nombre.value, telefono: f.telefono.value, email: f.email.value, direccion: f.entrega.value === 'pickup' ? undefined : f.direccion.value },
+    cliente: { nombre: f.nombre.value, telefono: f.telefono.value, email: f.email.value, direccion: $('#formPedido .fp-dir').hidden ? undefined : f.direccion.value,
+      departamento: interior ? f.departamento.value || undefined : undefined, localidad: interior ? f.localidad.value : undefined },
     entrega: f.entrega.value, envio: interior ? f.envio.value : undefined, pago: f.pago.value, cupon: f.cupon.value.trim() || undefined,
     fuente: f.fuente.value, items: itemsDe().items, ...(editando ? {} : { estado: f.estado.value }),
   };

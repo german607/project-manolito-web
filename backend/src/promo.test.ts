@@ -5,7 +5,7 @@ import express from 'express';
 import type { AddressInfo } from 'node:net';
 import { adminRouter } from './admin.js';
 import { manejarErrores } from './errores.js';
-import { calcular, PedidoInput } from './pedidos.js';
+import { calcular, insertar, cambiarEstado, PedidoInput } from './pedidos.js';
 import { productos, boxes, q, q1 } from './db.js';
 
 async function patch(ruta: string, body: unknown) {
@@ -45,10 +45,10 @@ test('promo: el precio anterior se edita en el admin, queda en el historial y no
 
 test('stock por color: el producto y las boxes que lo traen no se venden en ese color', async () => {
   await q("UPDATE productos SET controla_stock = false");
-  const r = await patch('/productos/zapatitos', { sinStock: ['Celeste'] });
+  const r = await patch('/productos/zapatitos', { stockColores: { Celeste: 0, Rosa: 2 } });
   assert.equal(r.status, 200);
-  assert.deepEqual(r.d.sinStock, ['Celeste']);
-  assert.equal((await patch('/productos/zapatitos', { sinStock: ['Violeta'] })).status, 400, 'un color que el producto no tiene');
+  assert.deepEqual(r.d.sinStock, ['Celeste'], 'en 0 = sin stock');
+  assert.equal((await patch('/productos/zapatitos', { stockColores: { Violeta: 1 } })).status, 400, 'un color que el producto no tiene');
 
   // Las boxes con zapatitos pierden el celeste; las que no los traen, no
   assert.ok((await boxes.una('bienvenida'))!.coloresSinStock.includes('Celeste'));
@@ -61,11 +61,19 @@ test('stock por color: el producto y las boxes que lo traen no se venden en ese 
   await assert.doesNotReject(pedir([box('Rosa')]));
   await assert.rejects(pedir([{ tipo: 'producto', id: 'zapatitos', color: 'Celeste', armado: 'a' }, { tipo: 'producto', id: 'babero', color: 'Rosa', armado: 'a' }]), /Zapatitos tejidos en celeste/);
 
+  // Cantidad por color: se descuenta al vender (suelto o dentro de una box) y vuelve al cancelar
+  await assert.rejects(pedir([{ tipo: 'producto', id: 'zapatitos', color: 'Rosa', cantidad: 3, armado: 'b' }, { tipo: 'producto', id: 'babero', color: 'Rosa', armado: 'b' }]), /Quedan solo 2 de Zapatitos tejidos en rosa/);
+  const venta = PedidoInput.parse({ cliente: { nombre: 'Ana', telefono: '099123456', email: 'ana@test.com' }, entrega: 'pickup', pago: 'transferencia', items: [box('Rosa')] });
+  const id = await insertar(venta, await calcular(venta, productos.uno, boxes.una));
+  assert.deepEqual((await productos.uno('zapatitos'))!.stockColores, { Celeste: 0, Rosa: 1 }, 'la box rosa descontó un zapatito rosa');
+  await cambiarEstado(id, 'cancelado');
+  assert.deepEqual((await productos.uno('zapatitos'))!.stockColores, { Celeste: 0, Rosa: 2 }, 'cancelar lo devuelve');
+
   // Sin ningún color: la box queda agotada
-  await patch('/productos/zapatitos', { sinStock: ['Rosa', 'Celeste', 'Beige'] });
+  await patch('/productos/zapatitos', { stockColores: { Rosa: 0, Celeste: 0, Beige: 0 } });
   assert.equal((await boxes.una('bienvenida'))!.agotada, true);
-  await patch('/productos/zapatitos', { sinStock: [] });
+  await patch('/productos/zapatitos', { stockColores: null });
   const h = await q("SELECT count(*)::int AS n FROM historial WHERE entidad = 'producto' AND entidad_id = 'zapatitos'");
-  await patch('/productos/zapatitos', { sinStock: [] });
+  await patch('/productos/zapatitos', { stockColores: null });
   assert.equal((await q("SELECT count(*)::int AS n FROM historial WHERE entidad = 'producto' AND entidad_id = 'zapatitos'"))[0].n, h[0].n, 'guardar lo mismo no ensucia el historial');
 });

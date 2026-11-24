@@ -1,5 +1,6 @@
 // Catálogo inicial: lo que hoy muestra el sitio. Se carga solo si la base está vacía.
-// `productos` de cada box = de qué productos descuenta stock (el conejo de peluche no es un producto del catálogo).
+// `productos` de cada box = de qué productos descuenta stock. El conejo de peluche es un producto solo para llevar su stock
+// (activo: false, no se vende suelto).
 const COL = ['Rosa', 'Celeste', 'Beige'];
 const foto = (id: string) => `assets/img/arma-tu-box/producto-${id}.jpg`;
 
@@ -13,7 +14,8 @@ export const PRODUCTOS = [
   { id: 'guarda', nombre: 'Guardachupete de silicona', precio: 390, colores: COL, descripcion: 'Estuche de silicona libre de BPA, suave para guardar y llevar el chupete siempre limpio.' },
   { id: 'mordillo', nombre: 'Mordillo de silicona', precio: 490, colores: COL, descripcion: 'Mordillo de silicona y madera natural, seguro y libre de BPA para aliviar las encías.' },
   { id: 'porta', nombre: 'Portachupete personalizado', precio: 790, colores: null, personalizable: true, descripcion: 'Con el nombre de tu bebé (hasta 5 letras), en silicona libre de BPA o madera natural.' },
-].map(p => ({ personalizable: false, ...p, foto: foto(p.id) }));
+  { id: 'conejo', nombre: 'Conejo de peluche', precio: 0, colores: null, activo: false, descripcion: 'Conejo de peluche suave y seguro, el compañero ideal para abrazar.' },
+].map(p => ({ personalizable: false, activo: true, ...p, foto: p.id === 'conejo' ? null : foto(p.id) }));
 
 export const BOXES = [
   { id: 'mini-box', colores: ['Rosa', 'Celeste', 'Verde', 'Beige'], nombre: 'Mini box', precio: 990, foto: 'mini-box.jpg', productos: ['babero', 'porta'], items: ['Babero de algodón', 'Portachupete personalizado'] },
@@ -23,5 +25,5 @@ export const BOXES = [
   { id: 'primeros-mimos', colores: ['Rosa', 'Celeste', 'Beige'], nombre: 'Box Primeros mimos', precio: 1790, foto: 'box-primeros-mimos.jpg', productos: ['zapatitos', 'babero', 'sonajero', 'porta'], items: ['Zapatitos tejidos', 'Babero de algodón', 'Sonajero de tela suave y seguro', 'Portachupete personalizado'] },
   { id: 'pequeno-tesoro', colores: ['Rosa', 'Celeste', 'Beige'], nombre: 'Box Pequeño tesoro', precio: 2090, foto: 'box-pequeno-tesoro.jpg', productos: ['trapito', 'zapatitos', 'porta'], items: ['Trapito de apego', 'Zapatitos tejidos', 'Portachupete personalizado'] },
   { id: 'bienvenida', colores: ['Rosa', 'Celeste', 'Beige'], nombre: 'Box Bienvenida', precio: 2790, foto: 'box-bienvenida-zapatitos.jpg', productos: ['manta', 'zapatitos', 'trapito', 'porta'], items: ['Manta de muselina', 'Zapatitos tejidos', 'Trapito de apego', 'Portachupete personalizado'] },
-  { id: 'especial-manolito', colores: ['Rosa', 'Celeste', 'Beige'], nombre: 'Box especial Manolito', precio: 3290, foto: 'box-especial-manolito-sonajero.jpg', etiqueta: 'PREMIUM', productos: ['manta', 'babero', 'zapatitos', 'sonajero', 'porta'], items: ['Manta de muselina', 'Babero de algodón', 'Zapatitos tejidos', 'Sonajero de tela', 'Conejo de peluche', 'Portachupete personalizado'] },
+  { id: 'especial-manolito', colores: ['Rosa', 'Celeste', 'Beige'], nombre: 'Box especial Manolito', precio: 3290, foto: 'box-especial-manolito-sonajero.jpg', etiqueta: 'PREMIUM', productos: ['manta', 'babero', 'zapatitos', 'sonajero', 'conejo', 'porta'], items: ['Manta de muselina', 'Babero de algodón', 'Zapatitos tejidos', 'Sonajero de tela', 'Conejo de peluche', 'Portachupete personalizado'] },
 ].map(b => ({ etiqueta: null as string | null, ...b, foto: `assets/img/boxes/${b.foto}` }));

@@ -142,25 +142,25 @@ async function actualizar(tabla: 'productos' | 'boxes', id: string, cambios: Rec
 }
 
 adminRouter.patch('/productos/:id', async (req, res) => {
-  const { controlaStock, precioAnterior, sinStock, ...cambios } = z.object({
+  const { controlaStock, precioAnterior, stockColores, ...cambios } = z.object({
     precio: Precio.optional(),
     precioAnterior: Precio.nullable().optional(), // vacío = sin promo
-    sinStock: z.array(z.string().max(40)).max(20).optional(), // colores que no hay
+    stockColores: z.record(z.string().max(40), z.number().int().min(0).max(100_000)).nullable().optional(), // { color: cantidad }; vacío = no se controla
     stock: z.number().int().min(0).nullable().optional(),
     controlaStock: z.boolean().optional(), // false = "Ignorar stock"
     activo: z.boolean().optional(),
   }).strict().parse(req.body);
   const actual = await productos.uno(req.params.id);
   if (!actual) throw new HttpError(404, 'No encontrado');
-  if (sinStock?.some(c => !actual.colores?.includes(c))) throw new HttpError(400, `${actual.nombre} no tiene ese color`);
+  if (stockColores && Object.keys(stockColores).some(c => !actual.colores?.includes(c))) throw new HttpError(400, `${actual.nombre} no tiene ese color`);
   if ((controlaStock ?? actual.controlaStock) && (cambios.stock === undefined ? actual.stockCargado : cambios.stock) === null) {
     throw new HttpError(400, 'Cargá la cantidad de stock, o activá "Ignorar stock"');
   }
   const nuevo = await tx(async () => {
     await actualizar('productos', req.params.id, { ...cambios, controla_stock: controlaStock, precio_anterior: precioAnterior,
-      sin_stock: sinStock && JSON.stringify(sinStock) });
+      stock_colores: stockColores === undefined ? undefined : stockColores && Object.keys(stockColores).length ? JSON.stringify(stockColores) : null });
     const nuevo = (await productos.uno(req.params.id))!;
-    const d = diferencias(actual, nuevo, ['precio', 'precioAnterior', 'stockCargado', 'controlaStock', 'sinStock', 'activo']);
+    const d = diferencias(actual, nuevo, ['precio', 'precioAnterior', 'stockCargado', 'controlaStock', 'stockColores', 'activo']);
     if (Object.keys(d).length) await registrar(res.locals.usuario.email, 'producto', actual.id, 'editar', d);
     return nuevo;
   });

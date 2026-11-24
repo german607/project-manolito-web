@@ -282,6 +282,11 @@ test('retiro → "pronto para retirar" con la dirección de Ajustes; interior �
 test('sin peine de bamboo: la Bienvenida trae zapatitos y la especial Manolito un sonajero', async () => {
   const ids = async (box: string) => (await boxes.una(box))!.componentes.map(c => c.id).sort();
   assert.deepEqual(await ids('bienvenida'), ['manta', 'porta', 'trapito', 'zapatitos']);
-  assert.deepEqual(await ids('especial-manolito'), ['babero', 'manta', 'porta', 'sonajero', 'zapatitos']);
+  assert.deepEqual(await ids('especial-manolito'), ['babero', 'conejo', 'manta', 'porta', 'sonajero', 'zapatitos'], 'el conejo lleva su stock');
   assert.ok((await boxes.una('especial-manolito'))!.items.includes('Sonajero de tela'));
+  // Con el conejo en 0 la especial Manolito queda agotada; no se vende suelto (está inactivo)
+  await setStock(['conejo'], 0);
+  assert.equal((await boxes.una('especial-manolito'))!.agotada, true);
+  await setStock(['conejo'], 0, false);
+  assert.equal((await productos.uno('conejo'))!.activo, false);
 });

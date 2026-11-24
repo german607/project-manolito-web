@@ -157,10 +157,10 @@ async function cargarBoxes() { tabla('#tablaBoxes', await api('/boxes'), 'boxes'
 function tabla(sel, items, tipo) {
   const conStock = tipo === 'productos';
   const t = $(sel);
-  t.innerHTML = `<thead><tr><th>Foto</th><th>${conStock ? 'Producto' : 'Box'}</th><th>Precio</th><th title="Se muestra tachado en la web si es mayor que el precio. Vacío = sin promo">Precio anterior</th>${conStock ? '<th>Stock</th><th title="Tocá un color para marcarlo sin stock (tachado). Las boxes que traen este producto dejan de venderse en ese color">Sin stock por color</th>' : ''}<th>Activo</th><th></th></tr></thead>
+  t.innerHTML = `<thead><tr><th>Foto</th><th>${conStock ? 'Producto' : 'Box'}</th><th>Precio</th><th title="Se muestra tachado en la web si es mayor que el precio. Vacío = sin promo">Precio anterior</th>${conStock ? '<th>Stock</th><th title="Cantidad de cada color. Vacío = ese color no se controla; 0 = sin stock (tachado en la web y en las boxes que lo traen)">Stock por color</th>' : ''}<th>Activo</th><th></th></tr></thead>
     <tbody>${items.map(p => `
       <tr data-id="${esc(p.id)}" class="${p.activo ? '' : 'off'}">
-        <td><img class="thumb" src="../${esc(p.foto)}" alt="" ${conStock ? 'title="Cambiar foto"' : 'style="cursor:default"'}>${conStock ? '<input type="file" accept="image/jpeg,image/png,image/webp" hidden>' : ''}</td>
+        <td><img class="thumb" src="${p.foto ? '../' + esc(p.foto) : 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'}" alt="" ${conStock ? 'title="Cambiar foto"' : 'style="cursor:default"'}>${conStock ? '<input type="file" accept="image/jpeg,image/png,image/webp" hidden>' : ''}</td>
         <td>${esc(p.nombre)}</td>
         <td><input type="number" name="precio" min="0" step="10" value="${p.precio}" aria-label="Precio de ${esc(p.nombre)}"></td>
         <td><input type="number" name="precioAnterior" min="0" step="10" value="${p.precioAnterior ?? ''}" placeholder="Sin promo" aria-label="Precio anterior (tachado) de ${esc(p.nombre)}"></td>
@@ -168,7 +168,7 @@ function tabla(sel, items, tipo) {
           <input type="number" name="stock" min="0" value="${p.stockCargado ?? ''}" ${p.controlaStock ? '' : 'disabled'} aria-label="Stock de ${esc(p.nombre)}">
           <label class="switch" title="Activado: se vende sin mirar la cantidad"><input type="checkbox" name="ignorar" ${p.controlaStock ? '' : 'checked'}> <span>Ignorar stock</span></label>
         </div></td>
-        <td>${p.colores?.length ? `<div class="sin-stock">${p.colores.map(c => `<button type="button" class="${p.sinStock.includes(c) ? 'sin' : ''}" aria-pressed="${p.sinStock.includes(c)}" data-color="${esc(c)}" title="${p.sinStock.includes(c) ? 'Sin stock: tocá para volver a tenerlo' : 'Hay stock: tocá para marcarlo sin stock'}">${esc(c)}</button>`).join('')}</div>` : '<span class="meta">—</span>'}</td>` : ''}
+        <td>${p.colores?.length ? `<div class="stock-colores">${p.colores.map(c => { const n = p.stockColores?.[c]; return `<label class="${n === 0 ? 'sin' : ''}"><span>${esc(c)}</span><input type="number" min="0" data-color="${esc(c)}" value="${n ?? ''}" placeholder="—" aria-label="Stock de ${esc(p.nombre)} en ${esc(c)}"></label>`; }).join('')}</div>` : '<span class="meta">—</span>'}</td>` : ''}
         <td><label class="switch"><input type="checkbox" name="activo" ${p.activo ? 'checked' : ''}> <span>${p.activo ? 'Sí' : 'No'}</span></label></td>
         <td><button class="btn sm" disabled>Guardar</button></td>
       </tr>`).join('')}</tbody>`;
@@ -176,10 +176,7 @@ function tabla(sel, items, tipo) {
   t.querySelectorAll('tbody tr').forEach(tr => {
     const btn = tr.querySelector('.btn');
     const campo = n => tr.querySelector(`[name=${n}]`);
-    tr.querySelectorAll('.sin-stock button').forEach(b => b.addEventListener('click', () => {
-      const sin = b.getAttribute('aria-pressed') !== 'true';
-      b.setAttribute('aria-pressed', sin); b.classList.toggle('sin', sin); btn.disabled = false;
-    }));
+    tr.querySelectorAll('.stock-colores input').forEach(i => i.addEventListener('input', () => i.parentElement.classList.toggle('sin', i.value === '0')));
     tr.addEventListener('input', e => {
       btn.disabled = false;
       if (e.target.name === 'ignorar') campo('stock').disabled = e.target.checked;
@@ -188,7 +185,8 @@ function tabla(sel, items, tipo) {
     btn.addEventListener('click', async () => {
       const body = { precio: Number(campo('precio').value), precioAnterior: campo('precioAnterior').value === '' ? null : Number(campo('precioAnterior').value), activo: campo('activo').checked };
       if (conStock) {
-        body.sinStock = [...tr.querySelectorAll('.sin-stock button[aria-pressed=true]')].map(b => b.dataset.color);
+        const porColor = [...tr.querySelectorAll('.stock-colores input')].filter(i => i.value !== '').map(i => [i.dataset.color, Number(i.value)]);
+        if (tr.querySelector('.stock-colores')) body.stockColores = porColor.length ? Object.fromEntries(porColor) : null;
         body.controlaStock = !campo('ignorar').checked;
         body.stock = campo('stock').value === '' ? null : Number(campo('stock').value);
       }
@@ -580,9 +578,9 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') abrirNotific
 
 // ---------- Historial ----------
 
-const CAMPOS = { taller: 'Estado interno', hasta: 'Hasta', rastreo: 'Código de rastreo DAC', direccionRetiro: 'Dirección de retiro', recargoMp: 'Recargo de Mercado Pago', cupon: 'Código de descuento', descuento: 'Descuento', minimo: 'Compra mínima', usosMax: 'Usos máximos', vence: 'Vence', comprobante: 'Comprobante', datosDePago: 'Datos para pagar', precio: 'Precio', precioAnterior: 'Precio anterior (tachado)', sinStock: 'Colores sin stock', stockCargado: 'Stock', controlaStock: 'Controla stock', activo: 'Activo', estado: 'Estado', foto: 'Foto', total: 'Total', pago: 'Pago' };
+const CAMPOS = { taller: 'Estado interno', hasta: 'Hasta', rastreo: 'Código de rastreo DAC', direccionRetiro: 'Dirección de retiro', recargoMp: 'Recargo de Mercado Pago', cupon: 'Código de descuento', descuento: 'Descuento', minimo: 'Compra mínima', usosMax: 'Usos máximos', vence: 'Vence', comprobante: 'Comprobante', datosDePago: 'Datos para pagar', precio: 'Precio', precioAnterior: 'Precio anterior (tachado)', stockColores: 'Stock por color', stockCargado: 'Stock', controlaStock: 'Controla stock', activo: 'Activo', estado: 'Estado', foto: 'Foto', total: 'Total', pago: 'Pago' };
 const ACCIONES = { recordatorio: 'Reclamó el pago de', comprobante: 'Subió el comprobante de', crear: 'Creó', editar: 'Editó', foto: 'Cambió la foto de', estado: 'Cambió el estado de', taller: 'Cambió el estado interno de', borrar: 'Deshizo', rastreo: 'Cargó el rastreo de' };
-const valor = (campo, x) => x === null || x === undefined ? '—' : typeof x === 'boolean' ? (x ? 'sí' : 'no') : Array.isArray(x) ? x.join(', ') || 'ninguno'
+const valor = (campo, x) => x === null || x === undefined ? '—' : typeof x === 'boolean' ? (x ? 'sí' : 'no') : Array.isArray(x) ? x.join(', ') || 'ninguno' : typeof x === 'object' ? Object.entries(x).map(([k, n]) => `${k}: ${n}`).join(', ') || 'sin control'
   : (campo === 'vence' || campo === 'hasta') && String(x).length > 10 ? new Date(x).toLocaleString('es-UY', { timeZone: 'America/Montevideo', dateStyle: 'short', timeStyle: 'short', hourCycle: 'h23' })
   : campo === 'precio' || campo === 'precioAnterior' || campo === 'total' || campo === 'minimo' ? plata(x) : campo === 'pago' ? PAGOS[x] || x : campo === 'foto' ? 'imagen' : String(x);
 $('#filtroHistorial').addEventListener('change', () => cargarHistorial().catch(err => toast(err.message)));

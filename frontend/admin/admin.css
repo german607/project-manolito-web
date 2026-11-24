@@ -184,7 +184,9 @@ td input[type=number]{width:96px;}
 .taller-kpi.trabajando{border-left-color:var(--taller-trabajando);}
 .taller-kpi.completado{border-left-color:var(--taller-completado);}
 
-/* Catálogo: stock por color. Tachado en rojo = no hay ese color */
-.sin-stock{display:flex;gap:4px;flex-wrap:wrap;}
-.sin-stock button{font:inherit;font-size:.78rem;font-weight:700;border:1.5px solid var(--line);background:var(--white);color:var(--ink);border-radius:999px;padding:3px 9px;cursor:pointer;}
-.sin-stock button.sin{text-decoration:line-through;color:#B0413E;border-color:#E8B4B2;background:#FBEDEC;}
+/* Catálogo: stock por color. En rojo = 0 (sin stock) */
+.stock-colores{display:grid;grid-template-columns:repeat(2,auto);gap:4px 12px;justify-content:start;}
+.stock-colores label{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:.78rem;font-weight:700;}
+td .stock-colores input[type=number]{width:58px;padding:5px 6px;}
+.stock-colores label.sin span{color:#B0413E;text-decoration:line-through;}
+.stock-colores label.sin input{border-color:#E8B4B2;background:#FBEDEC;}

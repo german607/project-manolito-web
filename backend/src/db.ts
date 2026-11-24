@@ -313,6 +313,19 @@ const MIGRACIONES: (() => Promise<void>)[] = [
   async () => {
     await q(`ALTER TABLE productos ADD COLUMN IF NOT EXISTS sin_stock jsonb NOT NULL DEFAULT '[]'`);
   },
+  // 21: stock por color con cantidad: stock_colores = { color: cantidad } (un color que no está = no se controla).
+  // Los colores marcados sin stock pasan a 0. Y el conejo de peluche de la especial Manolito pasa a ser un producto
+  // (solo para esa box, no se vende suelto) para poder llevar su stock; arranca sin controlar para no dejarla agotada
+  async () => {
+    await q('ALTER TABLE productos ADD COLUMN IF NOT EXISTS stock_colores jsonb');
+    await q(`UPDATE productos SET stock_colores = (SELECT jsonb_object_agg(c, 0) FROM jsonb_array_elements_text(sin_stock) c)
+      WHERE stock_colores IS NULL AND sin_stock <> '[]'`);
+    if (await q1("SELECT 1 FROM boxes WHERE id = 'especial-manolito'")) {
+      await q(`INSERT INTO productos (id, nombre, descripcion, precio, activo, foto) VALUES ('conejo', 'Conejo de peluche',
+        'Conejo de peluche suave y seguro, el compañero ideal para abrazar.', 0, false, NULL) ON CONFLICT DO NOTHING`);
+      await q(`INSERT INTO box_productos (box_id, producto_id) VALUES ('especial-manolito', 'conejo') ON CONFLICT DO NOTHING`);
+    }
+  },
 ];
 
 // Crea las tablas, aplica migraciones y carga el catálogo inicial si la base está vacía.
@@ -329,8 +342,8 @@ export async function iniciarDb() {
     }
     if (!(await q1('SELECT 1 FROM productos LIMIT 1'))) {
       for (const p of PRODUCTOS) {
-        await q('INSERT INTO productos (id, nombre, descripcion, precio, colores, personalizable, foto) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-          [p.id, p.nombre, p.descripcion, p.precio, p.colores && JSON.stringify(p.colores), p.personalizable, p.foto]);
+        await q('INSERT INTO productos (id, nombre, descripcion, precio, colores, personalizable, foto, activo) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+          [p.id, p.nombre, p.descripcion, p.precio, p.colores && JSON.stringify(p.colores), p.personalizable, p.foto, p.activo]);
       }
       for (const b of BOXES) {
         await q('INSERT INTO boxes (id, nombre, precio, items, foto, etiqueta, colores) VALUES ($1, $2, $3, $4, $5, $6, $7)',
@@ -360,11 +373,14 @@ export type Producto = {
   id: string; nombre: string; descripcion: string | null; precio: number;
   colores: string[] | null; personalizable: boolean; foto: string | null;
   activo: boolean; precioAnterior: number | null; // tachado en la web si es mayor que el precio (promo)
-  sinStock: string[]; // colores que no hay (stock por color)
+  stockColores: Record<string, number> | null; // { color: cantidad }; un color que no está no se controla
+  sinStock: string[]; // colores en 0 (no se venden)
   stock: number | null;   // el que usan las ventas: null = sin límite (no se controla)
   stockCargado: number | null; controlaStock: boolean; // lo que se edita en el admin
 };
-export type Componente = { id: string; nombre: string; cantidad: number; stock: number | null; colores: string[] | null; sinStock: string[] };
+export type Componente = { id: string; nombre: string; cantidad: number; stock: number | null; colores: string[] | null; stockColores: Record<string, number> | null };
+// Colores en 0 (o menos) de un producto con stock por color
+export const coloresAgotados = (sc: Record<string, number> | null) => Object.entries(sc ?? {}).filter(([, n]) => n <= 0).map(([c]) => c);
 export type Box = {
   id: string; nombre: string; precio: number; items: string[]; colores: string[] | null;
   foto: string | null; etiqueta: string | null; activo: boolean; precioAnterior: number | null;
@@ -375,14 +391,14 @@ export type Box = {
 // Stock que usan las ventas, en SQL: NULL si el producto tiene "Ignorar stock"
 export const STOCK_SQL = 'CASE WHEN controla_stock THEN COALESCE(stock, 0) END';
 
-const toProducto = ({ controla_stock, orden: _orden, precio_anterior, sin_stock, ...r }: any): Producto => ({
-  ...r, precioAnterior: precio_anterior, sinStock: sin_stock ?? [], stock: controla_stock ? (r.stock ?? 0) : null, stockCargado: r.stock, controlaStock: controla_stock,
+const toProducto = ({ controla_stock, orden: _orden, precio_anterior, sin_stock: _sinStock, stock_colores, ...r }: any): Producto => ({
+  ...r, precioAnterior: precio_anterior, stockColores: stock_colores ?? null, sinStock: coloresAgotados(stock_colores), stock: controla_stock ? (r.stock ?? 0) : null, stockCargado: r.stock, controlaStock: controla_stock,
 });
 
 // Cada box con sus componentes en una sola consulta
 const SELECT_BOX = `SELECT b.*, COALESCE((
     SELECT json_agg(json_build_object('id', p.id, 'nombre', p.nombre, 'cantidad', bp.cantidad, 'stock', CASE WHEN p.controla_stock THEN COALESCE(p.stock, 0) END,
-      'colores', p.colores, 'sinStock', p.sin_stock) ORDER BY bp.orden)
+      'colores', p.colores, 'stockColores', p.stock_colores) ORDER BY bp.orden)
     FROM box_productos bp JOIN productos p ON p.id = bp.producto_id WHERE bp.box_id = b.id
   ), '[]') AS componentes
   FROM boxes b`;
@@ -390,7 +406,7 @@ const SELECT_BOX = `SELECT b.*, COALESCE((
 // agotada: falta cantidad de algún producto, o no queda ningún color
 const toBox = ({ precio_anterior, ...r }: any): Box => {
   const comps = r.componentes as Componente[];
-  const coloresSinStock = ((r.colores ?? []) as string[]).filter(color => comps.some(c => c.colores?.includes(color) && c.sinStock.includes(color)));
+  const coloresSinStock = ((r.colores ?? []) as string[]).filter(color => comps.some(c => c.colores?.includes(color) && coloresAgotados(c.stockColores).includes(color)));
   return {
     ...r, precioAnterior: precio_anterior, coloresSinStock,
     agotada: comps.some(c => c.stock !== null && c.stock < c.cantidad) || (!!r.colores?.length && coloresSinStock.length === r.colores.length),

@@ -133,7 +133,7 @@ export const CarritoInput = z.object({
 export type Linea = {
   tipo: 'producto' | 'box'; id: string; nombre: string; cantidad: number;
   color?: string; estampado?: string; nombreBebe?: string; modelo?: string; babero?: string /* pedidos viejos: color/modelo del babero de la box */; armado?: string; precioUnitario: number; total: number;
-  componentes?: { id: string; cantidad: number }[];
+  componentes?: { id: string; cantidad: number; color?: string }[]; // color: para el stock por color
 };
 
 export const letras = (s = '') => s.replace(/\s+/g, '').length;
@@ -166,6 +166,12 @@ export async function calcular(
       if (b.colores?.length && !it.color) throw new HttpError(400, `Elegí el color de ${b.nombre}`);
       if (it.color && !b.colores?.includes(it.color)) throw new HttpError(400, `Color "${it.color}" no disponible para ${b.nombre}`);
       if (it.color && b.coloresSinStock.includes(it.color)) throw new HttpError(409, `${b.nombre} en ${it.color.toLowerCase()} está sin stock por ahora`);
+      // Cada producto de la box va del color de la box (si lo tiene en ese color)
+      const colorDe = (c: { colores: string[] | null }) => (it.color && c.colores?.includes(it.color) ? it.color : undefined);
+      for (const c of b.componentes) {
+        const quedan = colorDe(c) ? c.stockColores?.[colorDe(c)!] : undefined;
+        if (quedan !== undefined && quedan < c.cantidad * it.cantidad) throw new HttpError(409, `${b.nombre} en ${it.color!.toLowerCase()}: no queda stock de ${c.nombre}`);
+      }
       // El babero de la box va del mismo color que la box
       const conPorta = b.componentes.some(c => c.id === 'porta');
       if (conPorta && !it.modelo) throw new HttpError(400, `Elegí el modelo del portachupete de ${b.nombre}`);
@@ -175,7 +181,7 @@ export async function calcular(
         if (c.stock !== null && c.stock < c.cantidad * it.cantidad) throw new HttpError(409, `${b.nombre}: no queda stock de ${c.nombre}`);
       }
       lineas.push({ tipo: 'box', id: b.id, nombre: b.nombre, cantidad: it.cantidad, color: it.color, nombreBebe: it.nombreBebe, modelo: it.modelo, precioUnitario: b.precio, total: b.precio * it.cantidad,
-        componentes: b.componentes.map(c => ({ id: c.id, cantidad: c.cantidad * it.cantidad })) });
+        componentes: b.componentes.map(c => ({ id: c.id, cantidad: c.cantidad * it.cantidad, color: colorDe(c) })) });
       continue;
     }
     const p = await buscarProducto(it.id);
@@ -184,6 +190,8 @@ export async function calcular(
     if (!it.armado && !p.personalizable) throw new HttpError(400, `${p.nombre} se compra desde "Armá tu box" (mínimo ${MIN_ARMADO} productos)`);
     if (it.color && !p.colores?.includes(it.color)) throw new HttpError(400, `Color "${it.color}" no disponible para ${p.nombre}`);
     if (it.color && p.sinStock.includes(it.color)) throw new HttpError(409, `${p.nombre} en ${it.color.toLowerCase()} está sin stock por ahora`);
+    const quedanColor = it.color ? p.stockColores?.[it.color] : undefined;
+    if (quedanColor !== undefined && quedanColor < it.cantidad) throw new HttpError(409, `Quedan solo ${quedanColor} de ${p.nombre} en ${it.color!.toLowerCase()}`);
     if (it.color === 'Estampada' && !it.estampado) throw new HttpError(400, `Falta contar qué estampado querés para ${p.nombre}`);
     if (it.estampado && it.color !== 'Estampada') throw new HttpError(400, `El estampado solo va con el color Estampada`);
     if (it.nombreBebe && !p.personalizable) throw new HttpError(400, `${p.nombre} no lleva nombre`);
@@ -192,7 +200,7 @@ export async function calcular(
     const extra = p.personalizable ? Math.max(0, letras(it.nombreBebe) - LETRAS_INCLUIDAS) * PRECIO_LETRA_EXTRA : 0;
     const unit = p.precio + extra;
     lineas.push({ tipo: 'producto', id: p.id, nombre: p.nombre, cantidad: it.cantidad, color: it.color, estampado: it.estampado, nombreBebe: it.nombreBebe, modelo: p.personalizable ? it.modelo : undefined, armado: it.armado, precioUnitario: unit, total: unit * it.cantidad,
-      componentes: [{ id: p.id, cantidad: it.cantidad }] });
+      componentes: [{ id: p.id, cantidad: it.cantidad, color: it.color }] });
   }
   const subtotal = lineas.reduce((s, l) => s + l.total, 0);
   const { cupon, descuento } = input.cupon ? await aplicarCupon(input.cupon, subtotal) : { cupon: undefined, descuento: 0 };
@@ -271,14 +279,23 @@ const stockDe = (l: Linea) => l.componentes ?? (l.tipo === 'producto' ? [{ id: l
 async function descontarStock(lineas: Linea[]) {
   for (const c of lineas.flatMap(stockDe)) {
     const p = await q1<{ nombre: string; stock: number | null }>(`SELECT nombre, ${STOCK_SQL} AS stock FROM productos WHERE id = $1 FOR UPDATE`, [c.id]);
+    if (c.color) await moverStockColor(c.id, c.color, -c.cantidad, p?.nombre);
     if (!p || p.stock === null) continue; // "Ignorar stock": no se mira ni se toca la cantidad
     if (p.stock < c.cantidad) throw new HttpError(409, `No hay stock suficiente de ${p.nombre}`);
     await q('UPDATE productos SET stock = stock - $1 WHERE id = $2', [c.cantidad, c.id]);
   }
 }
+// Stock por color: solo si ese color tiene cantidad cargada (si no, no se controla)
+async function moverStockColor(id: string, color: string, n: number, nombre = id) {
+  const r = await q1<{ quedan: number | null }>(`SELECT (stock_colores->>$2)::int AS quedan FROM productos WHERE id = $1 FOR UPDATE`, [id, color]);
+  if (r?.quedan === null || r?.quedan === undefined) return;
+  if (r.quedan + n < 0) throw new HttpError(409, `No hay stock suficiente de ${nombre} en ${color.toLowerCase()}`);
+  await q(`UPDATE productos SET stock_colores = jsonb_set(stock_colores, ARRAY[$2], to_jsonb((stock_colores->>$2)::int + $3)) WHERE id = $1`, [id, color, n]);
+}
 async function devolverStock(lineas: Linea[]) {
   for (const c of lineas.flatMap(stockDe)) {
     await q('UPDATE productos SET stock = COALESCE(stock, 0) + $1 WHERE id = $2 AND controla_stock', [c.cantidad, c.id]);
+    if (c.color) await moverStockColor(c.id, c.color, c.cantidad);
   }
 }
 
